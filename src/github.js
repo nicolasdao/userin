@@ -1,8 +1,8 @@
 const passport = require('passport')
-const Strategy = require('passport-google-oauth20').Strategy
+const Strategy = require('passport-github').Strategy
 const { fetch, obj:{ merge }, idpHelp: { getCallbackUrl, formatError } } = require('./utils')
 
-const STRATEGY = 'google'
+const STRATEGY = 'github'
 const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
 const OAUTH_CALLBACK_PATHNAME = `/${STRATEGY}/oauth2callback`
 

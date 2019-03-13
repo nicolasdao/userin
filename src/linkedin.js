@@ -1,8 +1,8 @@
 const passport = require('passport')
-const Strategy = require('passport-google-oauth20').Strategy
+const Strategy = require('passport-linkedin-oauth2').Strategy
 const { fetch, obj:{ merge }, idpHelp: { getCallbackUrl, formatError } } = require('./utils')
 
-const STRATEGY = 'google'
+const STRATEGY = 'linkedin'
 const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
 const OAUTH_CALLBACK_PATHNAME = `/${STRATEGY}/oauth2callback`
 
@@ -17,12 +17,13 @@ const parseAuthResponse = (accessToken, refreshToken, profile, next) => {
 }
 
 let _passportConfigured = false
-const configurePassport = ({ appId, appSecret, callbackURL }) => passport.use(new Strategy({
-	clientID: appId,
-	clientSecret: appSecret,
-	callbackURL
-}, parseAuthResponse))
-
+const configurePassport = ({ appId, appSecret, callbackURL, scopes }) => 
+	passport.use(new Strategy({
+		clientID: appId,
+		clientSecret: appSecret,
+		callbackURL,
+		scope: scopes
+	}, parseAuthResponse))
 
 /**
  * Returns an Express handler used by the client to request Authorization access to the IdP
@@ -33,11 +34,11 @@ const getAuthRequestHandler = ({ appId, appSecret, scopes }) => (req, res, next)
 	console.log('REQUEST HANDLER')
 	if (!_passportConfigured) {
 		const callbackURL = getCallbackUrl(req, OAUTH_CALLBACK_PATHNAME)
-		configurePassport({ appId, appSecret, callbackURL })
+		configurePassport({ appId, appSecret, callbackURL, scopes })
 		_passportConfigured = true
 	}
 
-	const handler = passport.authenticate(STRATEGY, { scope: scopes })
+	const handler = passport.authenticate(STRATEGY)
 	handler(req, res, next)
 }
 

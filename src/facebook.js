@@ -2,8 +2,9 @@ const passport = require('passport')
 const Strategy = require('passport-facebook')
 const { fetch, obj:{ merge }, idpHelp: { getCallbackUrl, formatError } } = require('./utils')
 
-const OAUTH_PATHNAME = '/facebook/oauth2'
-const OAUTH_CALLBACK_PATHNAME = '/facebook/oauth2callback'
+const STRATEGY = 'facebook'
+const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
+const OAUTH_CALLBACK_PATHNAME = `/${STRATEGY}/oauth2callback`
 
 const parseAuthResponse = (accessToken, refreshToken, profile, next) => {
 	const id = profile.id
@@ -23,7 +24,7 @@ const parseAuthResponse = (accessToken, refreshToken, profile, next) => {
 const getAuthRequestHandler = () => (req, res, next) => {
 	console.log('REQUEST HANDLER')
 	const callbackURL = getCallbackUrl(req, OAUTH_CALLBACK_PATHNAME)
-	const handler = passport.authenticate('facebook', { callbackURL })
+	const handler = passport.authenticate(STRATEGY, { callbackURL })
 	handler(req, res, next)
 }
 
@@ -41,7 +42,7 @@ const getAuthResponseHandler = ({ userPortalAPI, apiKey, onSuccess, onError }) =
 
 	console.log('RESPONSE HANDLER')
 	const callbackURL = getCallbackUrl(req, OAUTH_CALLBACK_PATHNAME)
-	const handler = passport.authenticate('facebook', { callbackURL }, (err,user) => {
+	const handler = passport.authenticate(STRATEGY, { callbackURL }, (err,user) => {
 		// CASE 1 - IdP Failure
 		if (err) {
 			res.status(500).send(formatError(onError, err.message))
@@ -63,9 +64,9 @@ const getAuthResponseHandler = ({ userPortalAPI, apiKey, onSuccess, onError }) =
 						if (data && data.token) 
 							res.status(200).send(merge(onSuccess, data))
 						else 
-							res.status(422).send(formatError(onError, `Facebook OAuth succeeded, HTTP GET to 'userPortalAPI' ${userPortalAPI} successed to but did not return a 'token' value ({ "token": null }).`))
+							res.status(422).send(formatError(onError, `The ${STRATEGY} OAuth succeeded, HTTP GET to 'userPortalAPI' ${userPortalAPI} successed to but did not return a 'token' value ({ "token": null }).`))
 					} else 
-						res.status(status).send(formatError(onError, `Facebook OAuth succeeded, but HTTP GET to 'userPortalAPI' ${userPortalAPI} failed.`))
+						res.status(status).send(formatError(onError, `The ${STRATEGY} OAuth succeeded, but HTTP GET to 'userPortalAPI' ${userPortalAPI} failed.`))
 				}).catch(err => {
 					res.status(500).send(formatError(onError, err.message))
 				}).then(next)

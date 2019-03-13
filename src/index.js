@@ -1,4 +1,6 @@
 module.exports = {
 	facebook: require('./facebook'),
-	google: require('./google')
+	google: require('./google'),
+	linkedin: require('./linkedin'),
+	github: require('./github')
 }

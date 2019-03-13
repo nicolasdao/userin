@@ -77,6 +77,59 @@ UserIn's main goal is to be simple and understandable. It is open source because
 	```
 6. In the _Credentials_ page, select the _OAuth consent screen_ tab. Fill up the form depending on your requirements. Make sure you update the __*Application name*__ to your App name so that your App users see that name in the consent screen. You can also add your brand in the consent screen by uploading your App logo. Don't forget to click the __*Save*__ button at the bottom to apply your changes.
 
+### LinkedIn
+#### Purpose 
+
+* Acquire an __*App ID*__ and an __*App Secret*__.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### Steps
+
+1. Sign in to your LinkedIn account and then browse to [https://www.linkedin.com/developers/apps](https://www.linkedin.com/developers/apps) to either create a new App or access any existing ones. For the sake of this tutorial, the next steps only focus on creating a new App.
+2. In the top right corner of the __*My Apps*__ page, click on the __*Create app*__ button.
+3. Fill up the form and then click the __*Create app*__ button at the bottom.
+4. Once the the App is created, you are redirected to the App's page. In that page, select the __*Auth*__ tab and copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+
+	```js
+	{
+		"schemes": {
+			"linkedin": {
+				"appId": "your-app-id",
+				"appSecret": "your-app-secret"
+			}
+		}
+	}
+	```
+5. Still in the __*Auth*__ tab, under the __*OAuth 2.0 settings*__ section, enter the redirect URI [your-origin/linkedin/oauth2callback](your-origin/linkedin/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/linkedin/oauth2callback](http://localhost:3000/linkedin/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/linkedin/oauth2callback](https://youcool.com/linkedin/oauth2callback).
+
+### Github
+#### Purpose 
+
+* Acquire an __*App ID*__ and an __*App Secret*__.
+* Configure a __*Consent Screen*__. That screen acts as a disclaimer to inform the user of the implication of using Google as an IdP to sign-in to your App.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### Steps
+
+1. Sign in to your Github account and then browse to [https://github.com/settings/apps](https://github.com/settings/apps) to either create a new App or access any existing ones. For the sake of this tutorial, the next steps only focus on creating a new App.
+2. In the top right corner of the __*GitHub Apps*__ page, click on the __*New GitHub App*__ button.
+3. Fill up the form and then click the __*Create GitHub App*__ button at the bottom. The most important field to fill is the __*User authorization callback URL*__. Enter the redirect URI [your-origin/github/oauth2callback](your-origin/github/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/github/oauth2callback](http://localhost:3000/github/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/github/oauth2callback](https://youcool.com/github/oauth2callback).
+
+> NOTE: The App creation form forces you to enter a _Homepage URL_ and a _Webhook URL_. If you don't have any, that's not important. Just enter random URIs (e.g., Homepage URL: [https://leavemealone.com](https://leavemealone.com) Webhook URL: [https://leavemealone.com](https://leavemealone.com))
+
+4. Once the the App is created, you are redirected to the App's page. In that page, copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+
+	```js
+	{
+		"schemes": {
+			"github": {
+				"appId": "your-app-id",
+				"appSecret": "your-app-secret"
+			}
+		}
+	}
+	```
+
 ## 2. Configuring The UserIn Middleware With The IdP Secrets
 
 ## 3. Generate a UserIn API Key To Communicate Safely With The App System

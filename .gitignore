@@ -2,3 +2,4 @@
 *.orig
 node_modules/
 userinrc.json
+LOCAL_DOC.md

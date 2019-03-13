@@ -10,5 +10,6 @@ module.exports = Object.assign(require('./core'), {
 	error: require('./error'),
 	fetch: require('./fetch'),
 	promise: require('./promise'),
-	url: require('./url')
+	url: require('./url'),
+	idpHelp: require('./idpHelp')
 })

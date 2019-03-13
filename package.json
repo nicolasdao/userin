@@ -32,6 +32,9 @@
   },
   "dependencies": {
     "@neap/funky": "^0.1.4",
+    "passport": "^0.4.0",
+    "passport-facebook": "^3.0.0",
+    "passport-google-oauth20": "^2.0.0",
     "shortid": "^2.2.14"
   }
 }

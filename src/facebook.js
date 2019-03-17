@@ -47,7 +47,8 @@ const setUp = ({ appId, appSecret, scopes, userPortal, onSuccess, onError }) => 
 
 
 module.exports = {
-	setUp
+	setUp,
+	scopes: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 }
 
 

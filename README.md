@@ -97,7 +97,29 @@ Now, let's change the code as follow:
 ```js
 const { app } = require('@neap/funky')
 const Encryption = require('jwt-pwd')
-const { apiKeyHandler, jwt } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
+const { bearerHandler } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
+
+app.get('/sensitive/data', bearerHandler({ key: 'x-token' }), (req,res) => res.status(200).send('Special data for logged in users only'))
+
+eval(app.listen(3500))
+```
+
+Run:
+```
+node index.js
+```
+```
+curl http://localhost:3500/sensitive/data
+```
+
+This time, you'll receive a 403 response with this error message: `Unauthorized access. Missing bearer token. Header 'x-token' not found.`
+
+To access to this GET endpoint, you'll need to get a JWT token first, and then pass it to the `x-token` header.  
+
+Let's add a new web endpoint to obtain a JWT token:
+
+```js
+const { apiKeyHandler, bearerHandler, jwt } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
 
 const _userStore = []
 
@@ -113,22 +135,13 @@ app.post('/user/in', apiKeyHandler({ key:'x-api-key', value:'EhZVzt1r9POWyV99Y3D
 	jwt.create({ id, authMethod, email }).then(token => res.status(200).send({ token }))
 })
 
-app.get('/sensitive/data', (req,res) => res.status(200).send('Special data for logged in users only'))
-
-eval(app.listen(3500))
 ```
 
-Run:
-```
-node index.js
-```
-```
-curl http://localhost:3500/sensitive/data
-```
+This new web endpoint hosted at `http://localhost:3500/user/in` is the one used in the previous section to define the property `userPortal.api` in the `userinrc.json`. Notice that the `apiKeyHandler` restricts accesses to this web endpoint to request containing the correct API key value in the `x-api-key` header. This API key value is also the same as the one defined in the previous section for property `userPortal.key` in the `userinrc.json`. 
 
-This time, you'll receive a 403 response with this error message: `Unauthorized access. Missing bearer token. Header 'x-token' not found.`
+The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "token": "some-JWT-token-value" }`. _UserIn_ uses that response to pass the token to the client. The client is now in possession of a valid JWT token he/she can use with all future HTTP request to your secured API.
 
-To access to this GET endpoint, you'll need to get a JWT token first. Run this curl method:
+To test the code above without using _UserIn_ explicitely, we can emulate passing an IdP user details as using this curl command:
 
 ```
 curl -d '{"id":"1", "firstName":"Nic", "email":"nic@neap.co", "authMethod":"default"}' -H "x-api-key: EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATp" -X POST http://localhost:3500/user/in
@@ -140,6 +153,7 @@ Extract the token from the response, and then run:
 curl -H "x-token: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NTI4Mjg3NjB9.V56ZvG1VXmM2lrhm3NVFgmACxhylyLbgTTmFpQccF9k" http://localhost:3500/sensitive/data
 ```
 
+You should now be able to receive the correct response. 
 
 # What App Engineers Must Still Do Manually
 

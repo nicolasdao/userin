@@ -2,16 +2,151 @@
 
 __*UserIn*__ is an open source middleware REST API built in NodeJS with Express. __*UserIn*__ lets App engineers to implement custom login/register feature using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ aims to be an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It was initially designed to be hosted as a microservice (though its codebase could be integrated into any NodeJS system) in a serverless architecture (e.g., AWS Lambda, Google Functions, App Engine, ...).
 
-The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their own data store. UserIn assumes that software engineers are comfortable to build CRUD REST APIs to store and manage users (e.g., GET users by ID, POST create new users) while securing those APIs with an API key. This design means that software engineers are responsibile to store user's data themselves while the boilerplate to exchange OAuth messages between all parties is abstracted behind UserIn. 
+The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their own data store. UserIn assumes that software engineers are comfortable with building CRUD REST APIs to store and manage users (e.g., GET users by ID, POST create new users) while securing those APIs with an API key. This design means that software engineers are responsibile to store user's data themselves while the boilerplate to exchange OAuth messages between all parties is abstracted behind UserIn. 
 
-UserIn's main goal is to be simple and understandable. It is open source because we believe our community should be able to manage OAuth through other means than a black box.
+The manual steps left to the App engineers are:
+
+* [1. Create an App In The IdP](#1-create-an-app-in-the-idp) - This has to be done for each IdP your app needs to support. This would have had to be done for Auth0, Firebase Authentication, AWS Cognito anyway.
+* [2. Configuring The UserIn Middleware With The IdP Secrets](#2-configuring-the-userin-middleware-with-the-idp-secrets) - This is just a matter of updating the `userinrc.json` file with the secrets acquired in the previous step. This also would have had to be done for Auth0, Firebase Authentication, AWS Cognito anyway.
+* [3. Generate a UserIn API Key To Communicate Safely With The App System](#3-Generate-a-UserIn-API-Key-To-Communicate-Safely-With-The-App-System) - This API key allows to communicate safely between your existing backend and UserIn.
+* [4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware](#4-add-a-few-rest-apis-in-the-app-to-communicate-with-the-userin-middleware) - Those REST APIs can be developped any ways the softwre engineers chose to, but they need to implement very specific signatures. 
+
+# Getting Started
+## 1. Clone this project
+
+```
+git clone https://github.com/nicolasdao/userin
+cd userin
+```
+
+## 2. Get the App ID, App Secret, and configure the Redirect URIs for each IdP
+
+Login to your IdP. We've detailed how to configure an new App for all the following IdPs:
+
+* [Facebook](#facebook)
+* [Google](#google)
+* [LinkedIn](#linkedin)
+* [GitHub](#github)
+
+> IMPORTANT: Read carefully the note on how to set up the redirect URI.
+
+## 3. Create a `userinrc.json` & Configure It
+
+Add the `userinrc.json` in the root folder. Use the App ID and the App secret collected in the previous step. Here is an example:
+
+```js
+{
+	"userPortal": {
+		"api": "http://localhost:3500/user/in",
+		"key": "EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATpj"
+	},
+	"schemes": {
+		"facebook": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		},
+		"google": {
+			"appId": 987654321,
+			"appSecret": "zfcwfceefeqfrceffre"
+		}
+	},
+	"onSuccess": {
+		"whatever": "you-want-in-case-of-successful-auth"
+	},
+	"onError": {
+		"somethingelse": "in-case-failing-to-auth"
+	}
+}
+```
+
+Where:
+
+| Property 				| Description |
+|-----------------------|-------------|
+| `userPortal.api` 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App engineer's responsibility. More details about this in section |
+| `userPortal.key`		| Optional, but highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
+| `schemes.facebook` 	| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
+| `onSuccess` 			| Optional. Custom object returned to the client each time a successfull login is achieved. |
+| `onError` 			| Optional. Custom object returned to the client each time a failed login happens. |
+
+## 4. Add a new web enpoint into your existing App
+
+In this step, we suppose you have an existing web API powering your App. Everything works fine, except there is no user login and your web endpoints are not protected by a JWT token, meaning anybody can access them. Consider this simplistic example:
+
+```js
+const { app } = require('@neap/funky')
+
+app.get('/sensitive/data', (req,res) => res.status(200).send('Special data for logged in users only'))
+
+eval(app.listen(3500))
+```
+
+Run this code, and then use curl to query the web endpoint:
+
+```
+node index.js
+```
+```
+curl http://localhost:3500/sensitive/data
+```
+
+As you can see, the `/sensitive/data` endpoint is not protected, and anybody can access the sensitive data.
+
+Now, let's change the code as follow:
+
+```js
+const { app } = require('@neap/funky')
+const Encryption = require('jwt-pwd')
+const { apiKeyHandler, jwt } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
+
+const _userStore = []
+
+const _getUser = (id, authMethod) => _userStore.find(u => u && u.id == id && u.authMethod ==  authMethod)
+
+app.post('/user/in', apiKeyHandler({ key:'x-api-key', value:'EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATp' }), (req,res) => {
+	const { user } = req.params || {}
+	const { id, authMethod, email } = user || {}
+	const u = _getUser(id, authMethod)
+	if (!u)
+		_userStore.push(user)
+	
+	jwt.create({ id, authMethod, email }).then(token => res.status(200).send({ token }))
+})
+
+app.get('/sensitive/data', (req,res) => res.status(200).send('Special data for logged in users only'))
+
+eval(app.listen(3500))
+```
+
+Run:
+```
+node index.js
+```
+```
+curl http://localhost:3500/sensitive/data
+```
+
+This time, you'll receive a 403 response with this error message: `Unauthorized access. Missing bearer token. Header 'x-token' not found.`
+
+To access to this GET endpoint, you'll need to get a JWT token first. Run this curl method:
+
+```
+curl -d '{"id":"1", "firstName":"Nic", "email":"nic@neap.co", "authMethod":"default"}' -H "x-api-key: EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATp" -X POST http://localhost:3500/user/in
+```
+
+Extract the token from the response, and then run:
+
+```
+curl -H "x-token: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NTI4Mjg3NjB9.V56ZvG1VXmM2lrhm3NVFgmACxhylyLbgTTmFpQccF9k" http://localhost:3500/sensitive/data
+```
+
 
 # What App Engineers Must Still Do Manually
 
 * [1. Create an App In The IdP](#1-create-an-app-in-the-idp) - This has to be done for each IdP your app wants to support.
 * [2. Configuring The UserIn Middleware With The IdP Secrets](#2-configuring-the-userin-middleware-with-the-idp-secrets) - This is just a matter of updating the `userinrc.json` file with the secrets acquired in the previous step.
 * [3. Generate a UserIn API Key To Communicate Safely With The App System](#3-Generate-a-UserIn-API-Key-To-Communicate-Safely-With-The-App-System) - This API key allows to communicate safely between your existing backend and UserIn.
-* [4. Add a Few REST APIs In Their App To Communicate With The UserIn Middleware](#4-add-a-few-rest-apis-in-their-app-to-communicate-with-the-userin-middleware) - Those REST APIs can be developped any ways the softwre engineers chose to, but they need to implement very specific signatures. 
+* [4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware](#4-add-a-few-rest-apis-in-the-app-to-communicate-with-the-userin-middleware) - Those REST APIs can be developped any ways the softwre engineers chose to, but they need to implement very specific signatures. 
 
 ## 1. Create an App In The IdP
 ### Facebook
@@ -106,7 +241,6 @@ UserIn's main goal is to be simple and understandable. It is open source because
 #### Purpose 
 
 * Acquire an __*App ID*__ and an __*App Secret*__.
-* Configure a __*Consent Screen*__. That screen acts as a disclaimer to inform the user of the implication of using Google as an IdP to sign-in to your App.
 * Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
 
 #### Steps
@@ -134,7 +268,7 @@ UserIn's main goal is to be simple and understandable. It is open source because
 
 ## 3. Generate a UserIn API Key To Communicate Safely With The App System
 
-## 4. Add a Few REST APIs In Their App To Communicate With The UserIn Middleware
+## 4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware
 
 # Theory & Concepts
 ## The Basics
@@ -227,6 +361,15 @@ Configuring an authentication portal that supports both Facebook and the default
 	]
 }
 ```
+
+## How To Generate API Key?
+__*UserIn__ ships with a utility that generates API keys. In your terminal, browse to the _UserIn_ root folder, and run the following command:
+
+```
+npm run key
+```
+
+> You're free to generate your API using any method you want. The command above is provided to users for convenience.
 
 # Concepts & Jargon
 ## Redirect URI

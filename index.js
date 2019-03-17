@@ -9,38 +9,34 @@
 const { app } = require('@neap/funky')
 const { obj: { merge } } = require('./src/utils')
 const { facebook, google, linkedin, github } = require('./src')
-const { schemes, onSuccess, onError, userPortalAPI, apiKey } = require('./userinrc.json')
+const { schemes, onSuccess, onError, userPortal } = require('./userinrc.json')
 
 const facebookOAuth = facebook.setUp(merge({ 
 	scopes:['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name'],
 	onSuccess,
 	onError,
-	userPortalAPI, 
-	apiKey
+	userPortal
 }, schemes.facebook))
 
 const googleOAuth = google.setUp(merge({ 
 	scopes:['profile', 'email'],
 	onSuccess,
 	onError,
-	userPortalAPI, 
-	apiKey
+	userPortal
 }, schemes.google))
 
 const linkedinOAuth = linkedin.setUp(merge({ 
 	scopes:['r_basicprofile', 'r_emailaddress'],
 	onSuccess,
 	onError,
-	userPortalAPI, 
-	apiKey
+	userPortal
 }, schemes.linkedin))
 
 const githubOAuth = github.setUp(merge({ 
 	scopes:['r_basicprofile', 'r_emailaddress'],
 	onSuccess,
 	onError,
-	userPortalAPI, 
-	apiKey
+	userPortal
 }, schemes.github))
 
 app.get('/alive', (req,res) => res.status(200).send('\'userIn\' is alive'))
@@ -61,7 +57,7 @@ app.get(linkedinOAuth.callbackPathname, linkedinOAuth.authResponse)
 app.get(githubOAuth.pathname, githubOAuth.authRequest)
 app.get(githubOAuth.callbackPathname, githubOAuth.authResponse)
 
-eval(app.listen('app', process.env.PORT || 3000))
+eval(app.listen(process.env.PORT || 3000))
 
 
 

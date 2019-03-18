@@ -1,36 +1,51 @@
-# What Is UserIn
+# UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ is an open source middleware REST API built in NodeJS with Express. __*UserIn*__ lets App engineers to implement custom login/register feature using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ aims to be an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It was initially designed to be hosted as a microservice (though its codebase could be integrated into any NodeJS system) in a serverless architecture (e.g., AWS Lambda, Google Functions, App Engine, ...).
+__*UserIn*__ aims to let your users in your App as quickly as possible and with minimum friction. __*UserIn*__ is an open source middleware REST API built in NodeJS. __*UserIn*__ lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ aims to be an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their own data store. UserIn assumes that software engineers are comfortable with building CRUD REST APIs to store and manage users (e.g., GET users by ID, POST create new users) while securing those APIs with an API key. This design means that software engineers are responsibile to store user's data themselves while the boilerplate to exchange OAuth messages between all parties is abstracted behind UserIn. 
+The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their data store. __*UserIn*__ helps App Engineers to control the use of IdPs to access their App fully.
 
-The manual steps left to the App engineers are:
+Because the workflows involved in using OAuth and IdPs might not be completely obvious to all App Engineers, this document contains extra information regarding this topic under the [Theory & Concepts](#-theory--concepts) section. If you're new to using IdPs, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general.
 
-* [1. Create an App In The IdP](#1-create-an-app-in-the-idp) - This has to be done for each IdP your app needs to support. This would have had to be done for Auth0, Firebase Authentication, AWS Cognito anyway.
-* [2. Configuring The UserIn Middleware With The IdP Secrets](#2-configuring-the-userin-middleware-with-the-idp-secrets) - This is just a matter of updating the `userinrc.json` file with the secrets acquired in the previous step. This also would have had to be done for Auth0, Firebase Authentication, AWS Cognito anyway.
-* [3. Generate a UserIn API Key To Communicate Safely With The App System](#3-Generate-a-UserIn-API-Key-To-Communicate-Safely-With-The-App-System) - This API key allows to communicate safely between your existing backend and UserIn.
-* [4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware](#4-add-a-few-rest-apis-in-the-app-to-communicate-with-the-userin-middleware) - Those REST APIs can be developped any ways the softwre engineers chose to, but they need to implement very specific signatures. 
+# Table Of Contents
+> * [Getting Started](#getting-started)
+> 	- [1. Clone UserIn](#1-clone-userin)
+> 	- [2. Create an App In Each IdP You Want To Support](#2-create-an-app-in-each-idp-you-want-to-support)
+> 	- [3. Create & Configure the `userinrc.json`](#3-create-&-configure-the-userinrcjson)
+> 	- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
+> * [UserIn Forms](#userin-forms)
+> * [How To](#how-to)
+> 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
+> 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
+> 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
+> 	- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
+> * [Theory & Concepts](#-theory--concepts)
+> 	- [Identity Provider](#identity-provider)
+> 	- [What UserIn Does & Does Not](#what-userin-does--does-not)
+>	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
+>	- [Redirect URI](#redirect-uri)
+> * [About Neap](#this-is-what-we-re-up-to)
+> * [License](#license)
 
 # Getting Started
-## 1. Clone this project
+## 1. Clone UserIn
 
 ```
-git clone https://github.com/nicolasdao/userin
+git clone https://github.com/nicolasdao/userin.git
 cd userin
 ```
 
-## 2. Get the App ID, App Secret, and configure the Redirect URIs for each IdP
+## 2. Create an App In Each IdP You Want To Support
 
 Login to your IdP. We've detailed how to configure an new App for all the following IdPs:
 
-* [Facebook](#facebook)
-* [Google](#google)
-* [LinkedIn](#linkedin)
-* [GitHub](#github)
+- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
+- [How To Create An App In Google?](#how-to-create-an-app-in-google)
+- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
+- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
 
 > IMPORTANT: Read carefully the note on how to set up the redirect URI.
 
-## 3. Create a `userinrc.json` & Configure It
+## 3. Create & Configure the `userinrc.json`
 
 Add the `userinrc.json` in the root folder. Use the App ID and the App secret collected in the previous step. Here is an example:
 
@@ -51,27 +66,53 @@ Add the `userinrc.json` in the root folder. Use the App ID and the App secret co
 		}
 	},
 	"onSuccess": {
-		"whatever": "you-want-in-case-of-successful-auth"
+		"redirectUrl": "http://localhost:3500/success"
 	},
 	"onError": {
-		"somethingelse": "in-case-failing-to-auth"
+		"redirectUrl": "http://localhost:3500/error"
 	}
 }
 ```
 
 Where:
 
-| Property 				| Description |
-|-----------------------|-------------|
-| `userPortal.api` 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App engineer's responsibility. More details about this in section |
-| `userPortal.key`		| Optional, but highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
-| `schemes.facebook` 	| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
-| `onSuccess` 			| Optional. Custom object returned to the client each time a successfull login is achieved. |
-| `onError` 			| Optional. Custom object returned to the client each time a failed login happens. |
+| Property 					| Description |
+|---------------------------|-------------|
+| `userPortal.api` 			| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
+| `userPortal.key`			| Optional, but highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
+| `schemes.facebook` 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
+| `onSuccess.redirectUrl` 	| Required URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
+| `onError.redirectUrl` 	| Required URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
 
-## 4. Add a new web enpoint into your existing App
+> WARNING: Neither `onSuccess.redirectUrl` nor `onError.redirectUrl` are the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 
-In this step, we suppose you have an existing web API powering your App. Everything works fine, except there is no user login and your web endpoints are not protected by a JWT token, meaning anybody can access them. Consider this simplistic example:
+## 4. Add a new web endpoint into your existing App
+
+This step can be implemented however you want using any technology you feel comfortable with as long as the technology you're using allows to create web APIs.
+
+Based on what is configured in the previous step, the minimum requirement is to engineer a web endpoint such as:
+- It accepts HTTP POST at URL [http://localhost:3500/user/in](http://localhost:3500/user/in).
+- It accepts a JSON payload similar to: 
+	```js
+	{
+		"user": {
+			"id": 1,
+			"email": "nic@neap.co",
+			"strategy": "facebook",
+			"firstName": "Nicolas",
+			"lastName": "Dao",
+			"profileImg": "https://someprofile.com/to-a-face.jpeg"
+		}
+	}
+	```
+- It returns a JSON payload similar to:
+	```js
+	{
+		"code": "123456789"
+	}
+	```
+
+To keep this tutorial simple, it is assumed that the current system is a web API hosted in NodeJS using Express. The API will be secured using a JWT token. Securing the API this way is not the responsibility of __*UserIn*__. There are many other ways to secure a web API, but this technique is quite common.
 
 ```js
 const { app } = require('@neap/funky')
@@ -99,7 +140,7 @@ const { app } = require('@neap/funky')
 const Encryption = require('jwt-pwd')
 const { bearerHandler } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
 
-app.get('/sensitive/data', bearerHandler({ key: 'x-token' }), (req,res) => res.status(200).send('Special data for logged in users only'))
+app.get('/sensitive/data', bearerHandler(), (req,res) => res.status(200).send('Special data for logged in users only'))
 
 eval(app.listen(3500))
 ```
@@ -112,59 +153,94 @@ node index.js
 curl http://localhost:3500/sensitive/data
 ```
 
-This time, you'll receive a 403 response with this error message: `Unauthorized access. Missing bearer token. Header 'x-token' not found.`
+This time, you'll receive a 403 response with this error message: `Unauthorized access. Missing bearer token. Header 'Authorization' not found.`
 
 To access to this GET endpoint, you'll need to get a JWT token first, and then pass it to the `x-token` header.  
 
 Let's add a new web endpoint to obtain a JWT token:
 
 ```js
+const { app } = require('@neap/funky')
+const Encryption = require('jwt-pwd')
 const { apiKeyHandler, bearerHandler, jwt } = new Encryption({ jwtSecret: '5NJqs6z4fMxvVK2IOTaePyGCPWvhL9MMX/o7nk2/9Ko/5jYuX+hUdfkmIzVAj6awtWk=' })
 
 const _userStore = []
 
-const _getUser = (id, authMethod) => _userStore.find(u => u && u.id == id && u.authMethod ==  authMethod)
+const _getUser = (id, strategy) => _userStore.find(u => u && u.id == id && u.strategy ==  strategy)
 
-app.post('/user/in', apiKeyHandler({ key:'x-api-key', value:'EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATp' }), (req,res) => {
+// userPortal.api => http://localhost:3500/user/in
+app.post('/user/in', apiKeyHandler({ key:'x-api-key', value:'EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATpj' }), (req,res) => {
 	const { user } = req.params || {}
-	const { id, authMethod, email } = user || {}
-	const u = _getUser(id, authMethod)
+	const { id, strategy, email } = user || {}
+	const u = _getUser(id, strategy)
 	if (!u)
 		_userStore.push(user)
 	
-	jwt.create({ id, authMethod, email }).then(token => res.status(200).send({ token }))
+	jwt.create({ id, strategy, email }).then(token => res.status(200).send({ code:token }))
 })
 
+// onSuccess.redirectUrl => http://localhost:3500/success
+app.get('/success', (req,res) => res.status(200).send(`
+	<!DOCTYPE html>
+	<html>
+	<head><title>UserIn Demo</title></head>
+	<body>
+		<h1>Welcome To UserIn Demo</h1>
+		<div id="container"></div>
+		<script type="text/javascript">
+			var code = (window.location.hash || '').replace('#','').split('=')[1]
+			if (code) {
+				var xhttp = new XMLHttpRequest()
+				xhttp.onreadystatechange = function() {
+					if (xhttp.readyState == XMLHttpRequest.DONE)
+						document.getElementById('container').innerText = xhttp.responseText
+				}
+				xhttp.open('GET', '/sensitive/data', true)
+				xhttp.setRequestHeader('Authorization', 'Bearer ' + code)
+				xhttp.send()
+			}
+		</script>
+	</body>
+	</html>`))
+
+app.get('/sensitive/data', bearerHandler(), (req,res) => res.status(200).send('Special data for logged in users only'))
+
+eval(app.listen(3500))
 ```
 
-This new web endpoint hosted at `http://localhost:3500/user/in` is the one used in the previous section to define the property `userPortal.api` in the `userinrc.json`. Notice that the `apiKeyHandler` restricts accesses to this web endpoint to request containing the correct API key value in the `x-api-key` header. This API key value is also the same as the one defined in the previous section for property `userPortal.key` in the `userinrc.json`. 
+The web endpoint hosted at `http://localhost:3500/user/in` is the one used in the previous section to define the property `userPortal.api` in the `userinrc.json`. Notice that the `apiKeyHandler` restricts access to requests containing the correct API key value in the `x-api-key` header. This API key value is also the same as the one defined in the previous section for property `userPortal.key` in the `userinrc.json`.
 
-The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "token": "some-JWT-token-value" }`. _UserIn_ uses that response to pass the token to the client. The client is now in possession of a valid JWT token he/she can use with all future HTTP request to your secured API.
+As for the web endpoint hosted at `http://localhost:3500/success`, this is the one used in the previous section to define the property `onSuccess.redirectUrl` in the `userinrc.json`. 
 
-To test the code above without using _UserIn_ explicitely, we can emulate passing an IdP user details as using this curl command:
+The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
 
-```
-curl -d '{"id":"1", "firstName":"Nic", "email":"nic@neap.co", "authMethod":"default"}' -H "x-api-key: EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATp" -X POST http://localhost:3500/user/in
-```
-
-Extract the token from the response, and then run:
+To test this code, configure one IdP (let's say facebook) in __*UserIn*__ and configure it as explained in [3. Create & Configure the `userinrc.json`](#3-create--configure-the-userinrcjson). Once properly configured, run the project with:
 
 ```
-curl -H "x-token: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NTI4Mjg3NjB9.V56ZvG1VXmM2lrhm3NVFgmACxhylyLbgTTmFpQccF9k" http://localhost:3500/sensitive/data
+npm start
 ```
 
-You should now be able to receive the correct response. 
+This will host __*UserIn*__ on port 3000. 
 
-# What App Engineers Must Still Do Manually
+Create another npm project and paste the code above in an `index.js`, then run:
 
-* [1. Create an App In The IdP](#1-create-an-app-in-the-idp) - This has to be done for each IdP your app wants to support.
-* [2. Configuring The UserIn Middleware With The IdP Secrets](#2-configuring-the-userin-middleware-with-the-idp-secrets) - This is just a matter of updating the `userinrc.json` file with the secrets acquired in the previous step.
-* [3. Generate a UserIn API Key To Communicate Safely With The App System](#3-Generate-a-UserIn-API-Key-To-Communicate-Safely-With-The-App-System) - This API key allows to communicate safely between your existing backend and UserIn.
-* [4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware](#4-add-a-few-rest-apis-in-the-app-to-communicate-with-the-userin-middleware) - Those REST APIs can be developped any ways the softwre engineers chose to, but they need to implement very specific signatures. 
+```
+node index.js
+```
 
-## 1. Create an App In The IdP
-### Facebook
-#### Purpose 
+This will host the test API on port 3500.
+
+To test the connection between those 2 systems, open your browser and browse to [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2). A successfull test should display a web page
+
+# UserIn Forms
+
+__*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that uses the __*UserIn*__ REST APIs. 
+
+More documentation coming soon.
+
+# How To
+## How To Create An App In Facebook?
+#### Goal 
 
 * Acquire an __*App ID*__ and an __*App Secret*__.
 * Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
@@ -196,8 +272,8 @@ You should now be able to receive the correct response.
 
 > NOTE: Step 5 is not required in Development mode (this is the default when the App is created). This assumes that your app is hosted locally using _http://localhost_. When going live, step 5 is required.
 
-### Google
-#### Purpose 
+## How To Create An App In Google?
+#### Goal 
 
 * Acquire an __*App ID*__ and an __*App Secret*__.
 * Configure a __*Consent Screen*__. That screen acts as a disclaimer to inform the user of the implication of using Google as an IdP to sign-in to your App.
@@ -226,8 +302,8 @@ You should now be able to receive the correct response.
 	```
 6. In the _Credentials_ page, select the _OAuth consent screen_ tab. Fill up the form depending on your requirements. Make sure you update the __*Application name*__ to your App name so that your App users see that name in the consent screen. You can also add your brand in the consent screen by uploading your App logo. Don't forget to click the __*Save*__ button at the bottom to apply your changes.
 
-### LinkedIn
-#### Purpose 
+## How To Create An App In LinkedIn?
+#### Goal 
 
 * Acquire an __*App ID*__ and an __*App Secret*__.
 * Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
@@ -251,8 +327,8 @@ You should now be able to receive the correct response.
 	```
 5. Still in the __*Auth*__ tab, under the __*OAuth 2.0 settings*__ section, enter the redirect URI [your-origin/linkedin/oauth2callback](your-origin/linkedin/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/linkedin/oauth2callback](http://localhost:3000/linkedin/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/linkedin/oauth2callback](https://youcool.com/linkedin/oauth2callback).
 
-### Github
-#### Purpose 
+## How To Create An App In GitHub?
+#### Goal 
 
 * Acquire an __*App ID*__ and an __*App Secret*__.
 * Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
@@ -278,89 +354,13 @@ You should now be able to receive the correct response.
 	}
 	```
 
-## 2. Configuring The UserIn Middleware With The IdP Secrets
-
-## 3. Generate a UserIn API Key To Communicate Safely With The App System
-
-## 4. Add a Few REST APIs In The App To Communicate With The UserIn Middleware
-
-# Theory & Concepts
-## The Basics
-### Identity Provider
-
-In the broad sense of the term, an identity provider (IdP) is an entity that can issue a referral stating that a user is indeed the owner of an identity piece (e.g., email address). The most well known IdPs are Facebook, Google and Github.
-
-### OAuth is an _Authorization Protocol_ NOT an _Authentication Protocol_
-
-Contrary to [OpenID](https://en.wikipedia.org/wiki/OpenID) which is a pure authentication protocol, OAuth's main purpose is to authorize 3rd parties to be granted limited access to APIs. When an App offers its user to register using his/her Facebook or Google account, that does not mean the user proves his/her identity through Facebook or Google. Instead, that means that the user grants that App limited access to his/her Facebook or Google account. However, as of today (2019), gaining limiting access to an Identity Provider's API is considered _good enough_ to prove one's identity. That's what is referred to as a __*pseudo authentication*__ method. This project aims at facilitating the implementation of such _pseudo authentication_ method.
-
-### Using OAuth With an IdP Is Not An App Login Full Picture
-
-When OAuth with an IdP is involved in an App login workflow, the entire workflow is usually made of two steps:
-1. __*Pseudo Authentication*__: This is the OAuth bit referred by many articles online. This step is about using an IdP such as Facebook to get the user details faster, skipping the password step, or simply getting access to the IdP API.
-2. __*App Access Authentication & Authorization*__: This has nothing to do with OAuth, though OAuth could be used to perform that task if the App engineers choose to. The App engineers is usually required to build a security mechanism that will identify the user and grant the right level of access to resources. 
-
-Many tools on the market (Auth0, Firebase Authentication, AWS Cognito, ...) help making the _pseudo authentication_ step easier, but in any case, the App engineers are still responsible to code the _App Access Authentication & Authorization_ step. On a high level, the _App Access Authentication & Authorization_ usually consists in, but is not limited to:
-* Authenticating the user request (e.g., verifying a valid token is passed with each request).
-* Authorizing the request (e.g., validating that the user associated with the token is authorized to access the resource).
-
-			// NOT SURE ABOUT BELOW
-			Contrary to what a lot of people believe, OAuth is not used to login users to Apps. Instead, it represents a shortcut to capture user's details so that THE APP CAN GENERATE ITS OWN AUTH TOKEN. Yes, you read correctly. OAuth does not magically absolve the app to perform any authentication and authorization processing. The app still has to:
-			1. Generate its own token (using any method the App engineers want).
-			2. Validate that token for each request.
-
-			Those two steps have nothing to do with OAuth, and no secured apps are free from implementing them in one way or the other. So why do we need OAuth then? There are two main reasons:
-			1. Users usually hate to create a new username and memorize passwords. Instead of asking them to do so, we can ask an IdP the user is already connected to to send details about him/her and use those details to create a new account or let them access the app without entering a password. 
-			2. The app may need to access certain IdP's APIs. In which case, the app will need an OAuth token issued by the IdP.
-
-## Workflow To Use OAuth To Help Users To Login 
-
-Regardless of the IdP (e.g., Facebook. Google, Github), the _pseudo authentication_ workflow is the same.
-
-1. App user clicks on _Login with <IdP>_ in the App login page, which directs the user to the IdP OAuth login page. That request to the IdP OAuth page passes multiple parameters including but not limited to:
-	1. App ID and App Secret used for security purposes.
-	2. Redirect URI to inform the IdP about the location where the user must be redirected after the IdP authorization validation.
-
-> NOTE: If the user already logged in with the IdP in the past, that step might be so quick that it may not be visible. On the other hand, if that's the first time the user uses the IdP, a consent screen prompts to accept to grant the App access to the IdP.
-
-2. After successfully verifying the user, the IdP redirects the user to the _redirect URI_ that was passed in the previous step. The IdP usually appends a query string to that redirect URI containing an access token. This access token allows the user to make another secured HTTP POST request to obtain IdP's data:
-		1. An IdP token (OAuth token) that can be used to access the IdP's API.
-		2. A token expiry date that defines when the OAuth token expires.
-		3. A renewal token that can be used to renew the Oauth token after it has expired.
-		4. Claims regarding the current IdP's user (e.g., email, first name, last name, ...). The type of claims depend on the type of access the App is requesting in the first place.
-
-
-
-
-			// NOT SURE ABOUT BELOW
-			1. Use OAuth to delegate identity verification to an IdP. This identity is relative to the IdP. That means that OAuth should return an IdP ID which uniquely identify that user for that specific IdP (e.g., Facebook ID, Google ID, ...). This ID can then be stored in your own user database when the user is created for the first time. For a user using Facebook as an IdP, next time that user logs in to the app using Facebook, that Facebook ID will be used to retrieve the app user's details.
-			2. Create a new security token based on the App's user details. This step is post OAuth and has nothing to do with OAuth. At this stage, either the user is new and details have been collected, or the user is an existing one and his details have been retrieved from the App's database using the IdP ID. Using those credentials, the App is responsible to create a new token using any method. 
-
-			Authenticating and authorizing users to an App require the 2 steps above. The first one uses OAuth, and the second one uses an arbitrary method based on what the App engineers want to accomplish. 
-
-			This project aims at automating the first OAuth step, and facilitating the second.
-
-			Regardless of the IdP (e.g., Facebook. Google, Github), the _pseudo authentication_ workflow is the same:
-			1. Click _login with <IdP>_
-				1. This step redirect the App to the IdP specific page for deal with authorization requests.
-				2. If the user is already logged in to the IdP, the IdP redirects to the App's redirect URL (more about this later). If the user is not logged in, then he/she must log in. Upon successful login, the IdP redirects to the App's redirect URL. In both cases, the IdP passes mutliple pieces of data to the App's redirect URL:
-					1. An IdP token (OAuth token) that can be used to access the IdP's API.
-					2. A token expiry date that defines when the OAuth token expires.
-					3. A renewal token that can be used to renew the Oauth token after it has expired.
-					4. Claims regarding the current IdP's user (e.g., email, first name, last name, ...). The type of claims depend on the type of access the App is requesting in the first place. More details about this in section 
-
-			2. Receive IdP authorization confirmation with user's data.
-			3. Create a new account or let the user in:
-				1. Now the user's data have been collected,
-
-
-# How To
-## How To Add a Authentication Method?
+## How To Add a Authentication Method To UserIn?
 
 This can be done by adding one or many of the following supported scheme in the `userinrc.json`:
 - __*default*__
 - __*facebook*__
 - __*google*__
+- __*linkedin*__
 - __*github*__
 
 where _default_ represent the standard username/password authentication method.
@@ -369,15 +369,21 @@ Configuring an authentication portal that supports both Facebook and the default
 
 ```js
 {
-	"schemes": [
-		"default",
-		"facebook"
-	]
+	"schemes": {
+		"facebook": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		},
+		"google": {
+			"appId": 987654321,
+			"appSecret": "zfcwfceefeqfrceffre"
+		}
+	}
 }
 ```
 
 ## How To Generate API Key?
-__*UserIn__ ships with a utility that generates API keys. In your terminal, browse to the _UserIn_ root folder, and run the following command:
+__*UserIn*__ ships with a utility that generates API keys. In your terminal, browse to the _UserIn_ root folder, and run the following command:
 
 ```
 npm run key
@@ -385,7 +391,95 @@ npm run key
 
 > You're free to generate your API using any method you want. The command above is provided to users for convenience.
 
-# Concepts & Jargon
+# Theory & Concepts
+## Identity Provider
+
+In the broad sense of the term, an identity provider (IdP) is an entity that can issue a referral stating that a user is indeed the owner of an identity piece (e.g., email address). The most well known IdPs are Facebook, Google, LinkedIn and Github. Those IdPs are also sometimes referred as __*Federated Idendity Providers*__ (FIP) as they help to federate identity across multiple apps. FIP is often contrasted with __*Single Sign On*__ (SSO) which is usually used to authorize access to multiple apps within the same context. In reality FIP is a form of SSO, but with a broader scope, as the Apps' context does not matter as much.
+
+## OAuth is an _Authorization Protocol_ NOT an _Authentication Protocol_
+
+Contrary to [OpenID](https://en.wikipedia.org/wiki/OpenID) which is a pure authentication protocol, OAuth's main purpose is to authorize 3rd parties to be granted limited access to APIs. When an App offers its user to register using his/her Facebook or Google account, that does not mean the user proves his/her identity through Facebook or Google. Instead, that means that the user grants that App limited access to his/her Facebook or Google account. However, as of today (2019), gaining limiting access to an Identity Provider's API is considered _good enough_ to prove one's identity. That's what is referred to as a __*pseudo authentication*__ method. This project aims at facilitating the implementation of such _pseudo authentication_ method.
+
+## What UserIn Does & Does Not
+### What It Does
+
+__*UserIn*__ interfaces between the client (e.g., browser), configured IdPs (e.g., Facebook, Google, LinkedIn, ...) and the App middleware (Web API). The end goal is to share the user's identity details contained in the IdP with the App middleware so that the App middleware can either create a new user or let an existing user in without using a password or ask for extra details. 
+
+### What It Does Not
+
+__*UserIn*__ does NOT secure the App middleware using OAuth. Securing the App middleware has nothing to do with _UserIn_ nor does it have anything to do with Auth0, Firebase Authentication, or AWS Cognito. Controlling the App middleware access (with, for example, a JWT token) is a task that the App Engineer must implement separately from integrating with _UserIn_.
+
 ## Redirect URI
 
-A _Redirect URI_ is a URI that receives the IdP's response with the user details after successful authorizations. That URI is configured in your code. Because, in theory, any URI can be configured, the IdP wants to guarentee the App engineer that they can control the permitted Redirect URI. Therefore, most IdPs require the App engineers to whitelist their redirect URIs durin the App creation step.
+A _Redirect URI_ is a URI that receives the IdP's response with the user details after successful authorizations. That URI is configured in your code. Because, in theory, any URI can be configured, the IdP wants to guarentee the App Engineer that they can control the permitted Redirect URI. Therefore, most IdPs require the App Engineers to whitelist their redirect URIs durin the App creation step.
+
+## The UserIn Auth Workflow
+
+As with most OAuth worklows relying in IdPs, the key idea to understand is that the browser spends its time redirecting between all the parties involved (i.e., IdP and App middleware). This usually happens very fast, which makes it look like it happens behind the scene.
+
+The usual user sign-in process with __*UserIn*__ is as follow. 
+
+#### 1. UserIn Form (Browser)
+The user lands on a __*[UserIn Forms](#userin-forms)*__ which offers multiple ways to sign in to the App (e.g., Facebook, Google, username/password, ...).
+
+#### 2. IdP Authentication & Authorization (Browser To UserIn Back To Browser Then To IdP)
+When the user uses Facebook for example, the browser sends an HTTP GET to __*UserIn*__, which in turn responds back to the browser with a redirect to the Facebook login page. This step might not be visible is the user is already logged in to Facebook. To witness it, make sure you're not logged in, or open your browser in incognito mode.
+
+#### 3. Sharing User Details With The App (IdP Back To UserIn Then To App Middleware Back To UserIn)
+Upon successfull authentication to Facebook, Facebook redirects the user to __*UserIn*__, which in turn POST the user's identity to a web endpoint that the App Engineer has to provide. The App Engineer is free to implement that web endpoint using any method or technology, as long as this endpoint accepts a JSON payload with as `user` property describing the user's identity and returns a JSON payload with a `code` property representing any string useful to the App Engineer (e.g., a JWT token, or a short-lived token that allows to access a JWT token through another REST API).
+
+#### 4. Letting The User In The App (UserIn To App)
+Upon successful reception of that `code`, __*UserIn*__ redirects the user to the configured `onSuccess.redirectUrl` (which is typically the App). The `code` acquired through the App middleware in the previous step is included in the `redirectUrl` as a search parameters (e.g., [https://example.com/success#code=123456789](https://example.com/success#code=123456789)). A similar behavior occurs in case of failure. The redirect URL is determined by the `onError.redirectUrl` parameter. Details about the error are passed in the query string (e.g., [https://example.com/error?error_msg=something_bad_happened&code=500](https://example.com/error?error_msg=something_bad_happened&code=500)).
+
+#### 5. Authenticating/Authorizing Access To The App (Outside of UserIn's Scope!)
+Though the user seems to be in the App now, no authentication and authorization to access the app have been performed yet. Indeed, __*UserIn*__ has just skipped the pre-screening queue (no need to provide explicit user details and password) but the user still needs to show an ID to enter the party. That ID is contained in the search parameter of the current URI (that's the `code` parameter acquired in the previous step). In this step, the App Engineer is required to extract that code from the URI and use it to authenticate and authroize the user. This step can be done in any way the App Engineer wishes to. 
+
+#### Conclusion
+As you can see, the __*UserIn*__'s scope does not cover securing your App's API. This job is left to you. __*UserIn*__'s scope stops after the user is either created in your system or successfully authenticated and has landed on the `onSuccess.redirectUrl`. Using the `code` in that redirect URL, you're free to secure your App however you want.
+
+# This Is What We re Up To
+We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).
+
+Our other open-sourced projects:
+#### GraphQL
+* [__*graphql-s2s*__](https://github.com/nicolasdao/graphql-s2s): Add GraphQL Schema support for type inheritance, generic typing, metadata decoration. Transpile the enriched GraphQL string schema into the standard string schema understood by graphql.js and the Apollo server client.
+* [__*schemaglue*__](https://github.com/nicolasdao/schemaglue): Naturally breaks down your monolithic graphql schema into bits and pieces and then glue them back together.
+* [__*graphql-authorize*__](https://github.com/nicolasdao/graphql-authorize.git): Authorization middleware for [graphql-serverless](https://github.com/nicolasdao/graphql-serverless). Add inline authorization straight into your GraphQl schema to restrict access to certain fields based on your user's rights.
+
+#### React & React Native
+* [__*react-native-game-engine*__](https://github.com/bberak/react-native-game-engine): A lightweight game engine for react native.
+* [__*react-native-game-engine-handbook*__](https://github.com/bberak/react-native-game-engine-handbook): A React Native app showcasing some examples using react-native-game-engine.
+
+#### General Purposes
+* [__*core-async*__](https://github.com/nicolasdao/core-async): JS implementation of the Clojure core.async library aimed at implementing CSP (Concurrent Sequential Process) programming style. Designed to be used with the npm package 'co'.
+* [__*jwt-pwd*__](https://github.com/nicolasdao/jwt-pwd): Tiny encryption helper to manage JWT tokens and encrypt and validate passwords using methods such as md5, sha1, sha256, sha512, ripemd160.
+
+#### Google Cloud Platform
+* [__*google-cloud-bucket*__](https://github.com/nicolasdao/google-cloud-bucket): Nodejs package to manage Google Cloud Buckets and perform CRUD operations against them.
+* [__*google-cloud-bigquery*__](https://github.com/nicolasdao/google-cloud-bigquery): Nodejs package to manage Google Cloud BigQuery datasets, and tables and perform CRUD operations against them.
+* [__*google-cloud-tasks*__](https://github.com/nicolasdao/google-cloud-tasks): Nodejs package to push tasks to Google Cloud Tasks. Include pushing batches.
+
+# License
+Copyright (c) 2017-2019, Neap Pty Ltd.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+* Neither the name of Neap Pty Ltd nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL NEAP PTY LTD BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+<p align="center"><a href="https://neap.co" target="_blank"><img src="https://neap.co/img/neap_color_horizontal.png" alt="Neap Pty Ltd logo" title="Neap" height="89" width="200"/></a></p>
+
+
+

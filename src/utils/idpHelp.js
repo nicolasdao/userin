@@ -2,6 +2,7 @@ const passport = require('passport')
 const urlHelp = require('./url')
 const { obj:{ merge } } = require('./core')
 const fetch = require('./fetch')
+const { throwIfNotTruthy } = require('./error')
 
 const getCallbackUrl = (req, pathname) => urlHelp.buildUrl({ 
 	protocol: req.secure ? 'https:' : 'http:', 
@@ -9,7 +10,12 @@ const getCallbackUrl = (req, pathname) => urlHelp.buildUrl({
 	pathname
 })
 
-const formatError = (onError, message) => merge(onError || {}, { error: message })
+const addErrorToUrl = (url, { code, message }) => {
+	let urlInfo = urlHelp.getInfo(url)
+	urlInfo.query.error_msg = encodeURIComponent(message)
+	urlInfo.query.error_code = code
+	return urlHelp.buildUrl(urlInfo)
+}
 
 /**
  * Returns an Express handler that client indirectly request through the IdP redirection performed in response of 
@@ -27,15 +33,23 @@ const getAuthResponseHandler = ({ strategy, userPortal, onSuccess, onError, call
 	onSuccess = onSuccess || {}
 	onError = onError || {}
 
+	throwIfNotTruthy(onSuccess.redirectUrl, 'onSuccess.redirectUrl')
+	throwIfNotTruthy(onError.redirectUrl, 'onError.redirectUrl')
+
+	const formatErroUrl = (code, message) => addErrorToUrl(onError.redirectUrl, { code, message })
+
 	const callbackURL = callbackPathname ? getCallbackUrl(req, callbackPathname) : undefined
 	const handler = passport.authenticate(strategy, { callbackURL }, (err,user) => {
 		// CASE 1 - IdP Failure
 		if (err) {
-			res.status(500).send(formatError(onError, err.message))
+			const redirectUrl = formatErroUrl(500, err.message)
+			res.redirect(redirectUrl)
 			next()
 		}
 		// CASE 2 - IdP Success
 		else {
+			user = user || {}
+			user.strategy = strategy
 			// 2.1. An external user portal has been configured. Use it to manage the user
 			if (userPortal && userPortal.api)
 				fetch.post({
@@ -47,16 +61,31 @@ const getAuthResponseHandler = ({ strategy, userPortal, onSuccess, onError, call
 					body: JSON.stringify({ user })
 				}).then(({ status, data }) => {
 					if (status < 300) {
-						if (data && data.token) 
-							res.status(200).send(merge(onSuccess, data))
-						else 
-							res.status(422).send(formatError(onError, `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`))
+						if (data && data.code) {
+							if (onSuccess.cookie && onSuccess.cookie.name)
+								res.cookie(onSuccess.cookie.name, JSON.stringify(data), { 
+									expire: onSuccess.cookie.expire,   
+									maxAge: onSuccess.cookie.maxAge,
+									httpOnly: onSuccess.cookie.httpOnly
+								})
+
+							let urlInfo = urlHelp.getInfo(onSuccess.redirectUrl)
+							urlInfo.hash = `#code=${encodeURIComponent(data.code)}`
+							const redirectUrl = urlHelp.buildUrl(urlInfo)
+							res.redirect(redirectUrl)
+						}
+						else {
+							const redirectUrl = formatErroUrl(422, `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`)
+							res.redirect(redirectUrl)
+						}
 					} else {
 						const errMsg = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
-						res.status(status).send(formatError(onError, `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`))
+						const redirectUrl = formatErroUrl(422, `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`)
+						res.redirect(redirectUrl)
 					}
 				}).catch(err => {
-					res.status(500).send(formatError(onError, err.message))
+					const redirectUrl = formatErroUrl(500, err.message)
+					res.redirect(redirectUrl)
 				}).then(next)
 			// 2.2. No external user portal defined. Return the IdP user to the client
 			else {
@@ -70,6 +99,5 @@ const getAuthResponseHandler = ({ strategy, userPortal, onSuccess, onError, call
 
 module.exports = {
 	getCallbackUrl,
-	formatError,
 	getAuthResponseHandler
 }

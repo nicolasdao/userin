@@ -11,6 +11,13 @@ const { obj: { merge } } = require('./src/utils')
 const authMethods = require('./src')
 const { schemes, onSuccess, onError, userPortal } = require('./userinrc.json')
 
+const throwMissing = ([prop, propName]) => {
+	if (!prop) throw new Error(`Missing required '${propName}' property in the userinrc.json`)
+}
+
+const requiredConfigs = [[schemes, 'schemes'], [onSuccess, 'onSuccess'], [onError, 'onError'], [onSuccess.redirectUrl, 'onSuccess.redirectUrl'], [onError.redirectUrl, 'onError.redirectUrl']]
+requiredConfigs.forEach(throwMissing)
+
 const SUPPORTED_SCHEMES = Object.keys(schemes)
 
 Object.keys(schemes).forEach(scheme => {

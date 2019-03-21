@@ -18,7 +18,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
 > 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
 > 	- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
-> * [Theory & Concepts](#-theory--concepts)
+> * [Theory & Concepts](#theory--concepts)
 > 	- [Identity Provider](#identity-provider)
 > 	- [What UserIn Does & Does Not](#what-userin-does--does-not)
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)

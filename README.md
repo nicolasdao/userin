@@ -386,13 +386,14 @@ Configuring an authentication portal that supports both Facebook and the default
 ```
 
 ## How To Generate API Key?
-__*UserIn*__ ships with a utility that generates API keys. In your terminal, browse to the _UserIn_ root folder, and run the following command:
 
-```
-npm run key
-```
+There are various way to do it. The quickest way is to use the native NodeJS core library `crypto` as follow:
 
-> You're free to generate your API using any method you want. The command above is provided to users for convenience.
+```js
+require('crypto').randomBytes(50).toString('base64')
+````
+
+Alternatively, there are plenty of websites that generate random key such as [https://keygen.io/](https://keygen.io/) or [https://randomkeygen.com/](#https://randomkeygen.com/).
 
 # Theory & Concepts
 ## Identity Provider

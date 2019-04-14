@@ -237,8 +237,6 @@ To test the connection between those 2 systems, open your browser and browse to 
 
 __*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that uses the __*UserIn*__ REST APIs. 
 
-|Name      |														|
-|----------|------------------------------------------------------------------------------------------------------------|
 |__Gray Quail__|[https://github.com/nicolasdao/userin-form-gray-quail](https://github.com/nicolasdao/userin-form-gray-quail)|
 
 # How To

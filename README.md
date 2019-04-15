@@ -18,7 +18,8 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
 > 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
 > 	- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
-> * [Theory & Concepts](#-theory--concepts)
+>	- [How To Generate API Key?](#how-to-generate-api-key)
+> * [Theory & Concepts](#theory--concepts)
 > 	- [Identity Provider](#identity-provider)
 > 	- [What UserIn Does & Does Not](#what-userin-does--does-not)
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
@@ -236,7 +237,9 @@ To test the connection between those 2 systems, open your browser and browse to 
 
 __*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that uses the __*UserIn*__ REST APIs. 
 
-More documentation coming soon.
+|Name      | Link													|
+|----------|------------------------------------------------------------------------------------------------------------|
+|__Gray Quail__|[https://github.com/nicolasdao/userin-form-gray-quail](https://github.com/nicolasdao/userin-form-gray-quail)|
 
 # How To
 ## How To Create An App In Facebook?
@@ -383,13 +386,14 @@ Configuring an authentication portal that supports both Facebook and the default
 ```
 
 ## How To Generate API Key?
-__*UserIn*__ ships with a utility that generates API keys. In your terminal, browse to the _UserIn_ root folder, and run the following command:
 
-```
-npm run key
-```
+There are various way to do it. The quickest way is to use the native NodeJS core library `crypto` as follow:
 
-> You're free to generate your API using any method you want. The command above is provided to users for convenience.
+```js
+require('crypto').randomBytes(50).toString('base64')
+````
+
+Alternatively, there are plenty of websites that generate random key such as [https://keygen.io/](https://keygen.io/) or [https://randomkeygen.com/](#https://randomkeygen.com/).
 
 # Theory & Concepts
 ## Identity Provider

@@ -10,7 +10,7 @@
 /* global it */
 
 const { assert } = require('chai')
-const { url } = require('../src/utils')
+const { url, obj: { extractFlattenedJSON } } = require('../src/utils')
 
 describe('utils', () => {
 	describe('#url.getInfo', () => {
@@ -55,6 +55,37 @@ describe('utils', () => {
 				query: Object.assign(uri_01.query, { title: 'founder & director', age:37 })
 			}))
 			assert.equal(new_uri_01, 'https://neap.co/search/splash.html?&facetGeoRegion=%5B%22au%3A0%22%5D&origin=FACETED_SEARCH&title=founder%20%26%20director&age=37#hello', '01')
+		})
+	})
+
+	describe('#obj.extractFlattenedJSON', () => {
+		it('Should extract flattened JSON from object', () => {
+			const data = {
+				'user.firstName': 'Nicolas',
+				'user.lastName': 'Dao',
+				'user.age': 38,
+				'user.address.line1': '123 Super Street',
+				'user.address.state': 'NSW',
+				'user.friends[0].name': 'Brendan',
+				'user.friends[0].age': 31,
+				'user.friends[1].name': 'Boris',
+				'user.friends[1].age': 32,
+				'products[0].name': 'Shoes',
+				'products[0].price': 32 
+			}
+
+			const { user, products } = extractFlattenedJSON(data)
+			assert.equal(user.firstName, 'Nicolas', '01')
+			assert.equal(user.lastName, 'Dao', '02')
+			assert.equal(user.age, 38, '03')
+			assert.equal(user.address.line1, '123 Super Street', '04')
+			assert.equal(user.address.state, 'NSW', '05')
+			assert.equal(user.friends[0].name, 'Brendan', '06')
+			assert.equal(user.friends[0].age, 31, '07')
+			assert.equal(user.friends[1].name, 'Boris', '08')
+			assert.equal(user.friends[1].age, 32, '09')
+			assert.equal(products[0].name, 'Shoes', '10')
+			assert.equal(products[0].price, 32, '11')
 		})
 	})
 })

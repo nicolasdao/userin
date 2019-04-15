@@ -10,7 +10,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > * [Getting Started](#getting-started)
 > 	- [1. Clone UserIn](#1-clone-userin)
 > 	- [2. Create an App In Each IdP You Want To Support](#2-create-an-app-in-each-idp-you-want-to-support)
-> 	- [3. Create & Configure the `userinrc.json`](#3-create-&-configure-the-userinrcjson)
+> 	- [3. Create & Configure the `.userinrc.json`](#3-create-&-configure-the-userinrcjson)
 > 	- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
 > * [UserIn Forms](#userin-forms)
 > * [How To](#how-to)
@@ -45,9 +45,9 @@ Login to your IdP. We've detailed how to configure an new App for all the follow
 
 > IMPORTANT: Read carefully the note on how to set up the redirect URI.
 
-## 3. Create & Configure the `userinrc.json`
+## 3. Create & Configure the `.userinrc.json`
 
-Add the `userinrc.json` in the root folder. Use the App ID and the App secret collected in the previous step. Here is an example:
+Add the `.userinrc.json` in the root folder. Use the App ID and the App secret collected in the previous step. Here is an example:
 
 ```js
 {
@@ -208,13 +208,13 @@ app.get('/sensitive/data', bearerHandler(), (req,res) => res.status(200).send('S
 eval(app.listen(3500))
 ```
 
-The web endpoint hosted at `http://localhost:3500/user/in` is the one used in the previous section to define the property `userPortal.api` in the `userinrc.json`. Notice that the `apiKeyHandler` restricts access to requests containing the correct API key value in the `x-api-key` header. This API key value is also the same as the one defined in the previous section for property `userPortal.key` in the `userinrc.json`.
+The web endpoint hosted at `http://localhost:3500/user/in` is the one used in the previous section to define the property `userPortal.api` in the `userinrc.json`. Notice that the `apiKeyHandler` restricts access to requests containing the correct API key value in the `x-api-key` header. This API key value is also the same as the one defined in the previous section for property `userPortal.key` in the `.userinrc.json`.
 
-As for the web endpoint hosted at `http://localhost:3500/success`, this is the one used in the previous section to define the property `onSuccess.redirectUrl` in the `userinrc.json`. 
+As for the web endpoint hosted at `http://localhost:3500/success`, this is the one used in the previous section to define the property `onSuccess.redirectUrl` in the `.userinrc.json`. 
 
 The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
 
-To test this code, configure one IdP (let's say facebook) in __*UserIn*__ and configure it as explained in [3. Create & Configure the `userinrc.json`](#3-create--configure-the-userinrcjson). Once properly configured, run the project with:
+To test this code, configure one IdP (let's say facebook) in __*UserIn*__ and configure it as explained in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson). Once properly configured, run the project with:
 
 ```
 npm start
@@ -253,7 +253,7 @@ More documentation coming soon.
 4. Get the __App ID__ and the __App Secret__
 	1. The App ID is easily foundable at the top of each page.
 	2. The App Secret is under __*Settings/Basic*__ section in the left menu. 
-	3. Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+	3. Create or configure the `.userinrc.json` file under the `userin` root folder as follow:
 
 	```js
 	{
@@ -288,7 +288,7 @@ More documentation coming soon.
 	1. _Name_: This is not really important and will not be displayed to your user. You can leave the default.
 	2. _Authorized JavaScript origins_: This is optional but highly recommended before going live.
 	3. _Authorized redirect URIs_: This is required. Enter [your-origin/google/oauth2callback](your-origin/google/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/google/oauth2callback](http://localhost:3000/google/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/google/oauth2callback](https://youcool.com/google/oauth2callback).
-5. After completing the step above, a confirmation screen pops up. Copy the __*client ID*__ (i.e., the App ID) and the __*client secret*__ (i.e., the App Secret). Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+5. After completing the step above, a confirmation screen pops up. Copy the __*client ID*__ (i.e., the App ID) and the __*client secret*__ (i.e., the App Secret). Create or configure the `.userinrc.json` file under the `userin` root folder as follow:
 
 	```js
 	{
@@ -313,7 +313,7 @@ More documentation coming soon.
 1. Sign in to your LinkedIn account and then browse to [https://www.linkedin.com/developers/apps](https://www.linkedin.com/developers/apps) to either create a new App or access any existing ones. For the sake of this tutorial, the next steps only focus on creating a new App.
 2. In the top right corner of the __*My Apps*__ page, click on the __*Create app*__ button.
 3. Fill up the form and then click the __*Create app*__ button at the bottom.
-4. Once the the App is created, you are redirected to the App's page. In that page, select the __*Auth*__ tab and copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+4. Once the the App is created, you are redirected to the App's page. In that page, select the __*Auth*__ tab and copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `.userinrc.json` file under the `userin` root folder as follow:
 
 	```js
 	{
@@ -341,7 +341,7 @@ More documentation coming soon.
 
 > NOTE: The App creation form forces you to enter a _Homepage URL_ and a _Webhook URL_. If you don't have any, that's not important. Just enter random URIs (e.g., Homepage URL: [https://leavemealone.com](https://leavemealone.com) Webhook URL: [https://leavemealone.com](https://leavemealone.com))
 
-4. Once the the App is created, you are redirected to the App's page. In that page, copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `userinrc.json` file under the `userin` root folder as follow:
+4. Once the the App is created, you are redirected to the App's page. In that page, copy the __*Client ID*__ (i.e., the App ID) and the __*Client secret*__ (i.e., the App Secret). Create or configure the `.userinrc.json` file under the `userin` root folder as follow:
 
 	```js
 	{
@@ -356,7 +356,7 @@ More documentation coming soon.
 
 ## How To Add a Authentication Method To UserIn?
 
-This can be done by adding one or many of the following supported scheme in the `userinrc.json`:
+This can be done by adding one or many of the following supported scheme in the `.userinrc.json`:
 - __*default*__
 - __*facebook*__
 - __*google*__
@@ -365,7 +365,7 @@ This can be done by adding one or many of the following supported scheme in the 
 
 where _default_ represent the standard username/password authentication method.
 
-Configuring an authentication portal that supports both Facebook and the default username/password would require a `userinrc.json` file similar to the following:
+Configuring an authentication portal that supports both Facebook and the default username/password would require a `.userinrc.json` file similar to the following:
 
 ```js
 {

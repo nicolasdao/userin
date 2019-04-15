@@ -27,7 +27,7 @@ const getAuthRequestHandler = () => (req, res, next) => {
 	handler(req, res, next)
 }
 
-const setUp = ({ appId, appSecret, scopes, userPortal, onSuccess, onError }) => {
+const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
 	passport.use(new Strategy({
 		clientID: appId,
 		clientSecret: appSecret,
@@ -35,7 +35,7 @@ const setUp = ({ appId, appSecret, scopes, userPortal, onSuccess, onError }) => 
 	}, parseAuthResponse))
 
 	const authRequestHandler = getAuthRequestHandler()
-	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, onSuccess, onError, callbackPathname:OAUTH_CALLBACK_PATHNAME })
+	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, redirectUrls, callbackPathname:OAUTH_CALLBACK_PATHNAME })
 
 	return {
 		authRequest: authRequestHandler,

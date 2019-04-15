@@ -6,16 +6,22 @@
  * LICENSE file in the root directory of this source tree.
 */
 
-const { app } = require('@neap/funky')
+const { app, cors } = require('@neap/funky')
 const { obj: { merge } } = require('./src/utils')
 const authMethods = require('./src')
-const { schemes, onSuccess, onError, userPortal } = require('./userinrc.json')
+const { schemes, redirectUrls, userPortal, CORS } = require('./.userinrc.json')
+
+const corsAccess = cors({
+	allowedHeaders: (CORS || {}).allowedHeaders || ['Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
+	origins: (CORS || {}).origins || ['*']
+})
+app.use(corsAccess)
 
 const throwMissing = ([prop, propName]) => {
-	if (!prop) throw new Error(`Missing required '${propName}' property in the userinrc.json`)
+	if (!prop) throw new Error(`Missing required '${propName}' property in the .userinrc.json`)
 }
 
-const requiredConfigs = [[schemes, 'schemes'], [onSuccess, 'onSuccess'], [onError, 'onError'], [onSuccess.redirectUrl, 'onSuccess.redirectUrl'], [onError.redirectUrl, 'onError.redirectUrl']]
+const requiredConfigs = [[schemes, 'schemes']]
 requiredConfigs.forEach(throwMissing)
 
 const SUPPORTED_SCHEMES = Object.keys(schemes)
@@ -25,14 +31,20 @@ Object.keys(schemes).forEach(scheme => {
 	if (authMethod) {
 		const oauth = authMethod.setUp(merge({ 
 			scopes:authMethod.scopes,
-			onSuccess,
-			onError,
+			redirectUrls,
 			userPortal
-		}, schemes[scheme]))
+		}, scheme == 'default' ? {} : schemes[scheme]))
 
 		// Create endpoints. To test, use: curl -X GET http://localhost:3000/<scheme>/oauth2
-		app.get(oauth.pathname, oauth.authRequest)
-		app.get(oauth.callbackPathname, oauth.authResponse)
+		if (scheme == 'default') {
+			app.options([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
+			app.post([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authRequest)
+		} else {
+			app.options([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
+			app.get([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authRequest)
+			app.options([oauth.callbackPathname, `${oauth.callbackPathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
+			app.get([oauth.callbackPathname, `${oauth.callbackPathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authResponse)
+		}
 	}
 })
 

@@ -40,10 +40,10 @@ const getAuthRequestHandler = ({ appId, appSecret, scopes }) => (req, res, next)
 	handler(req, res, next)
 }
 
-const setUp = ({ appId, appSecret, scopes, userPortal, onSuccess, onError }) => {
+const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
 
 	const authRequestHandler = getAuthRequestHandler({ appId, appSecret, scopes })
-	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, onSuccess, onError })
+	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, redirectUrls })
 
 	return {
 		authRequest: authRequestHandler,

@@ -10,7 +10,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > * [Getting Started](#getting-started)
 > 	- [1. Clone UserIn](#1-clone-userin)
 > 	- [2. Create an App In Each IdP You Want To Support](#2-create-an-app-in-each-idp-you-want-to-support)
-> 	- [3. Create & Configure the `.userinrc.json`](#3-create-&-configure-the-userinrcjson)
+> 	- [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
 > 	- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
 > * [UserIn Forms](#userin-forms)
 > * [How To](#how-to)

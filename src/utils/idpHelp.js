@@ -3,9 +3,15 @@ const { join } = require('path')
 const urlHelp = require('./url')
 const fetch = require('./fetch')
 
+/**
+ * Build a new URI made of the current request domain, a pathname, and optional request paramaters 'successRedirectUrl', 'errorRedirectUrl' 
+ * @param  {Request} req      	Request object. 
+ * @param  {String}  pathname 	Custom pathname
+ * @return {String}  			New URI
+ */
 const getCallbackUrl = (req, pathname) => {
 	const { successRedirectUrl, errorRedirectUrl } = req.params || {}
-	urlHelp.buildUrl({ 
+	return urlHelp.buildUrl({ 
 		protocol: req.secure ? 'https:' : 'http:', 
 		host: req.headers.host, 
 		pathname: (successRedirectUrl && errorRedirectUrl) ? join(pathname, successRedirectUrl, errorRedirectUrl) : pathname

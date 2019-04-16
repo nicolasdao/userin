@@ -11,9 +11,12 @@ const { obj: { merge } } = require('./src/utils')
 const authMethods = require('./src')
 const { schemes, redirectUrls, userPortal, CORS } = require('./.userinrc.json')
 
+const CORSconfig = CORS || {}
+
 const corsAccess = cors({
-	allowedHeaders: (CORS || {}).allowedHeaders || ['Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
-	origins: (CORS || {}).origins || ['*']
+	methods: ['GET', 'POST', 'OPTIONS', 'HEAD'],
+	allowedHeaders: CORSconfig.allowedHeaders || ['Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'],
+	origins: CORSconfig.origins || ['*']
 })
 app.use(corsAccess)
 
@@ -36,14 +39,16 @@ Object.keys(schemes).forEach(scheme => {
 		}, scheme == 'default' ? {} : schemes[scheme]))
 
 		// Create endpoints. To test, use: curl -X GET http://localhost:3000/<scheme>/oauth2
+		// NOTE: We've added 2 endpoints for both the auth request and the auth callback request. The 1st is the default, while the 2nd
+		// 		 allows the client to explicitly determine the success URI and the error URI
+		const authEndpoints = [oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`]
+		const authCallbackEndpoints = [oauth.callbackPathname, `${oauth.callbackPathname}/:successRedirectUrl/:errorRedirectUrl`]
 		if (scheme == 'default') {
-			app.options([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
-			app.post([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authRequest)
+			app.options(authEndpoints, corsAccess)
+			app.post(authEndpoints, oauth.authRequest)
 		} else {
-			app.options([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
-			app.get([oauth.pathname, `${oauth.pathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authRequest)
-			app.options([oauth.callbackPathname, `${oauth.callbackPathname}/:successRedirectUrl/:errorRedirectUrl`], corsAccess)
-			app.get([oauth.callbackPathname, `${oauth.callbackPathname}/:successRedirectUrl/:errorRedirectUrl`], oauth.authResponse)
+			app.get(authEndpoints, oauth.authRequest)
+			app.get(authCallbackEndpoints, oauth.authResponse)
 		}
 	}
 })

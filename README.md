@@ -12,6 +12,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [2. Create an App In Each IdP You Want To Support](#2-create-an-app-in-each-idp-you-want-to-support)
 > 	- [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
 > 	- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
+>	- [5. Conclusion](#5-conclusion)
 > * [UserIn Forms](#userin-forms)
 > * [How To](#how-to)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
@@ -19,15 +20,40 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
 > 	- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
 >	- [How To Generate API Key?](#how-to-generate-api-key)
+>	- [How To Set Up CORS?](#how-to-set-up-cors)
+>	- [How To Multiple Custom Redirect URIs?](#how-to-multiple-custom-redirect-uris)
+>	- [How To Secure Redirect URIs?](#how-to-secure-redirect-uris)
+> * [FAQ](#faq)
+>	- [How Does OAuth2 Work?](#how-does-oauth2-work)
+>	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
 > * [Theory & Concepts](#theory--concepts)
 > 	- [Identity Provider](#identity-provider)
 > 	- [What UserIn Does & Does Not](#what-userin-does--does-not)
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 >	- [Redirect URI](#redirect-uri)
+>	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 > * [About Neap](#this-is-what-we-re-up-to)
 > * [License](#license)
 
 # Getting Started
+
+Assuming that you're testing __*UserIn*__ locally on port 3000, the following 4 steps:
+
+- [1. Clone UserIn](#1-clone-userin)
+- [2. Create an App In Each IdP You Want To Support](#2-create-an-app-in-each-idp-you-want-to-support)
+- [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
+- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
+
+expose 5 endpoints:
+
+1. POST [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)
+2. GET [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2)
+3. GET [http://localhost:3000/google/oauth2](http://localhost:3000/google/oauth2)
+4. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
+5. GET [http://localhost:3000/google/oauth2callback](http://localhost:3000/google/oauth2callback)
+
+The reason #1 is a POST rather than a GET is because the `default` scheme is not meant to use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
+
 ## 1. Clone UserIn
 
 ```
@@ -57,20 +83,22 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 		"key": "EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATpj"
 	},
 	"schemes": {
+		"default": true,
 		"facebook": {
 			"appId": 1234567891011121314,
 			"appSecret": "abcdefghijklmnopqrstuvwxyz"
-		},
-		"google": {
-			"appId": 987654321,
-			"appSecret": "zfcwfceefeqfrceffre"
 		}
 	},
-	"onSuccess": {
-		"redirectUrl": "http://localhost:3500/success"
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success"
+		},
+		"onError": {
+			"default": "http://localhost:3500/login"
+		}
 	},
-	"onError": {
-		"redirectUrl": "http://localhost:3500/error"
+	"CORS": {
+		"origins": ["http://localhost:3500"]
 	}
 }
 ```
@@ -81,17 +109,26 @@ Where:
 |---------------------------|-------------|
 | `userPortal.api` 			| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
 | `userPortal.key`			| Optional, but highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
-| `schemes.facebook` 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
-| `onSuccess.redirectUrl` 	| Required URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
-| `onError.redirectUrl` 	| Required URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
+| `schemes.default` 		| Optional. This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
+| `schemes.facebook` 		| Optional. This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
+| `redirectUrls.onSuccess.default` 	| Required URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
+| `redirectUrls.onError.default` 	| Required URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
+| `CORS.origins` 	| Optional, but highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
 
 > WARNING: Neither `onSuccess.redirectUrl` nor `onError.redirectUrl` are the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 
 ## 4. Add a new web endpoint into your existing App
 
+This section explains the overall design requirements to engineer an Web API that acts as your __UserIn__ backend, shows an example of such API and finally details how to test that demo API. This content is broken down as follow
+
+[4.1. Overview](#41-overview)
+[4.2. Code Sample](#42-code-sample)
+[4.3. Test](#43-test)
+
+### 4.1. Overview
 This step can be implemented however you want using any technology you feel comfortable with as long as the technology you're using allows to create web APIs.
 
-Based on what is configured in the previous step, the minimum requirement is to engineer a web endpoint such as:
+Based on what is configured in the previous step, the minimum requirement is to engineer a single web endpoint such as:
 - It accepts HTTP POST at URL [http://localhost:3500/user/in](http://localhost:3500/user/in).
 - It accepts a JSON payload similar to: 
 	```js
@@ -114,6 +151,8 @@ Based on what is configured in the previous step, the minimum requirement is to 
 	```
 
 To keep this tutorial simple, it is assumed that the current system is a web API hosted in NodeJS using Express. The API will be secured using a JWT token. Securing the API this way is not the responsibility of __*UserIn*__. There are many other ways to secure a web API, but this technique is quite common.
+
+### 4.2. Code Sample
 
 ```js
 const { app } = require('@neap/funky')
@@ -160,6 +199,8 @@ To access to this GET endpoint, you'll need to get a JWT token first, and then p
 
 Let's add a new web endpoint to obtain a JWT token:
 
+__*Final index.js*__
+
 ```js
 const { app } = require('@neap/funky')
 const Encryption = require('jwt-pwd')
@@ -168,12 +209,29 @@ const { apiKeyHandler, bearerHandler, jwt } = new Encryption({ jwtSecret: '5NJqs
 const _userStore = []
 
 const _getUser = (id, strategy) => _userStore.find(u => u && u.id == id && u.strategy ==  strategy)
+const _getUserByUsername = username => _userStore.find(u => u && u.username == username)
 
 // userPortal.api => http://localhost:3500/user/in
 app.post('/user/in', apiKeyHandler({ key:'x-api-key', value:'EhZVzt1r9POWyV99Y3D3029k3tnkTApG6xInATpj' }), (req,res) => {
 	const { user } = req.params || {}
-	const { id, strategy, email } = user || {}
-	const u = _getUser(id, strategy)
+	const { id, strategy, email, password, username } = user || {}
+	
+	let u
+	// Processing the 'default' scheme
+	if (strategy == 'default') {
+		if (!username)
+			return res.status(500).send('Failed to authenticate. Missing username.')
+		if (!password)
+			return res.status(500).send('Failed to authenticate. Missing password.')
+
+		u = _getUserByUsername(username)
+		if (u && u.password != password)
+			return res.status(500).send('Failed to authenticate. Invalid username or password.')
+	} 
+	// Processing the standard Identity Provider ('facebook', 'google', ...) schemes
+	else
+		u = _getUser(id, strategy)
+
 	if (!u)
 		_userStore.push(user)
 	
@@ -213,8 +271,8 @@ The web endpoint hosted at `http://localhost:3500/user/in` is the one used in th
 
 As for the web endpoint hosted at `http://localhost:3500/success`, this is the one used in the previous section to define the property `onSuccess.redirectUrl` in the `.userinrc.json`. 
 
-The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
-
+### 4.3. Test
+#### Testing Facebook Scheme
 To test this code, configure one IdP (let's say facebook) in __*UserIn*__ and configure it as explained in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson). Once properly configured, run the project with:
 
 ```
@@ -231,7 +289,27 @@ node index.js
 
 This will host the test API on port 3500.
 
-To test the connection between those 2 systems, open your browser and browse to [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2). A successfull test should display a web page
+To test the connection between those 2 systems, open your browser and browse to [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2). If successfull, this test should display a web page. 
+
+#### Testing Default Scheme (Username/Password)
+
+Because the `default` scheme uses an HTTP POST instead of an HTTP GET, you cannot test the above code using your browser (to know more about the rational behind this design, please refer to the [FAQ](#faq) section, [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)). 
+
+To test the `default` scheme, use `curl` as follow:
+
+```
+curl -d '{"user.username":"nic","user.password":"123"}' -H "Content-Type: application/json" -X POST http://localhost:3000/default/oauth2
+```
+
+An alternative way is using:
+
+```
+curl -d '{"user":{"username":"nic","password":"123"}}' -H "Content-Type: application/json" -X POST http://localhost:3000/default/oauth2
+```
+
+## 5. Conclusion
+
+The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
 
 # UserIn Forms
 
@@ -373,6 +451,7 @@ Configuring an authentication portal that supports both Facebook and the default
 ```js
 {
 	"schemes": {
+		"default":true,
 		"facebook": {
 			"appId": 1234567891011121314,
 			"appSecret": "abcdefghijklmnopqrstuvwxyz"
@@ -394,6 +473,102 @@ require('crypto').randomBytes(50).toString('base64')
 ````
 
 Alternatively, there are plenty of websites that generate random key such as [https://keygen.io/](https://keygen.io/) or [https://randomkeygen.com/](#https://randomkeygen.com/).
+
+## How To Set Up CORS?
+
+By default, CORS is setup as follow:
+
+- Allowed Methods: 'GET', 'POST', 'OPTIONS', 'HEAD'
+- Allowed Headers: 'Authorization', 'Origin', 'X-Requested-With', 'Content-Type', 'Accept'
+- Origins: `'*'` 
+
+`Allowed Headers` and `Origins` can be overidden in the `.userinrc.json` as follow:
+
+```js
+{
+	"userPortal": {...},
+	"schemes": {...},
+	"redirectUrls": {...},
+	"CORS": {
+		"origins": ["https://only-safe-domain.com"],
+		"allowedHeaders": ["Authorization", "Accept", "your-custom-allowed-header"]
+	}
+}
+```
+
+> NOTE: The `Allowed Methods` cannot be configured as the default configuration is required to operate __*UserIn*__.
+
+## How To Multiple Custom Redirect URIs?
+
+By default, __*UserIn*__ allows its clients (web apps, mobile apps, ...) to define custom redirect URIs. To do so, instead of using a URIs similar to `https://your-userin-origin/<scheme>/oauth2`, use `https://your-userin-origin/<scheme>/oauth2/<your-uriencoded-successuri>/<your-uriencoded-error-uri>`. To see an explicit example, refer to the [__*UserIn Forms*__](#userin-forms) [__*Gray Quail*__](https://github.com/nicolasdao/userin-form-gray-quail#standard-config).
+
+## How To Secure Redirect URIs?
+
+The previous sections shows that __*UserIn*__ allows its clients (web apps, mobile apps, ...) to define custom redirect URIs. To prevent nefarious use of your __*UserIn*__ API, it is highly recommended to restrict the number of allowed redirect URIs. Here is a `.userinrc.json` configuration example:
+
+```js
+{
+	"userPortal": {...},
+	"schemes": {...},
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success",
+			"authorized": ["http://localhost:3500/success"]
+		},
+		"onError": {
+			"default": "http://localhost:3500/login",
+			"authorized": ["http://localhost:3500/login"]
+		}
+	},
+}
+```
+
+# FAQ
+## How Does OAuth2 Work?
+
+OAuth2 fits multiple workflows. __*UserIn*__ implements one of the most common workflow. It is described in the [Theory & Concepts](#theory--concepts) section under [The UserIn Auth Workflow](#the-userin-auth-workflow). This should provide enough context to the reader.
+
+## How Does The `default` Scheme Work?
+
+__*UserIn*__ was designed to support _pseudo authentication_ using IdPs. However, in the vast majority of cases, authenticating with an IdP is a add-on to authenticating with a traditional method such as username/password. That traditional method involves explicitly capturing a user's credentials and sending them to your server where those credentials can be validated. An IdP adds an extra step in order to capture those credentials. With __*UserIn*__, in both cases, you server receive a user's credentials. That's why __*UserIn*__ support a `default` scheme. That scheme simply bypass the IdP step and sends the user's credentials directly to your server. That explains why the `default` scheme is implemented with an HTTP POST rather than an HTTP GET. If this is still not clear, let's compare the `default` scheme to the `facebook` scheme:
+
+> We assume that _UserIn_ is hosted locally at [http://localhost:3000](http://localhost:3000).
+
+| OAuth2 Scheme | HTTP Method 	| Endpoint 																			| Payload	|
+|*--------------|*--------------|*----------------------------------------------------------------------------------|*----------|
+| `facebook`	| GET 			| [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2) 	| N.A. 		|
+| `default` 	| POST 			| [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2) 		| `{ user: { username:"nic", password:"abc123" } }` |
+
+With the `facebook` scheme, the user is redirected to Facebook in order to capture the `user` object, and then redirect to your server via the combo __*UserIn*__ + your browser. With the `default` scheme, the `user` object is explicitly provided by your user and sent to your server via __*UserIn*__.
+
+> TRICK: The `default` scheme must be passed a JSON payload with a `user` property. Because it is quite common to to use __*UserIn*__ in a form, __*UserIn*__ also support passing a JSON payload similar to:
+>	```json
+>	{
+>		"user.email": "nic@neap.co",
+>		"user.password": "abc123"
+>	}
+>	```
+>
+>	instead of 
+>
+>	```json
+>	{
+>		"user": { 
+>			"email": "nic@neap.co",
+>			"password": "abc123"
+>		}
+>	}
+>	```
+>
+>	This makes building forms using __*UserIn*__ easier:
+>
+>	```html
+> 	<form action="http://localhost:3000/default/oauth2" method="post" enctype="application/json">
+> 		<input type="email" name="user.email" placeholder="Email" required>
+> 		<input type="password" name="user.password" placeholder="Password" required>
+> 		<input type="submit" value="Continue">
+> 	</form>
+>	```
 
 # Theory & Concepts
 ## Identity Provider

@@ -11,5 +11,6 @@ module.exports = Object.assign(require('./core'), {
 	fetch: require('./fetch'),
 	promise: require('./promise'),
 	url: require('./url'),
-	idpHelp: require('./idpHelp')
+	idpHelp: require('./idpHelp'),
+	response: require('./response')
 })

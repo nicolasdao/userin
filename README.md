@@ -23,6 +23,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [How To Set Up CORS?](#how-to-set-up-cors)
 >	- [How To Multiple Custom Redirect URIs?](#how-to-multiple-custom-redirect-uris)
 >	- [How To Secure Redirect URIs?](#how-to-secure-redirect-uris)
+>	- [How To Troubleshoot?](#how-to-troubleshoot)
 > * [FAQ](#faq)
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
@@ -520,6 +521,25 @@ The previous sections shows that __*UserIn*__ allows its clients (web apps, mobi
 			"authorized": ["http://localhost:3500/login"]
 		}
 	},
+}
+```
+
+## How To Troubleshoot?
+
+Bu default, __*UserIn*__ returns very few details about errors, which makes troubleshooting hard. To toggle more verbose error messages, add the following configuration in the `.userinrc.json`:
+
+```json
+"error": {
+	"mode": "verbose"
+}
+```
+
+It is also possible to replace the default non-verbose message `Oops, an error happened on our end.` with your own message as follow:
+
+```json
+"error": {
+	"mode": "verbose",
+	"defaultMessage": "Your own custom error message."
 }
 ```
 

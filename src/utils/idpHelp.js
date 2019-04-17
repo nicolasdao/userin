@@ -1,7 +1,16 @@
+/**
+ * Copyright (c) 2017-2019, Neap Pty Ltd.
+ * All rights reserved.
+ * 
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+*/
+
 const passport = require('passport')
 const { join } = require('path')
 const urlHelp = require('./url')
 const fetch = require('./fetch')
+const { send, addErrorToUrl, defaultErrorMessage } = require('./response')
 
 /**
  * Build a new URI made of the current request domain, a pathname, and optional request paramaters 'successRedirectUrl', 'errorRedirectUrl' 
@@ -18,14 +27,7 @@ const getCallbackUrl = (req, pathname) => {
 	})
 }
 
-const addErrorToUrl = (url, { code, message }) => {
-	let urlInfo = urlHelp.getInfo(url)
-	urlInfo.query.error_msg = message
-	urlInfo.query.error_code = code
-	return urlHelp.buildUrl(urlInfo)
-}
-
-const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatErroUrl, res, next }) => {
+const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatErrorUrl, res, next }) => {
 	user = user || {}
 	user.strategy = strategy
 
@@ -47,16 +49,28 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 					res.redirect(redirectUrl)
 				}
 				else {
-					const redirectUrl = formatErroUrl(422, `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`)
+					const redirectUrl = formatErrorUrl({
+						code:400, 
+						message: defaultErrorMessage,
+						verboseMessage: `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`
+					})
 					res.redirect(redirectUrl)
 				}
 			} else {
 				const errMsg = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
-				const redirectUrl = formatErroUrl(422, `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`)
+				const redirectUrl = formatErrorUrl({
+					code:400, 
+					message: errMsg || defaultErrorMessage,
+					verboseMessage: `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`
+				})
 				res.redirect(redirectUrl)
 			}
 		}).catch(err => {
-			const redirectUrl = formatErroUrl(500, err.message)
+			const redirectUrl = formatErrorUrl({
+				code: 500, 
+				message: defaultErrorMessage,
+				verboseMessage: err.message
+			})
 			res.redirect(redirectUrl)
 		}).then(next)
 	// 2.2. No external user portal defined. Return the IdP user to the client
@@ -88,29 +102,41 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls, callbackPa
 		const errorRedirect = decodeURIComponent(errorRedirectUrl || onErrorRedirectUrl)
 		const successRedirect = decodeURIComponent(successRedirectUrl || onSuccessRedirectUrl)
 		if (!errorRedirect) {
-			res.status(500).send('Missing required redirect error url. This redirect url is neither defined under the .userinrc.json nor in the request payload.')
+			send(res, {
+				code:500,
+				message: defaultErrorMessage,
+				verboseMessage: 'Missing required redirect error url. This redirect url is neither defined under the .userinrc.json nor in the request payload.'
+			})
 			next()
 			return
 		}
 		if (!successRedirect) {
-			res.status(500).send('Missing required redirect success url. This redirect url is neither defined under the .userinrc.json nor in the request payload.')
+			send(res, {
+				code:500,
+				message: defaultErrorMessage,
+				verboseMessage: 'Missing required redirect success url. This redirect url is neither defined under the .userinrc.json nor in the request payload.'
+			})
 			next()
 			return
 		}
 
-		const formatErroUrl = (code, message) => addErrorToUrl(errorRedirect, { code, message })
+		const formatErrorUrl = ({ code, message, verboseMessage }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage })
 
 		const callbackURL = callbackPathname ? getCallbackUrl(req, callbackPathname) : undefined
 		const handler = passport.authenticate(strategy, { callbackURL }, (err,user) => {
 			// CASE 1 - IdP Failure
 			if (err) {
-				const redirectUrl = formatErroUrl(500, err.message)
+				const redirectUrl = formatErrorUrl({
+					code:500, 
+					message: defaultErrorMessage,
+					verboseMessage: err.message
+				})
 				res.redirect(redirectUrl)
 				next()
 			}
 			// CASE 2 - IdP Success
 			else 
-				authToUserPortal({ user, userPortal, strategy, successRedirect, formatErroUrl, res, next })
+				authToUserPortal({ user, userPortal, strategy, successRedirect, formatErrorUrl, res, next })
 		})
 		handler(req, res, next)
 	}

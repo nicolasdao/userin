@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.0.7"></a>
+## [0.0.7](https://github.com/nicolasdao/userin/compare/v0.0.5...v0.0.7) (2019-04-18)
+
+
+### Features
+
+* Add support for echoing user data in the error redirect URI ([bed4c87](https://github.com/nicolasdao/userin/commit/bed4c87))
+* Add support to toggle/untoggle verbose error messages ([38ef5fb](https://github.com/nicolasdao/userin/commit/38ef5fb))
+
+
+
 <a name="0.0.6"></a>
 ## [0.0.6](https://github.com/nicolasdao/userin/compare/v0.0.5...v0.0.6) (2019-04-17)
 

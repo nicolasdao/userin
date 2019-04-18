@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.0.8"></a>
+## [0.0.8](https://github.com/nicolasdao/userin/compare/v0.0.7...v0.0.8) (2019-04-18)
+
+
+### Bug Fixes
+
+* The absence of .userinrc.json file in the project makes the unit test fail + add more doc about the new 'error.echoData' property in the .userinrc.json ([abf08f0](https://github.com/nicolasdao/userin/commit/abf08f0))
+
+
+
 <a name="0.0.7"></a>
 ## [0.0.7](https://github.com/nicolasdao/userin/compare/v0.0.5...v0.0.7) (2019-04-18)
 

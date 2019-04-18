@@ -22,9 +22,11 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [How To Create An App In GitHub?](#how-to-create-an-app-in-github)
 >	- [How To Generate API Key?](#how-to-generate-api-key)
 >	- [How To Set Up CORS?](#how-to-set-up-cors)
->	- [How To Multiple Custom Redirect URIs?](#how-to-multiple-custom-redirect-uris)
+>	- [How To Override The Redirect URIs?](#how-to-override-the-redirect-uris)
 >	- [How To Secure Redirect URIs?](#how-to-secure-redirect-uris)
 >	- [How To Troubleshoot?](#how-to-troubleshoot)
+>	- [How To Return Info To The Error Redirect URI?](#how-to-return-info-to-the-error-redirect-uri)
+>	- [How To Return More Data To The Redirect URIs?](#how-to-return-more-data-to-the-redirect-uris)
 > * [FAQ](#faq)
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
@@ -355,7 +357,7 @@ This file is required to run __*UserIn*__. The `.userinrc.json` file must be loc
 	"CORS": {
 		"origins": ["*"],
 		"allowedHeaders": ["Authorization", "Accept", "your-custom-allowed-header"]
-	}
+	},
 	"error": {
 		"mode": "verbose",
 		"defaultMessage": "Your own custom error message.",
@@ -571,9 +573,9 @@ By default, CORS is setup as follow:
 
 > NOTE: The `Allowed Methods` cannot be configured as the default configuration is required to operate __*UserIn*__.
 
-## How To Multiple Custom Redirect URIs?
+## How To Override The Redirect URIs?
 
-By default, __*UserIn*__ allows its clients (web apps, mobile apps, ...) to define custom redirect URIs. To do so, instead of using a URIs similar to `https://your-userin-origin/<scheme>/oauth2`, use `https://your-userin-origin/<scheme>/oauth2/<your-uriencoded-successuri>/<your-uriencoded-error-uri>`. To see an explicit example, refer to the [__*UserIn Forms*__](#userin-forms) [__*Gray Quail*__](https://github.com/nicolasdao/userin-form-gray-quail#standard-config).
+__*UserIn*__ allows its clients (web apps, mobile apps, ...) to define custom redirect URIs. To do so, instead of using a URIs similar to `https://your-userin-origin/<scheme>/oauth2`, use `https://your-userin-origin/<scheme>/oauth2/<your-uriencoded-successuri>/<your-uriencoded-error-uri>`. To see an explicit example, refer to the [__*UserIn Forms*__](#userin-forms) [__*Gray Quail*__](https://github.com/nicolasdao/userin-form-gray-quail#standard-config).
 
 ## How To Secure Redirect URIs?
 
@@ -615,6 +617,43 @@ It is also possible to replace the default non-verbose message `Oops, an error h
 }
 ```
 
+## How To Return Info To The Error Redirect URI?
+
+By default, when an error occurs in __*UserIn*__, the error code and the error message are both passed in the query string of the error redirect URI. The respective parameters are `error_msg` and `error_code` (e.g., [http://localhost:3520/auth?error_msg=The%20default%20OAuth%20succeeded%2C%20but%20HTTP%20GET%20to%20%27userPortal.api%27%20http%3A%2F%2Flocalhost%3A3520%2Fuser%2Fin%20failed.%20Details%3A%20Invalid%20username%20or%20password.&error_code=400](http://localhost:3520/auth?error_msg=The%20default%20OAuth%20succeeded%2C%20but%20HTTP%20GET%20to%20%27userPortal.api%27%20http%3A%2F%2Flocalhost%3A3520%2Fuser%2Fin%20failed.%20Details%3A%20Invalid%20username%20or%20password.&error_code=400)).
+
+It is possible to pass additional user's parameters (e.g., firstName, lastName, email, etc). To toggle this setting, add a `echoData` property in the `.userinrc.json` file as follow:
+
+```json
+{
+	"error": {
+		"echoData": ["firstName", "lastName", "email"]
+	}
+}
+```
+
+You can add any properties as long as they exist in the `user` object passed to __*UserIn*__ during the authentication step.
+
+## How To Return More Data To The Redirect URIs?
+
+As explained above, using the `echoData` property in the `.userinrc.json` allows to return user's data back to the error redirect URI. However, there are situations where more non-user related data are useful to be passed to either the success or error redirect URIs. Out-of-the-box, __*UserIn*__ does not provide any configuration to support this feature. However, one possible hack is to pass the desired parameters in the redirect URIs' query string. You can achieve this setup either in the `.userinrc.json` as follow:
+
+```json
+{
+	"userPortal": {...},
+	"schemes": {...},
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success?hello=world"
+		},
+		"onError": {
+			"default": "http://localhost:3500/login?some_custom_var=yayyyy"
+		}
+	},
+}
+```
+
+or use the same trick from the client (refer to section [How To Override The Redirect URIs?](#how-to-override-the-redirect-uris)).
+
 # FAQ
 ## How Does OAuth2 Work?
 
@@ -627,7 +666,7 @@ __*UserIn*__ was designed to support _pseudo authentication_ using IdPs. However
 > We assume that _UserIn_ is hosted locally at [http://localhost:3000](http://localhost:3000).
 
 | OAuth2 Scheme | HTTP Method 	| Endpoint 																			| Payload	|
-|*--------------|*--------------|*----------------------------------------------------------------------------------|*----------|
+|:--------------|:--------------|:----------------------------------------------------------------------------------|:----------|
 | `facebook`	| GET 			| [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2) 	| N.A. 		|
 | `default` 	| POST 			| [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2) 		| `{ user: { username:"nic", password:"abc123" } }` |
 

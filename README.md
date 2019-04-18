@@ -13,6 +13,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 > 	- [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
 > 	- [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
 >	- [5. Conclusion](#5-conclusion)
+> * [The `.userinrc.json` File](#the-userinrcjson-file)
 > * [UserIn Forms](#userin-forms)
 > * [How To](#how-to)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
@@ -106,17 +107,17 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 
 Where:
 
-| Property 					| Description |
-|---------------------------|-------------|
-| `userPortal.api` 			| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
-| `userPortal.key`			| Optional, but highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
-| `schemes.default` 		| Optional. This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
-| `schemes.facebook` 		| Optional. This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
-| `redirectUrls.onSuccess.default` 	| Required URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
-| `redirectUrls.onError.default` 	| Required URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
-| `CORS.origins` 	| Optional, but highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
+| Property 					| Required 	| Description 														|
+|:--------------------------|:----------|:------------------------------------------------------------------|
+| `userPortal.api` 			| YES 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
+| `userPortal.key`			| NO 		| Though it is optional, this field is highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
+| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
+| `schemes.facebook` 		| NO 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
+| `redirectUrls.onSuccess.default` 	| YES 		| URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
+| `redirectUrls.onError.default` 	| YES 		| URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
+| `CORS.origins` 	| NO 		| Though it is optional, this field is highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
 
-> WARNING: Neither `onSuccess.redirectUrl` nor `onError.redirectUrl` are the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
+> WARNING: `onSuccess.redirectUrl` and `onError.redirectUrl` are __NOT__ the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 
 ## 4. Add a new web endpoint into your existing App
 
@@ -311,6 +312,77 @@ curl -d '{"user":{"username":"nic","password":"123"}}' -H "Content-Type: applica
 ## 5. Conclusion
 
 The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
+
+# The `.userinrc.json` File
+
+This file is required to run __*UserIn*__. The `.userinrc.json` file must be located in the root directory of your _UserIn_ project. Here is an example of a configuration that includes all the properties:
+
+```json
+{
+	"userPortal": {
+		"api": "http://localhost:3500/user/in",
+		"key": "some-api-key"
+	},
+	"schemes": {
+		"default": true,
+		"facebook": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		},
+		"google": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		},
+		"linkedin": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		},
+		"github": {
+			"appId": 1234567891011121314,
+			"appSecret": "abcdefghijklmnopqrstuvwxyz"
+		}
+	},
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success",
+			"authorized": ["http://localhost:3500/success"]
+		},
+		"onError": {
+			"default": "http://localhost:3500/login",
+			"authorized": ["http://localhost:3500/login"]
+		}
+	},
+	"CORS": {
+		"origins": ["*"],
+		"allowedHeaders": ["Authorization", "Accept", "your-custom-allowed-header"]
+	}
+	"error": {
+		"mode": "verbose",
+		"defaultMessage": "Your own custom error message.",
+		"echoData": ["firstName", "lastName"]
+	}
+}
+```
+
+Where:
+
+| Property 					| Required 	| Description 														|
+|:--------------------------|:----------|:------------------------------------------------------------------|
+| `userPortal.api` 			| YES 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
+| `userPortal.key`			| NO 		| Though it is optional, this field is highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
+| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
+| `schemes.facebook` 		| NO 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
+| `redirectUrls.onSuccess.default` 	| YES 		| URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
+| `redirectUrls.onSuccess.authorized` 	| NO 		| This array restricts the URIs that can be used as a redirect URI. It is used for security reasons to prevent malicious hackers to redirect nefarious websites. |
+| `redirectUrls.onError.default` 	| YES 		| URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
+| `redirectUrls.onError.authorized` 	| NO 		| This array restricts the URIs that can be used as a redirect URI. It is used for security reasons to prevent malicious hackers to redirect nefarious websites. |
+| `CORS.origins` 	| NO 		| Though it is optional, this field is highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
+| `CORS.allowedHeaders` 	| NO 		| Helps to configure which request headers are allowed in CORS.|
+| `error.mode` | NO | Typically used in development mode. When set to `verbose`, error messages are verbose rather than short (disable this in production to prevent your users to be overwhelmed by technical messages). More information about this setting under the [How To Troubleshoot?](#how-to-troubleshoot) section. |
+| `error.defaultMessage` | NO | When `error.mode` is not set to `verbose`, a generic message is returned to the user in case of unexpected server error. The default message is `Oops, an error happened on our end.`. This property is used to override this default error message. |
+| `error.echoData` | NO | This array defined any user's properties that must be returned in the redirect error URI's query string. This can help the client to displa error messages to and user. |
+
+> __NOT__ WARNING: Neither `onSuccess.redirectUrl` nor `onError.redirectUrl` are the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 
 # UserIn Forms
 

@@ -7,7 +7,19 @@
 */
 
 const urlHelp = require('./url')
-const { error } = require('../../.userinrc.json')
+
+// We cannot replace the following try/catch with:
+// 
+// 		const { error } = require('../../.userinrc.json')
+// 		
+// This is because .userinrc.json is not put under source control. The above code snippet would make this project
+// fail its unit test. 
+let error 
+try {
+	error = require('../../.userinrc.json').error
+} catch(e) {
+	(() => error={})(e)
+}
 
 const VERBOSE = error && error.mode == 'verbose'
 const DEFAULT_ERROR_MSG = error && error.defaultMessage ? error.defaultMessage : 'Oops, an error happened on our end.'

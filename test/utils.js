@@ -54,7 +54,27 @@ describe('utils', () => {
 				ext:'.html',
 				query: Object.assign(uri_01.query, { title: 'founder & director', age:37 })
 			}))
-			assert.equal(new_uri_01, 'https://neap.co/search/splash.html?&facetGeoRegion=%5B%22au%3A0%22%5D&origin=FACETED_SEARCH&title=founder%20%26%20director&age=37#hello', '01')
+			const new_uri_02 = url.buildUrl({
+				'host': 'localhost:3520',
+				'protocol': 'http:',
+				'origin': 'http://localhost:3520',
+				'pathname': '/auth',
+				'querystring': '?test=hello',
+				'query': {
+					'test': 'hello',
+					'error_msg': 'The default OAuth succeeded, but HTTP GET to \'userPortal.api\' http://localhost:3520/user/in failed. Details: Invalid username or password.',
+					'error_code': 400
+				},
+				'hash': '',
+				'ext': '',
+				'uri': 'http://localhost:3520/auth?test=hello',
+				'shorturi': 'http://localhost:3520/auth',
+				'pathnameonly': '/auth',
+				'contentType': 'application/octet-stream'
+			})
+			
+			assert.equal(new_uri_01, 'https://neap.co/search/splash.html?facetGeoRegion=%5B%22au%3A0%22%5D&origin=FACETED_SEARCH&title=founder%20%26%20director&age=37#hello', '01')
+			assert.equal(new_uri_02, 'http://localhost:3520/auth?test=hello&error_msg=The%20default%20OAuth%20succeeded%2C%20but%20HTTP%20GET%20to%20\'userPortal.api\'%20http%3A%2F%2Flocalhost%3A3520%2Fuser%2Fin%20failed.%20Details%3A%20Invalid%20username%20or%20password.&error_code=400', '02')
 		})
 	})
 

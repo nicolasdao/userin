@@ -53,7 +53,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 			return
 		}
 
-		const formatErrorUrl = ({ code, message, verboseMessage }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage })
+		const formatErrorUrl = ({ code, message, verboseMessage, data }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage, data })
 		if (!user) {
 			const redirectUrl = formatErrorUrl({
 				code: 400, 

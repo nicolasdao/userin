@@ -52,7 +52,8 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 					const redirectUrl = formatErrorUrl({
 						code:400, 
 						message: defaultErrorMessage,
-						verboseMessage: `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`
+						verboseMessage: `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`,
+						data:user
 					})
 					res.redirect(redirectUrl)
 				}
@@ -61,7 +62,8 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 				const redirectUrl = formatErrorUrl({
 					code:400, 
 					message: errMsg || defaultErrorMessage,
-					verboseMessage: `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`
+					verboseMessage: `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`,
+					data:user
 				})
 				res.redirect(redirectUrl)
 			}
@@ -69,7 +71,8 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 			const redirectUrl = formatErrorUrl({
 				code: 500, 
 				message: defaultErrorMessage,
-				verboseMessage: err.message
+				verboseMessage: err.message,
+				data: user
 			})
 			res.redirect(redirectUrl)
 		}).then(next)
@@ -120,7 +123,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls, callbackPa
 			return
 		}
 
-		const formatErrorUrl = ({ code, message, verboseMessage }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage })
+		const formatErrorUrl = ({ code, message, verboseMessage, data }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage, data })
 
 		const callbackURL = callbackPathname ? getCallbackUrl(req, callbackPathname) : undefined
 		const handler = passport.authenticate(strategy, { callbackURL }, (err,user) => {

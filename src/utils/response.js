@@ -11,6 +11,8 @@ const { error } = require('../../.userinrc.json')
 
 const VERBOSE = error && error.mode == 'verbose'
 const DEFAULT_ERROR_MSG = error && error.defaultMessage ? error.defaultMessage : 'Oops, an error happened on our end.'
+const ERROR_DATA = error && error.echoData && Array.isArray(error.echoData) ? error.echoData : []
+const IS_ERROR_DATA = ERROR_DATA.length > 0
 
 const send = (res, { code, message, verboseMessage }) => res.status(code||200).send(verboseMessage && VERBOSE ? verboseMessage : (message||''))
 
@@ -23,11 +25,18 @@ const send = (res, { code, message, verboseMessage }) => res.status(code||200).s
  * @param  {[type]} options.verboseMessage [description]
  * @return {[type]}                        [description]
  */
-const addErrorToUrl = (url, { code, message, verboseMessage }) => {
+const addErrorToUrl = (url, { code, message, verboseMessage, data }) => {
 	let urlInfo = urlHelp.getInfo(url)
 	urlInfo.query.error_msg = verboseMessage && VERBOSE ? verboseMessage : (message||'')
 	urlInfo.query.error_code = code
-	return urlHelp.buildUrl(urlInfo)
+	if (IS_ERROR_DATA && data && typeof(data) == 'object')
+		ERROR_DATA.forEach(p => {
+			if (data[p])
+				urlInfo.query[p] = data[p]
+		})
+
+	const u = urlHelp.buildUrl(urlInfo)
+	return u
 }
 
 module.exports = {

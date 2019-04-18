@@ -39,13 +39,15 @@ const _rebuildQueryString = query => {
 	const queryString = Object.keys(query).reduce((acc,key) => {
 		if (key) {
 			const value = query[key]
-			if (value !== null && value !== '' && value !== undefined)
-				acc = `${acc}&${key}=${encodeURIComponent(value)}`
+			if (value !== null && value !== '' && value !== undefined) {
+				const sep = acc === '' ? '?' : '&'
+				acc = `${acc}${sep}${key}=${encodeURIComponent(value)}`
+			}
 		}
 		return acc
 	},'')
 
-	return queryString ? `?${queryString}` : ''
+	return queryString
 }
 
 /**

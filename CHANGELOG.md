@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.0.9"></a>
+## [0.0.9](https://github.com/nicolasdao/userin/compare/v0.0.6...v0.0.9) (2019-04-20)
+
+
+### Bug Fixes
+
+* The absence of .userinrc.json file in the project makes the unit test fail + add more doc about the new 'error.echoData' property in the .userinrc.json ([abf08f0](https://github.com/nicolasdao/userin/commit/abf08f0))
+
+
+### Features
+
+* Add support for echoing user data in the error redirect URI ([bed4c87](https://github.com/nicolasdao/userin/commit/bed4c87))
+* Change the access token from 'code' in the hash to the query parameter ([77a2b5b](https://github.com/nicolasdao/userin/commit/77a2b5b))
+
+
+
 <a name="0.0.8"></a>
 ## [0.0.8](https://github.com/nicolasdao/userin/compare/v0.0.7...v0.0.8) (2019-04-18)
 

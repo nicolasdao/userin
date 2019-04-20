@@ -44,7 +44,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 			if (status < 300) {
 				if (data && data.code) {
 					let urlInfo = urlHelp.getInfo(successRedirect)
-					urlInfo.hash = `#code=${encodeURIComponent(data.code)}`
+					urlInfo.query.code = data.code
 					const redirectUrl = urlHelp.buildUrl(urlInfo)
 					res.redirect(redirectUrl)
 				}

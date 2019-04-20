@@ -251,7 +251,8 @@ app.get('/success', (req,res) => res.status(200).send(`
 		<h1>Welcome To UserIn Demo</h1>
 		<div id="container"></div>
 		<script type="text/javascript">
-			var code = (window.location.hash || '').replace('#','').split('=')[1]
+			var urlParams = new URLSearchParams(window.location.search)
+			var code = urlParams.get('code')
 			if (code) {
 				var xhttp = new XMLHttpRequest()
 				xhttp.onreadystatechange = function() {
@@ -313,7 +314,7 @@ curl -d '{"user":{"username":"nic","password":"123"}}' -H "Content-Type: applica
 
 ## 5. Conclusion
 
-The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success#code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
+The workflow is clearer now. _UserIn_ authorizes the usage of an IdP to provide identity details (_pseudo authentication_). When those details have been successfully acquired, _UserIn_ POSTs them (the payload must be as follow `{ "user": Object }`) to your 3rd party web endpoint `http://localhost:3500/user/in`, which in turns decides whether to create a new user or get an existing one. The response from the `http://localhost:3500/user/in` is a JSON payload similar to `{ "code": "some_value" }`. Finally, _UserIn_ redirects the client to `http://localhost:3500/success?code=some_value`. In the example above the `success` endpoint returns HTML containing a script which proceed to an AJAX request to the `sensitive/data` endpoint, passing an Bearer token to the Authorization header.
 
 # The `.userinrc.json` File
 
@@ -739,7 +740,7 @@ When the user uses Facebook for example, the browser sends an HTTP GET to __*Use
 Upon successfull authentication to Facebook, Facebook redirects the user to __*UserIn*__, which in turn POST the user's identity to a web endpoint that the App Engineer has to provide. The App Engineer is free to implement that web endpoint using any method or technology, as long as this endpoint accepts a JSON payload with as `user` property describing the user's identity and returns a JSON payload with a `code` property representing any string useful to the App Engineer (e.g., a JWT token, or a short-lived token that allows to access a JWT token through another REST API).
 
 #### 4. Letting The User In The App (UserIn To App)
-Upon successful reception of that `code`, __*UserIn*__ redirects the user to the configured `onSuccess.redirectUrl` (which is typically the App). The `code` acquired through the App middleware in the previous step is included in the `redirectUrl` as a search parameters (e.g., [https://example.com/success#code=123456789](https://example.com/success#code=123456789)). A similar behavior occurs in case of failure. The redirect URL is determined by the `onError.redirectUrl` parameter. Details about the error are passed in the query string (e.g., [https://example.com/error?error_msg=something_bad_happened&code=500](https://example.com/error?error_msg=something_bad_happened&code=500)).
+Upon successful reception of that `code`, __*UserIn*__ redirects the user to the configured `onSuccess.redirectUrl` (which is typically the App). The `code` acquired through the App middleware in the previous step is included in the `redirectUrl` as a search parameters (e.g., [https://example.com/success?code=123456789](https://example.com/success?code=123456789)). A similar behavior occurs in case of failure. The redirect URL is determined by the `onError.redirectUrl` parameter. Details about the error are passed in the query string (e.g., [https://example.com/error?error_msg=something_bad_happened&code=500](https://example.com/error?error_msg=something_bad_happened&code=500)).
 
 #### 5. Authenticating/Authorizing Access To The App (Outside of UserIn's Scope!)
 Though the user seems to be in the App now, no authentication and authorization to access the app have been performed yet. Indeed, __*UserIn*__ has just skipped the pre-screening queue (no need to provide explicit user details and password) but the user still needs to show an ID to enter the party. That ID is contained in the search parameter of the current URI (that's the `code` parameter acquired in the previous step). In this step, the App Engineer is required to extract that code from the URI and use it to authenticate and authroize the user. This step can be done in any way the App Engineer wishes to. 

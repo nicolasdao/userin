@@ -32,7 +32,7 @@
     "standard-version": "^4.4.0"
   },
   "dependencies": {
-    "@neap/funky": "^0.2.5",
+    "@neap/funky": "^0.5.0",
     "passport": "^0.4.0",
     "passport-facebook": "^3.0.0",
     "passport-github": "^1.1.0",

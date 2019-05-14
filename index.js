@@ -9,7 +9,7 @@
 const { app, cors } = require('@neap/funky')
 const { obj: { merge } } = require('./src/utils')
 const authMethods = require('./src')
-const { schemes, redirectUrls, userPortal, CORS } = require('./.userinrc.json')
+const { schemes, redirectUrls, userPortal, CORS, devPort } = require('./.userinrc.json')
 
 const CORSconfig = CORS || {}
 
@@ -56,7 +56,7 @@ Object.keys(schemes).forEach(scheme => {
 app.get('/alive', (req,res) => res.status(200).send('\'userIn\' is alive'))
 app.get('/oauth2/schemes', (req,res) => res.status(200).send(SUPPORTED_SCHEMES))
 
-eval(app.listen(process.env.PORT || 3000))
+eval(app.listen(process.env.PORT || devPort || 3000))
 
 
 

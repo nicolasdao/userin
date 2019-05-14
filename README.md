@@ -363,7 +363,8 @@ This file is required to run __*UserIn*__. The `.userinrc.json` file must be loc
 		"mode": "verbose",
 		"defaultMessage": "Your own custom error message.",
 		"echoData": ["firstName", "lastName"]
-	}
+	},
+	"devPort": 3300
 }
 ```
 
@@ -384,6 +385,7 @@ Where:
 | `error.mode` | NO | Typically used in development mode. When set to `verbose`, error messages are verbose rather than short (disable this in production to prevent your users to be overwhelmed by technical messages). More information about this setting under the [How To Troubleshoot?](#how-to-troubleshoot) section. |
 | `error.defaultMessage` | NO | When `error.mode` is not set to `verbose`, a generic message is returned to the user in case of unexpected server error. The default message is `Oops, an error happened on our end.`. This property is used to override this default error message. |
 | `error.echoData` | NO | This array defined any user's properties that must be returned in the redirect error URI's query string. This can help the client to displa error messages to and user. |
+| `devPort` | NO | Default dev port is 3000. This properties overides the default. |
 
 > __NOT__ WARNING: Neither `onSuccess.redirectUrl` nor `onError.redirectUrl` are the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 

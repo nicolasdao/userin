@@ -12,7 +12,7 @@ const parseAuthResponse = (accessToken, refreshToken, profile, next) => {
 	const email = ((profile.emails || [])[0] || {}).value || null
 	const profileImg = ((profile.photos || [])[0] || {}).value
 
-	const user = { id, firstName, middleName, lastName, email, profileImg }
+	const user = { id, firstName, middleName, lastName, email, profileImg, accessToken, refreshToken }
 	next(null, user)
 }
 

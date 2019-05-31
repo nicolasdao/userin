@@ -22,6 +22,19 @@ const configurePassport = ({ appId, appSecret, callbackURL, scopes }) =>
 		clientID: appId,
 		clientSecret: appSecret,
 		callbackURL,
+		profileFields: [
+			'id',
+			'first-name',
+			'last-name',
+			'email-address',
+			//'headline',
+			//'summary',
+			//'industry',
+			'picture-url',
+			//'positions',
+			'public-profile-url',
+			//"location"
+		],
 		scope: scopes
 	}, parseAuthResponse))
 

@@ -6,9 +6,6 @@
  * LICENSE file in the root directory of this source tree.
 */
 
-/* global describe */
-/* global it */
-
 const { assert } = require('chai')
 const { url, obj: { extractFlattenedJSON } } = require('../src/utils')
 

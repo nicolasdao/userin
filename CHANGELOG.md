@@ -1,6 +1,21 @@
-# Change Log
+# Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [0.1.0](https://github.com/nicolasdao/userin/compare/v0.0.10...v0.1.0) (2019-07-22)
+
+
+### Bug Fixes
+
+* The node-fetch is installed in the dev-dep but not in the dep ([57d295d](https://github.com/nicolasdao/userin/commit/57d295d))
+* Vulnerability issues reported by github and npm ([b59e2ea](https://github.com/nicolasdao/userin/commit/b59e2ea))
+
+
+### Features
+
+* Include the access and refresh token on the user ([c84ba55](https://github.com/nicolasdao/userin/commit/c84ba55))
+
+
 
 <a name="0.0.10"></a>
 ## [0.0.10](https://github.com/nicolasdao/userin/compare/v0.0.9...v0.0.10) (2019-05-07)

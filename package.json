@@ -27,7 +27,7 @@
     "chai": "^4.1.2",
     "eslint": "^6.1.0",
     "mocha": "^5.2.0",
-    "node-dev": "^3.1.3",
+    "node-dev": "^4.0.0",
     "standard-version": "^6.0.1"
   },
   "dependencies": {
@@ -37,7 +37,7 @@
     "passport-facebook": "^3.0.0",
     "passport-github": "^1.1.0",
     "passport-google-oauth20": "^2.0.0",
-    "passport-linkedin-oauth2": "^1.6.1",
+    "passport-linkedin-oauth2": "^2.0.0",
     "shortid": "^2.2.14"
   }
 }

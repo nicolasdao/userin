@@ -70,7 +70,7 @@ const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
 
 module.exports = {
 	setUp,
-	scopes: ['r_basicprofile', 'r_emailaddress']
+	scopes: ['r_liteprofile', 'r_emailaddress']
 }
 
 

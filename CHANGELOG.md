@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/nicolasdao/userin/compare/v0.1.0...v0.1.1) (2019-08-10)
+
+
+### Bug Fixes
+
+* LinkedIn OAuth 2 is broken, probably because LinkedIn changed their OAuth 2 API ([c7485a3](https://github.com/nicolasdao/userin/commit/c7485a3))
+
+
+
 ## [0.1.0](https://github.com/nicolasdao/userin/compare/v0.0.10...v0.1.0) (2019-07-22)
 
 

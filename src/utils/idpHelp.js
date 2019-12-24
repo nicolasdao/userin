@@ -77,14 +77,8 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, errorRe
 					const message = `${defaultErrorMessage} (code 001)`
 					const verboseMessage = `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`	
 					
-					if (errorRedirect) {
-						const urlInfo = urlHelp.getInfo(errorRedirect)
-						urlInfo.query = urlInfo.query || {}
-						urlInfo.query.message = message
-						urlInfo.query.verboseMessage = verboseMessage
-						urlInfo.query.code = 400
-						res.redirect(urlHelp.buildUrl(urlInfo))
-					}
+					if (errorRedirect)
+						res.redirect(addErrorToUrl(errorRedirect, { code: 400, message, verboseMessage }))
 					else
 						res.status(400).send(verboseMessage)
 				}
@@ -92,27 +86,27 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, errorRe
 				const message = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
 				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`;
 
-				if (errorRedirect) {
-					const urlInfo = urlHelp.getInfo(errorRedirect)
-					urlInfo.query = urlInfo.query || {}
-					urlInfo.query.message = message || `${defaultErrorMessage} (code 002)`
-					urlInfo.query.verboseMessage = verboseMessage;
-					urlInfo.query.code = 400
-					res.redirect(urlHelp.buildUrl(urlInfo))
-				}
-				else
+				if (errorRedirect)
+					res.redirect(
+						addErrorToUrl(errorRedirect, {
+							code: 400,
+							message: message || `${defaultErrorMessage} (code 002)`,
+							verboseMessage
+						})
+					)
+				else 
 					res.status(400).send(verboseMessage)
 			}
 		}).catch(err => {
-			if (errorRedirect) {
-				const urlInfo = urlHelp.getInfo(errorRedirect)
-				urlInfo.query = urlInfo.query || {};
-				urlInfo.query.message = `${defaultErrorMessage} (code 003)`
-				urlInfo.query.verboseMessage = err.message
-				urlInfo.query.code = 500
-				res.redirect(urlHelp.buildUrl(urlInfo))
-			}
-			else
+			if (errorRedirect)
+				res.redirect(
+					addErrorToUrl(errorRedirect, {
+						code: 500,
+						message: `${defaultErrorMessage} (code 003)`,
+						verboseMessage: err.message
+					})
+				)
+			else 
 				res.status(500).send(err.message)
 		}).then(next)
 	// 2.2. No external user portal defined. Return the IdP user to the client

@@ -12,10 +12,6 @@ const STRATEGY = 'default'
 const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
 const OAUTH_CALLBACK_PATHNAME = `/${STRATEGY}/oauth2callback`
 
-const buildUrl = (url, params) => {
-	return `${url}?${Object.keys(params).map(k => `${k}=${encodeURIComponent(params[k])}`).join("&")}`
-}
-
 /**
  * Returns an Express handler that client directly requests.
  *
@@ -48,7 +44,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 			const verboseMessage = 'Missing required payload property. POST request must contain a \'user\' property in its JSON payload.'
 
 			if (errorRedirect)
-				res.redirect(buildUrl(errorRedirect, { code: 400, message, verboseMessage }))
+				res.redirect(addErrorToUrl(errorRedirect, { code: 400, message, verboseMessage }))
 			else
 				res.status(400).send(verboseMessage)
 
@@ -61,7 +57,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 			const verboseMessage = `Invalid payload. The type of the 'user' property in the JSON payload must be 'object' (current: '${typeof(user)}').`
 
 			if (errorRedirect)
-				res.redirect(buildUrl(errorRedirect, { code: 400, message, verboseMessage }))
+				res.redirect(addErrorToUrl(errorRedirect, { code: 400, message, verboseMessage }))
 			else
 				res.status(400).send(verboseMessage)
 

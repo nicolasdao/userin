@@ -12,6 +12,10 @@ const STRATEGY = 'default'
 const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
 const OAUTH_CALLBACK_PATHNAME = `/${STRATEGY}/oauth2callback`
 
+const buildUrl = (url, params) => {
+	return `${url}?${Object.keys(params).map(k => `${k}=${encodeURIComponent(params[k])}`).join("&")}`
+}
+
 /**
  * Returns an Express handler that client directly requests.
  *
@@ -29,53 +33,43 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 
 	return (req, res, next) => {
 		req.params = req.params || {}
+
 		const { successRedirectUrl, errorRedirectUrl } = req.params
 		const { user } = extractFlattenedJSON(req.params) 
 		
-		const errorRedirect = decodeURIComponent(errorRedirectUrl || onErrorRedirectUrl)
-		const successRedirect = decodeURIComponent(successRedirectUrl || onSuccessRedirectUrl)
-		if (!errorRedirect) {
-			send(res, { 
-				code:500, 
-				message: defaultErrorMessage,
-				verboseMessage: 'Missing required redirect error url. This redirect url is neither defined under the .userinrc.json nor in the request payload.'
-			})
-			next()
-			return
-		}
-		if (!successRedirect) {
-			send(res, { 
-				code:500, 
-				message: defaultErrorMessage,
-				verboseMessage: 'Missing required redirect success url. This redirect url is neither defined under the .userinrc.json nor in the request payload.'
-			})
-			next()
-			return
-		}
+		let errorRedirect = decodeURIComponent(errorRedirectUrl || onErrorRedirectUrl)
+		let successRedirect = decodeURIComponent(successRedirectUrl || onSuccessRedirectUrl)
 
-		const formatErrorUrl = ({ code, message, verboseMessage, data }) => addErrorToUrl(errorRedirect, { code, message, verboseMessage, data })
+		errorRedirect = errorRedirect === "undefined" ? undefined : errorRedirect
+		successRedirect = successRedirect === "undefined" ? undefined : successRedirect
+
 		if (!user) {
-			const redirectUrl = formatErrorUrl({
-				code: 400, 
-				message: defaultErrorMessage,
-				verboseMessage: 'Missing required payload property. POST request must contain a \'user\' property in its JSON payload.'
-			})
-			res.redirect(redirectUrl)
-			next()
-			return 
-		}
-		if (typeof(user) != 'object') {
-			const redirectUrl = formatErrorUrl({
-				code:400, 
-				message: defaultErrorMessage,
-				verboseMessage: `Invalid payload. The type of the 'user' property in the JSON payload must be 'object' (current: '${typeof(user)}').`
-			})
-			res.redirect(redirectUrl)
+			const message = defaultErrorMessage;
+			const verboseMessage = 'Missing required payload property. POST request must contain a \'user\' property in its JSON payload.'
+
+			if (errorRedirect)
+				res.redirect(buildUrl(errorRedirect, { code: 400, message, verboseMessage }))
+			else
+				res.status(400).send(verboseMessage)
+
 			next()
 			return 
 		}
 
-		authToUserPortal({ user, userPortal, strategy, successRedirect, formatErrorUrl, res, next })
+		if (typeof(user) != 'object') {		
+			const message = defaultErrorMessage;	
+			const verboseMessage = `Invalid payload. The type of the 'user' property in the JSON payload must be 'object' (current: '${typeof(user)}').`
+
+			if (errorRedirect)
+				res.redirect(buildUrl(errorRedirect, { code: 400, message, verboseMessage }))
+			else
+				res.status(400).send(verboseMessage)
+
+			next()
+			return 
+		}
+
+		authToUserPortal({ user, userPortal, strategy, successRedirect, errorRedirect, res, next })
 	}
 }
 

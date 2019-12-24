@@ -48,7 +48,7 @@ const getCallbackUrl = (req, pathname, options) => {
 	return urlHelp.buildUrl(urlParams, { noEncoding:true })
 }
 
-const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatErrorUrl, res, next }) => {
+const authToUserPortal = ({ user, userPortal, strategy, successRedirect, errorRedirect, res, next }) => {
 	user = user || {}
 	user.strategy = strategy
 
@@ -64,38 +64,56 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 		}).then(({ status, data }) => {
 			if (status < 300) {
 				if (data && data.code) {
-					let urlInfo = urlHelp.getInfo(successRedirect)
-					urlInfo.query.code = data.code
-					const redirectUrl = urlHelp.buildUrl(urlInfo)
-					res.redirect(redirectUrl)
+					if(successRedirect) {
+						const urlInfo = urlHelp.getInfo(successRedirect)
+						urlInfo.query = urlInfo.query || {}
+						urlInfo.query.code = data.code
+						res.redirect(urlHelp.buildUrl(urlInfo))
+					}
+					else
+						res.status(200).send(data.code);	
 				}
 				else {
-					const redirectUrl = formatErrorUrl({
-						code:400, 
-						message: `${defaultErrorMessage} (code 001)`,
-						verboseMessage: `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`,
-						data:user
-					})
-					res.redirect(redirectUrl)
+					const message = `${defaultErrorMessage} (code 001)`
+					const verboseMessage = `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`	
+					
+					if (errorRedirect) {
+						const urlInfo = urlHelp.getInfo(errorRedirect)
+						urlInfo.query = urlInfo.query || {}
+						urlInfo.query.message = message
+						urlInfo.query.verboseMessage = verboseMessage
+						urlInfo.query.code = 400
+						res.redirect(urlHelp.buildUrl(urlInfo))
+					}
+					else
+						res.status(400).send(verboseMessage)
 				}
 			} else {
-				const errMsg = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
-				const redirectUrl = formatErrorUrl({
-					code:400, 
-					message: errMsg || `${defaultErrorMessage} (code 002)`,
-					verboseMessage: `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${errMsg ? ` Details: ${errMsg}` : ''}`,
-					data:user
-				})
-				res.redirect(redirectUrl)
+				const message = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
+				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`;
+
+				if (errorRedirect) {
+					const urlInfo = urlHelp.getInfo(errorRedirect)
+					urlInfo.query = urlInfo.query || {}
+					urlInfo.query.message = message || `${defaultErrorMessage} (code 002)`
+					urlInfo.query.verboseMessage = verboseMessage;
+					urlInfo.query.code = 400
+					res.redirect(urlHelp.buildUrl(urlInfo))
+				}
+				else
+					res.status(400).send(verboseMessage)
 			}
 		}).catch(err => {
-			const redirectUrl = formatErrorUrl({
-				code: 500, 
-				message: `${defaultErrorMessage} (code 003)`,
-				verboseMessage: err.message,
-				data: user
-			})
-			res.redirect(redirectUrl)
+			if (errorRedirect) {
+				const urlInfo = urlHelp.getInfo(errorRedirect)
+				urlInfo.query = urlInfo.query || {};
+				urlInfo.query.message = `${defaultErrorMessage} (code 003)`
+				urlInfo.query.verboseMessage = err.message
+				urlInfo.query.code = 500
+				res.redirect(urlHelp.buildUrl(urlInfo))
+			}
+			else
+				res.status(500).send(err.message)
 		}).then(next)
 	// 2.2. No external user portal defined. Return the IdP user to the client
 	else {

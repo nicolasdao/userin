@@ -39,12 +39,14 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 		errorRedirect = errorRedirect === "undefined" ? undefined : errorRedirect
 		successRedirect = successRedirect === "undefined" ? undefined : successRedirect
 
+		const formatErrorUrl = errorRedirect ? args => addErrorToUrl(errorRedirect, args) : null;
+
 		if (!user) {
 			const message = defaultErrorMessage;
 			const verboseMessage = 'Missing required payload property. POST request must contain a \'user\' property in its JSON payload.'
 
-			if (errorRedirect)
-				res.redirect(addErrorToUrl(errorRedirect, { code: 400, message, verboseMessage }))
+			if (formatErrorUrl)
+				res.redirect(formatErrorUrl({ code: 400, message, verboseMessage }))
 			else
 				res.status(400).send(verboseMessage)
 
@@ -56,8 +58,8 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 			const message = defaultErrorMessage;	
 			const verboseMessage = `Invalid payload. The type of the 'user' property in the JSON payload must be 'object' (current: '${typeof(user)}').`
 
-			if (errorRedirect)
-				res.redirect(addErrorToUrl(errorRedirect, { code: 400, message, verboseMessage }))
+			if (formatErrorUrl)
+				res.redirect(formatErrorUrl({ code: 400, message, verboseMessage }))
 			else
 				res.status(400).send(verboseMessage)
 
@@ -65,7 +67,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 			return 
 		}
 
-		authToUserPortal({ user, userPortal, strategy, successRedirect, errorRedirect, res, next })
+		authToUserPortal({ user, userPortal, strategy, successRedirect, formatErrorUrl, res, next })
 	}
 }
 

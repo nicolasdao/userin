@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree.
 */
 
-const { idpHelp: { addErrorToUrl, authToUserPortal }, obj: { extractFlattenedJSON }, response:{ defaultErrorMessage, send } } = require('./utils')
+const { idpHelp: { addErrorToUrl, authToUserPortal }, obj: { extractFlattenedJSON }, response:{ defaultErrorMessage } } = require('./utils')
 
 const STRATEGY = 'default'
 const OAUTH_PATHNAME = `/${STRATEGY}/oauth2`
@@ -36,13 +36,13 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 		let errorRedirect = decodeURIComponent(errorRedirectUrl || onErrorRedirectUrl)
 		let successRedirect = decodeURIComponent(successRedirectUrl || onSuccessRedirectUrl)
 
-		errorRedirect = errorRedirect === "undefined" ? undefined : errorRedirect
-		successRedirect = successRedirect === "undefined" ? undefined : successRedirect
+		errorRedirect = errorRedirect === 'undefined' ? undefined : errorRedirect
+		successRedirect = successRedirect === 'undefined' ? undefined : successRedirect
 
-		const formatErrorUrl = errorRedirect ? args => addErrorToUrl(errorRedirect, args) : null;
+		const formatErrorUrl = errorRedirect ? args => addErrorToUrl(errorRedirect, args) : null
 
 		if (!user) {
-			const message = defaultErrorMessage;
+			const message = defaultErrorMessage
 			const verboseMessage = 'Missing required payload property. POST request must contain a \'user\' property in its JSON payload.'
 
 			if (formatErrorUrl)
@@ -55,7 +55,7 @@ const getAuthResponseHandler = ({ strategy, userPortal, redirectUrls }) => {
 		}
 
 		if (typeof(user) != 'object') {		
-			const message = defaultErrorMessage;	
+			const message = defaultErrorMessage	
 			const verboseMessage = `Invalid payload. The type of the 'user' property in the JSON payload must be 'object' (current: '${typeof(user)}').`
 
 			if (formatErrorUrl)

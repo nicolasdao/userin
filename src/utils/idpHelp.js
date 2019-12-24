@@ -71,7 +71,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 						res.redirect(urlHelp.buildUrl(urlInfo))
 					}
 					else
-						res.status(200).send(data.code);	
+						res.status(200).send(data.code)	
 				}
 				else {
 					const message = `${defaultErrorMessage} (code 001)`
@@ -84,7 +84,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 				}
 			} else {
 				const message = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
-				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`;
+				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`
 
 				if (formatErrorUrl)
 					res.redirect(

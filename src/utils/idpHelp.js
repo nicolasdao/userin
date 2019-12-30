@@ -75,7 +75,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 				}
 				else {
 					const message = `${defaultErrorMessage} (code 001)`
-					const verboseMessage = `The ${strategy} OAuth succeeded, HTTP GET to 'userPortal.api' ${userPortal.api} successed to but did not return a 'token' value ({ "token": null }).`	
+					const verboseMessage = `The ${strategy} OAuth succeeded, HTTP POST to 'userPortal.api' ${userPortal.api} succeeded to but did not return a 'token' value ({ "token": null }).`	
 					
 					if (formatErrorUrl)
 						res.redirect(formatErrorUrl({ code: 400, message, verboseMessage }))
@@ -84,7 +84,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 				}
 			} else {
 				const message = typeof(data) == 'string' ? data : data ? (data.message || (data.error || {}).message || JSON.stringify(data)) : null
-				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP GET to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`
+				const verboseMessage = `The ${strategy} OAuth succeeded, but HTTP POST to 'userPortal.api' ${userPortal.api} failed.${message ? ` Details: ${message}` : ''}`
 
 				if (formatErrorUrl)
 					res.redirect(

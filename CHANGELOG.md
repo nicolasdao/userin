@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.2](https://github.com/nicolasdao/userin/compare/v0.1.1...v0.1.2) (2020-03-18)
+
+
+### Bug Fixes
+
+* 46 of 46 vulnerabilities in 1214 scanned packages ([be718dd](https://github.com/nicolasdao/userin/commit/be718ddcc1878d0a21ceb441ffd3ac7cc3eab978))
+
 ### [0.1.1](https://github.com/nicolasdao/userin/compare/v0.1.0...v0.1.1) (2019-08-10)
 
 

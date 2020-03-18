@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/nicolasdao/userin/compare/v0.1.2...v0.1.3) (2020-03-18)
+
+
+### Bug Fixes
+
+* travis deploy ([36c9315](https://github.com/nicolasdao/userin/commit/36c93154ddaddf1200ff6b37d3d4dc0b7265d84c))
+
 ### [0.1.2](https://github.com/nicolasdao/userin/compare/v0.1.1...v0.1.2) (2020-03-18)
 
 

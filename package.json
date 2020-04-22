@@ -12,12 +12,12 @@
   },
   "homepage": "https://github.com/nicolasdao/userin#readme",
   "scripts": {
-    "dev": "NODE_ENV=dev node-dev index.js",
+    "dev": "TZ=UTC NODE_ENV=dev node-dev index.js",
     "key": "node src/utils/apiKey.js",
     "lint": "eslint index.js src/ test/ --fix",
     "push": "git push --follow-tags origin master",
     "rls": "standard-version --release-as",
-    "start": "NODE_ENV=production node index.js",
+    "start": "TZ=UTC NODE_ENV=production node index.js",
     "test": "mocha --exit",
     "v": "node -e \"console.log(require('./package.json').version)\""
   },

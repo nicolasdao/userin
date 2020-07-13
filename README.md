@@ -89,7 +89,7 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 	"schemes": {
 		"default": true,
 		"facebook": {
-			"appId": 1234567891011121314,
+			"appId": "1234567891011121314",
 			"appSecret": "abcdefghijklmnopqrstuvwxyz"
 		}
 	},
@@ -113,7 +113,7 @@ Where:
 |:--------------------------|:----------|:------------------------------------------------------------------|
 | `userPortal.api` 			| YES 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
 | `userPortal.key`			| NO 		| Though it is optional, this field is highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
-| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
+| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). In this case, you fullfill the responsibility of the IdP to verify the user's identity. The typical use case for this option is to support your own username password authentication. If set to `true`, __*UserIn*__ exposes an auth endpoint (in this example, it is hosted at [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)) that accepts a `user` object in its payload. |
 | `schemes.facebook` 		| NO 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
 | `redirectUrls.onSuccess.default` 	| YES 		| URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
 | `redirectUrls.onError.default` 	| YES 		| URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|

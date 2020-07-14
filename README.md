@@ -127,9 +127,9 @@ Where:
 
 This section explains the overall design requirements to engineer an Web API that acts as your __UserIn__ backend, shows an example of such API and finally details how to test that demo API. This content is broken down as follow
 
-[4.1. Overview](#41-overview)
-[4.2. Code Sample](#42-code-sample)
-[4.3. Test](#43-test)
+- [4.1. Overview](#41-overview)
+- [4.2. Code Sample](#42-code-sample)
+- [4.3. Test](#43-test)
 
 ### 4.1. Overview
 This step can be implemented however you want using any technology you feel comfortable with as long as the technology you're using allows to create web APIs.

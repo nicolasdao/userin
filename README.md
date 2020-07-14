@@ -103,7 +103,8 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 	},
 	"CORS": {
 		"origins": ["http://localhost:3500"]
-	}
+	},
+	"devPort": 3000
 }
 ```
 
@@ -118,6 +119,7 @@ Where:
 | `redirectUrls.onSuccess.default` 	| YES 		| URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
 | `redirectUrls.onError.default` 	| YES 		| URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
 | `CORS.origins` 	| NO 		| Though it is optional, this field is highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
+| `devPort` | NO | Local port used in dev. If not specified, the default port is 3000. |
 
 > WARNING: `onSuccess.redirectUrl` and `onError.redirectUrl` are __NOT__ the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 

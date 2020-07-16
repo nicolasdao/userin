@@ -58,7 +58,7 @@ const authToUserPortal = ({ user, userPortal, strategy, successRedirect, formatE
 			uri: userPortal.api,
 			headers: {
 				'content-type': 'application/json',
-				'x-api-key': userPortal.key
+				'x-api-key': process.env.USERPORTAL_KEY || userPortal.key
 			},
 			body: JSON.stringify({ user })
 		}).then(({ status, data }) => {

@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@neap/funky": "^0.5.0",
+    "form-data": "^3.0.0",
     "node-fetch": "^2.6.0",
     "passport": "^0.4.0",
     "passport-facebook": "^3.0.0",

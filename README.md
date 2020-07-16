@@ -15,6 +15,8 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 >	- [5. Conclusion](#5-conclusion)
 > * [The `.userinrc.json` File](#the-userinrcjson-file)
 > * [UserIn Forms](#userin-forms)
+> * [Maintaining App secrets](#maintaining-app-secrets)
+> * [Configuring access token's scopes](#configuring-access-tokens-scopes)
 > * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
@@ -51,17 +53,15 @@ Assuming that you're testing __*UserIn*__ locally on port 3000, the following 4 
 - [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
 - [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
 
-expose 5 endpoints:
+expose 3 endpoints:
 
 1. POST [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)
 2. GET [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2)
 3. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
-4. GET [http://localhost:3000/google/oauth2](http://localhost:3000/google/oauth2)
-5. GET [http://localhost:3000/google/oauth2callback](http://localhost:3000/google/oauth2callback)
 
-> WARNING: Only #1, #2 and #3 are functional, as only those 3 are configured in this demo (more about the configuration in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)).
+As you can see, this demo only exposes a `default` endpoint to manage your own username/password authentication and a `facebook` endpoint pair to manage the Facebook OAuth2. Exposing more endpoints to support more IdPs (e.g., Google, LinkedIn, Github) is a simple config (more about this configuration in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)).
 
-The reason #1 is a POST rather than a GET is because the `default` scheme is not meant to use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
+> NOTE: The `default` scheme(#1 above) is a POST rather than a GET because it does not use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
 
 ## 1. Clone UserIn
 
@@ -112,6 +112,8 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 	"devPort": 3000
 }
 ```
+
+> TIPS: The app secrets can also be stored in environment variables instead of stored in the `.userinrc.json`. For more details about this approach, please refer to the [Maintaining App secrets](#maintaining-app-secrets) section.
 
 Where:
 
@@ -404,6 +406,106 @@ __*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that
 |----------|------------------------------------------------------------------------------------------------------------|
 |__Gray Quail__|[https://github.com/nicolasdao/userin-form-gray-quail](https://github.com/nicolasdao/userin-form-gray-quail)|
 
+# Maintaining App secrets
+## Using the `.userinrc.json`
+
+As explained earlier, the easiest way to maintain IdP's secrets is to do it via the `.userinrc.json` file as follow:
+
+```js
+{
+	"userPortal": {
+		"api": "http://localhost:3500/user/in",
+		"key": "SECRET-01"
+	},
+	"schemes": {
+		"default": true,
+		"facebook": {
+			"appId": "FB-ID-SECRET",
+			"appSecret": "FB-SECRET"
+		},
+		"google": {
+			"appId": "GOOG-ID-SECRET",
+			"appSecret": "GOOG-SECRET"
+		},
+		"linkedin": {
+			"appId": "LINK-ID-SECRET",
+			"appSecret": "LINK-SECRET"
+		}
+		"github": {
+			"appId": "GIT-ID-SECRET",
+			"appSecret": "GIT-SECRET"
+		}
+	},
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success"
+		},
+		"onError": {
+			"default": "http://localhost:3500/login"
+		}
+	},
+	"CORS": {
+		"origins": ["http://localhost:3500"]
+	},
+	"devPort": 3000
+}
+```
+
+## Using environment variables
+
+Because those secrets are highly sensitive, maintaining them in the `.userinrc.json` file could be against your organization security policy (especially if that file is put under source-control). For that reason, UserIn also supports storing each secret in environment variables. The table below maps the secret type with its environment variable name:
+
+| Secret | Environment variable |
+|:-------|:---------------------|
+| `userPortal.key` | `USERPORTAL_KEY` |
+| `facebook.appId` | `FACEBOOK_APP_ID` |
+| `facebook.appSecret` | `FACEBOOK_APP_SECRET` |
+| `google.appId` | `GOOGLE_APP_ID` |
+| `google.appSecret` | `GOOGLE_APP_SECRET` |
+| `linkedin.appId` | `LINKEDIN_APP_ID` |
+| `linkedin.appSecret` | `LINKEDIN_APP_SECRET` |
+| `github.appId` | `GITHUB_APP_ID` |
+| `github.appSecret` | `GITHUB_APP_SECRET` |
+
+> IMPORTANT: The `schemes` section in the `.userinrc.json` file must still be explicitly specified even when the secrets are stored in environment variables. Otherwise, the IdP OAuth2 endpoint and callback are not activated. For example, when the Facebook secrets are stored in their environment variables, the `schemes` section of the `.userinrc.json` should be written as follow:
+>	```js
+>		"schemes": {
+>			"facebook": {}
+>		}
+>	```
+
+# Configuring access token's scopes
+
+Out-of-the-box, all IdPs are pre-configured with the following scopes and profileFields (for those who support profileFields):
+
+- __`Facebook`__:
+	- `scopes`: `null`
+	- `profileFields`:`['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']`
+	- Exhaustive list of all scopes: https://developers.facebook.com/docs/permissions/reference#manage-pages
+- __`GitHub`__:
+	- `scopes`: `['r_basicprofile', 'r_emailaddress']`
+	- `profileFields`: Not applicable
+- __`Google`__:
+	- `scopes`: `['profile', 'email']`
+	- `profileFields`: Not applicable
+- __`LinkedIn`__:
+	- `scopes`: `['r_liteprofile', 'r_emailaddress']`
+	- `profileFields`: Not applicable
+
+To override an IdP's default settings, use the `.userinrc.json` file as follow:
+
+```js
+"schemes": {
+	"default": true,
+	"facebook": {
+		"appId": "FB-ID-SECRET",
+		"appSecret": "FB-SECRET",
+		"scopes": ["public_profile", "publish_action"],
+		"profileFields": ["first_name", "last_name", "email"]
+	}
+}
+```
+
 # FAQ
 ## How To Create An App In Facebook?
 #### Goal 
@@ -666,19 +768,7 @@ or use the same trick from the client (refer to section [How To Override The Red
 
 ## How to update the scope of an IdP?
 
-Each IdP has been preconfigured with the minimal set of scopes (i.e., the scope you need to at least retrieve the email address of the user). To configure the scope:
-1. Choose one of the available IdP:
-	- `src/facebook.js`
-	- `src/github.js`
-	- `src/google.js`
-	- `src/linkedin.js`
-2. At the bottom of the file, update the scope field. For example, the `src/linkedin.js` file looks like this:
-	```js
-	module.exports = {
-		setUp,
-		scopes: ['r_liteprofile', 'r_emailaddress']
-	}
-	```
+Please refer to the [Configuring access token's scopes](#configuring-access-tokens-scopes) section.
 
 ## How Does OAuth2 Work?
 
@@ -789,6 +879,7 @@ The Facebook API is huge! It is broken down in various product types. The list b
 
 - [User API (e.g.,creating posts)](https://developers.facebook.com/docs/graph-api/reference)
 - [Page API](https://developers.facebook.com/docs/pages/guides)
+- [Access token debug tool](https://developers.facebook.com/tools/debug/accesstoken)
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

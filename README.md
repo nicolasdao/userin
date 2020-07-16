@@ -775,6 +775,8 @@ As you can see, the __*UserIn*__'s scope does not cover securing your App's API.
 # Annex
 ## LinkedIn API
 
+> The home page for the LinkedIn API documentation is https://docs.microsoft.com/en-us/linkedin/marketing/.
+
 Once you have the access token, simply call the API by passing the usual `Authorization: Bearer <ACCESS-TOKEN>` in the header.
 
 - Key concepts to understand: https://docs.microsoft.com/en-us/linkedin/shared/api-guide/concepts/urns?context=linkedin/marketing/context
@@ -782,6 +784,11 @@ Once you have the access token, simply call the API by passing the usual `Author
 - There is no long-lived refresh token, but the access token last a while (60 days). [It can be refreshed](https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin/marketing/context#refreshing-a-token), and you can check its current expiry date with this API: https://docs.microsoft.com/en-us/linkedin/shared/authentication/token-introspection?context=linkedin/marketing/context
 
 ## Facebook API
+
+The Facebook API is huge! It is broken down in various product types. The list below is far from exhaustive:
+
+- [User API (e.g.,creating posts)](https://developers.facebook.com/docs/graph-api/reference)
+- [Page API](https://developers.facebook.com/docs/pages/guides)
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

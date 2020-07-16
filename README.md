@@ -1,8 +1,10 @@
 # UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ lets your users in your App as quickly as possible and with minimum friction. __*UserIn*__ is an open source middleware REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
+__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users in your App as quickly as possible and with minimum friction. It is a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general.
+As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general. 
+
+Finally, we've also added some high-level documentation about IdPs APIs, as you may need to interact with them after acquiring their access token via UserIn. This documentation is located under the [Annex](#annex) section.
 
 # Table Of Contents
 > * [Getting Started](#getting-started)
@@ -34,6 +36,9 @@ As for the other alternatives, UserIn requires a good understanding of OAuth2. T
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 >	- [Redirect URI](#redirect-uri)
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
+> * [Annex](#annex)
+>	- [LinkedIn API](#linkedin-api)
+>	- [Facebook API](#facebook-api)
 > * [About Neap](#this-is-what-we-re-up-to)
 > * [License](#license)
 
@@ -766,6 +771,17 @@ Though the user seems to be in the App now, no authentication and authorization 
 
 #### Conclusion
 As you can see, the __*UserIn*__'s scope does not cover securing your App's API. This job is left to you. __*UserIn*__'s scope stops after the user is either created in your system or successfully authenticated and has landed on the `onSuccess.redirectUrl`. Using the `code` in that redirect URL, you're free to secure your App however you want.
+
+# Annex
+## LinkedIn API
+
+Once you have the access token, simply call the API by passing the usual `Authorization: Bearer <ACCESS-TOKEN>` in the header.
+
+- Key concepts to understand: https://docs.microsoft.com/en-us/linkedin/shared/api-guide/concepts/urns?context=linkedin/marketing/context
+- How to create a post: https://docs.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/share-api#post-shares
+- There is no long-lived refresh token, but the access token last a while (60 days). [It can be refreshed](https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin/marketing/context#refreshing-a-token), and you can check its current expiry date with this API: https://docs.microsoft.com/en-us/linkedin/shared/authentication/token-introspection?context=linkedin/marketing/context
+
+## Facebook API
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

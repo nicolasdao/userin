@@ -1,10 +1,8 @@
 # UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ aims to let your users in your App as quickly as possible and with minimum friction. __*UserIn*__ is an open source middleware REST API built in NodeJS. __*UserIn*__ lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ aims to be an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
+__*UserIn*__ lets your users in your App as quickly as possible and with minimum friction. __*UserIn*__ is an open source middleware REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their data store. __*UserIn*__ helps App Engineers to control the use of IdPs to access their App fully.
-
-Because the workflows involved in using OAuth and IdPs might not be completely obvious to all App Engineers, this document contains extra information regarding this topic under the [Theory & Concepts](#-theory--concepts) section. If you're new to using IdPs, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general.
+As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general.
 
 # Table Of Contents
 > * [Getting Started](#getting-started)
@@ -15,7 +13,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [5. Conclusion](#5-conclusion)
 > * [The `.userinrc.json` File](#the-userinrcjson-file)
 > * [UserIn Forms](#userin-forms)
-> * [How To](#how-to)
+> * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
 > 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
@@ -27,7 +25,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [How To Troubleshoot?](#how-to-troubleshoot)
 >	- [How To Return Info To The Error Redirect URI?](#how-to-return-info-to-the-error-redirect-uri)
 >	- [How To Return More Data To The Redirect URIs?](#how-to-return-more-data-to-the-redirect-uris)
-> * [FAQ](#faq)
+>	- [How to update the scope of an IdP?](#how-to-update-the-scope-of-an-idp)
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
 > * [Theory & Concepts](#theory--concepts)
@@ -52,9 +50,11 @@ expose 5 endpoints:
 
 1. POST [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)
 2. GET [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2)
-3. GET [http://localhost:3000/google/oauth2](http://localhost:3000/google/oauth2)
-4. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
+3. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
+4. GET [http://localhost:3000/google/oauth2](http://localhost:3000/google/oauth2)
 5. GET [http://localhost:3000/google/oauth2callback](http://localhost:3000/google/oauth2callback)
+
+> WARNING: Only #1, #2 and #3 are functional, as only those 3 are configured in this demo (more about the configuration in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)).
 
 The reason #1 is a POST rather than a GET is because the `default` scheme is not meant to use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
 
@@ -399,7 +399,7 @@ __*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that
 |----------|------------------------------------------------------------------------------------------------------------|
 |__Gray Quail__|[https://github.com/nicolasdao/userin-form-gray-quail](https://github.com/nicolasdao/userin-form-gray-quail)|
 
-# How To
+# FAQ
 ## How To Create An App In Facebook?
 #### Goal 
 
@@ -659,7 +659,22 @@ As explained above, using the `echoData` property in the `.userinrc.json` allows
 
 or use the same trick from the client (refer to section [How To Override The Redirect URIs?](#how-to-override-the-redirect-uris)).
 
-# FAQ
+## How to update the scope of an IdP?
+
+Each IdP has been preconfigured with the minimal set of scopes (i.e., the scope you need to at least retrieve the email address of the user). To configure the scope:
+1. Choose one of the available IdP:
+	- `src/facebook.js`
+	- `src/github.js`
+	- `src/google.js`
+	- `src/linkedin.js`
+2. At the bottom of the file, update the scope field. For example, the `src/linkedin.js` file looks like this:
+	```js
+	module.exports = {
+		setUp,
+		scopes: ['r_liteprofile', 'r_emailaddress']
+	}
+	```
+
 ## How Does OAuth2 Work?
 
 OAuth2 fits multiple workflows. __*UserIn*__ implements one of the most common workflow. It is described in the [Theory & Concepts](#theory--concepts) section under [The UserIn Auth Workflow](#the-userin-auth-workflow). This should provide enough context to the reader.

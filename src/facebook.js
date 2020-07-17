@@ -48,6 +48,7 @@ const setUp = ({ appId, appSecret, scopes, profileFields, userPortal, redirectUr
 
 module.exports = {
 	setUp,
+	scopes: ['public_profile'],
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 }
 

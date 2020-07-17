@@ -479,9 +479,11 @@ Because those secrets are highly sensitive, maintaining them in the `.userinrc.j
 Out-of-the-box, all IdPs are pre-configured with the following scopes and profileFields (for those who support profileFields):
 
 - __`Facebook`__:
-	- `scopes`: `null`
+	- `scopes`: `['public_profile']`
 	- `profileFields`:`['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']`
-	- Exhaustive list of all scopes: https://developers.facebook.com/docs/permissions/reference#manage-pages
+	- Exhaustive list of all scopes: https://developers.facebook.com/docs/facebook-login/permissions/
+
+	> WARNING: With the `public_profile` scope, the `email` field is not returned. To access the email information, the `email` scope needs to be added. For more details about the Facebook scopes, please refer to the [Facebook API](#facebook-api) section under the [Annex](#annex).
 - __`GitHub`__:
 	- `scopes`: `['r_basicprofile', 'r_emailaddress']`
 	- `profileFields`: Not applicable
@@ -505,6 +507,8 @@ To override an IdP's default settings, use the `.userinrc.json` file as follow:
 	}
 }
 ```
+
+> INFO: To know more about IdPs scopes, we've documented some of the most common scopes in the [Annex](#annex) section.
 
 # FAQ
 ## How To Create An App In Facebook?
@@ -869,7 +873,7 @@ As you can see, the __*UserIn*__'s scope does not cover securing your App's API.
 
 Once you have the access token, simply call the API by passing the usual `Authorization: Bearer <ACCESS-TOKEN>` in the header.
 
-### Usefull links
+### LinkedIn usefull links
 
 - Key concepts to understand: https://docs.microsoft.com/en-us/linkedin/shared/api-guide/concepts/urns?context=linkedin/marketing/context
 - How to create a post: https://docs.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/share-api#post-shares
@@ -877,12 +881,36 @@ Once you have the access token, simply call the API by passing the usual `Author
 
 ## Facebook API
 
-### Usefull links
+### Facebook usefull links
 
 - Facebook login and access token concepts: https://developers.facebook.com/docs/facebook-login/
 - User API (e.g.,creating posts): https://developers.facebook.com/docs/graph-api/reference
 - Page API: https://developers.facebook.com/docs/pages/guides
 - Access token debug tool: https://developers.facebook.com/tools/debug/accesstoken
+
+### Facebook popular scopes
+
+All OAuth2 token requests always include the default `public_profile`. Based on the need of your app, you may have to add more scopes in order to request more access from your Facebook users. Some of the most common scopes are details in this section. For an exhaustive list of all the scopes, please refer to the Facebook official documentation located at https://developers.facebook.com/docs/facebook-login/permissions/#reference-default.
+
+#### `public_profile`
+
+This scope is the default scope. You don't need to explicitly pass it to your access token request as it is always included. 
+
+If your intent is to access the basic details of your Facebook user (e.g., first name, last name), you do need to explicitly provide the list of fields you need with the `profileFields` configuration (refer to the Facebook example in the previous [Configuring access token's scopes](#configuring-access-tokens-scopes) section). 
+
+> WARNING: Even if the `email` field is added in the `profileFields` list, the `public_profile` does not grant enough priviliges to return it. If you need to access your Facebook users' email, add the [`email`](#email) scope.
+
+#### `email`
+
+Grant access to the Facebook user's email.
+
+#### `pages_manage_posts` 
+
+Allows to create and manage posts on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to read posts, which is why it usually works in pair with the [`pages_read_engagement`](#pages_read_engagement).
+
+### `pages_read_engagement`
+
+Allows to read posts, including the associated user generated data for each post, on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to manage posts, which is why it usually works in pair with the [`pages_manage_posts`](#pages_manage_posts).
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

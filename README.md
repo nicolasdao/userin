@@ -877,6 +877,7 @@ Once you have the access token, simply call the API by passing the usual `Author
 
 The Facebook API is huge! It is broken down in various product types. The list below is far from exhaustive:
 
+- [Facebook logon and access token concepts](https://developers.facebook.com/docs/facebook-login/)
 - [User API (e.g.,creating posts)](https://developers.facebook.com/docs/graph-api/reference)
 - [Page API](https://developers.facebook.com/docs/pages/guides)
 - [Access token debug tool](https://developers.facebook.com/tools/debug/accesstoken)

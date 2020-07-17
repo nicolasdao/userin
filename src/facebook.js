@@ -21,20 +21,20 @@ const parseAuthResponse = (accessToken, refreshToken, profile, next) => {
  * 
  * @return {Void}        	[description]
  */
-const getAuthRequestHandler = () => (req, res, next) => {
+const getAuthRequestHandler = ({ scopes }) => (req, res, next) => {
 	const callbackURL = getCallbackUrl(req, OAUTH_CALLBACK_PATHNAME)
-	const handler = passport.authenticate(STRATEGY, { callbackURL })
+	const handler = passport.authenticate(STRATEGY, { callbackURL, scope:scopes })
 	handler(req, res, next)
 }
 
-const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
+const setUp = ({ appId, appSecret, scopes, profileFields, userPortal, redirectUrls }) => {
 	passport.use(new Strategy({
-		clientID: appId,
-		clientSecret: appSecret,
-		profileFields: scopes
+		clientID: process.env.FACEBOOK_APP_ID || appId,
+		clientSecret: process.env.FACEBOOK_APP_SECRET || appSecret,
+		profileFields: profileFields
 	}, parseAuthResponse))
 
-	const authRequestHandler = getAuthRequestHandler()
+	const authRequestHandler = getAuthRequestHandler({ scopes })
 	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, redirectUrls, callbackPathname:OAUTH_CALLBACK_PATHNAME })
 
 	return {
@@ -48,7 +48,7 @@ const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
 
 module.exports = {
 	setUp,
-	scopes: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
+	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 }
 
 

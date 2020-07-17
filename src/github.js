@@ -42,7 +42,11 @@ const getAuthRequestHandler = ({ appId, appSecret, scopes }) => (req, res, next)
 
 const setUp = ({ appId, appSecret, scopes, userPortal, redirectUrls }) => {
 
-	const authRequestHandler = getAuthRequestHandler({ appId, appSecret, scopes })
+	const authRequestHandler = getAuthRequestHandler({ 
+		appId: process.env.GITHUB_APP_ID || appId, 
+		appSecret: process.env.GITHUB_APP_SECRET || appSecret,  
+		scopes 
+	})
 	const authResponseHandler = getAuthResponseHandler({ strategy:STRATEGY, userPortal, redirectUrls })
 
 	return {

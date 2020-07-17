@@ -1,10 +1,10 @@
 # UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ aims to let your users in your App as quickly as possible and with minimum friction. __*UserIn*__ is an open source middleware REST API built in NodeJS. __*UserIn*__ lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ aims to be an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
+__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users in your App as quickly as possible and with minimum friction. It is a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-The reason for this project is to offer alternatives to SaaS such as Auth0, Firebase Authentication, AWS Cognito which require by default to store App's users in their data store. __*UserIn*__ helps App Engineers to control the use of IdPs to access their App fully.
+As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general. 
 
-Because the workflows involved in using OAuth and IdPs might not be completely obvious to all App Engineers, this document contains extra information regarding this topic under the [Theory & Concepts](#-theory--concepts) section. If you're new to using IdPs, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general.
+Finally, we've also added some high-level documentation about IdPs APIs, as you may need to interact with them after acquiring their access token via UserIn. This documentation is located under the [Annex](#annex) section.
 
 # Table Of Contents
 > * [Getting Started](#getting-started)
@@ -15,7 +15,9 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [5. Conclusion](#5-conclusion)
 > * [The `.userinrc.json` File](#the-userinrcjson-file)
 > * [UserIn Forms](#userin-forms)
-> * [How To](#how-to)
+> * [Maintaining App secrets](#maintaining-app-secrets)
+> * [Configuring access token's scopes](#configuring-access-tokens-scopes)
+> * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
 > 	- [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin)
@@ -27,7 +29,7 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [How To Troubleshoot?](#how-to-troubleshoot)
 >	- [How To Return Info To The Error Redirect URI?](#how-to-return-info-to-the-error-redirect-uri)
 >	- [How To Return More Data To The Redirect URIs?](#how-to-return-more-data-to-the-redirect-uris)
-> * [FAQ](#faq)
+>	- [How to update the scope of an IdP?](#how-to-update-the-scope-of-an-idp)
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
 > * [Theory & Concepts](#theory--concepts)
@@ -36,6 +38,9 @@ Because the workflows involved in using OAuth and IdPs might not be completely o
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 >	- [Redirect URI](#redirect-uri)
 >	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
+> * [Annex](#annex)
+>	- [LinkedIn API](#linkedin-api)
+>	- [Facebook API](#facebook-api)
 > * [About Neap](#this-is-what-we-re-up-to)
 > * [License](#license)
 
@@ -48,15 +53,15 @@ Assuming that you're testing __*UserIn*__ locally on port 3000, the following 4 
 - [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)
 - [4. Add a new web endpoint into your existing App](#4-add-a-new-web-endpoint-into-your-existing-app)
 
-expose 5 endpoints:
+expose 3 endpoints:
 
 1. POST [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)
 2. GET [http://localhost:3000/facebook/oauth2](http://localhost:3000/facebook/oauth2)
-3. GET [http://localhost:3000/google/oauth2](http://localhost:3000/google/oauth2)
-4. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
-5. GET [http://localhost:3000/google/oauth2callback](http://localhost:3000/google/oauth2callback)
+3. GET [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback)
 
-The reason #1 is a POST rather than a GET is because the `default` scheme is not meant to use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
+As you can see, this demo only exposes a `default` endpoint to manage your own username/password authentication and a `facebook` endpoint pair to manage the Facebook OAuth2. Exposing more endpoints to support more IdPs (e.g., Google, LinkedIn, Github) is a simple config (more about this configuration in [3. Create & Configure the `.userinrc.json`](#3-create--configure-the-userinrcjson)).
+
+> NOTE: The `default` scheme(#1 above) is a POST rather than a GET because it does not use an IdP. Instead, it plugs straight into your own API to authenticate your user (e.g., supporting username with password). In that case, the user credentials are POSTed to your ow API via __UserIn__. To know more about this topic, please refer to the article [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work) under the [FAQ](#faq) section.
 
 ## 1. Clone UserIn
 
@@ -89,7 +94,7 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 	"schemes": {
 		"default": true,
 		"facebook": {
-			"appId": 1234567891011121314,
+			"appId": "1234567891011121314",
 			"appSecret": "abcdefghijklmnopqrstuvwxyz"
 		}
 	},
@@ -103,9 +108,12 @@ Add the `.userinrc.json` in the root folder. Use the App ID and the App secret c
 	},
 	"CORS": {
 		"origins": ["http://localhost:3500"]
-	}
+	},
+	"devPort": 3000
 }
 ```
+
+> TIPS: The app secrets can also be stored in environment variables instead of stored in the `.userinrc.json`. For more details about this approach, please refer to the [Maintaining App secrets](#maintaining-app-secrets) section.
 
 Where:
 
@@ -113,11 +121,12 @@ Where:
 |:--------------------------|:----------|:------------------------------------------------------------------|
 | `userPortal.api` 			| YES 		| HTTP POST endpoint. Expect to receive a `user` object. Creating this web endpoint is the App Engineer's responsibility. [http://localhost:3500/user/in](http://localhost:3500/user/in) is an example used in this tutorial to link this step with the next one. |
 | `userPortal.key`			| NO 		| Though it is optional, this field is highly recommended. This key allows to secure the communication between `userIn` and the `userPortal.api`. When specified, a header named `x-api-key` is passed during the HTTP POST. The App Engineer should only allow POST requests if that header is set with the correct value, or return a 403. |
-| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). If set to `true`, __*UserIn*__ exposes an auth endpoint (hosted ) that accepts a `user` object in its payload. |
+| `schemes.default` 		| NO 		| This flag determines if __*UserIn*__ supports custom Authentication powered by you own API (i.e., `userPortal.api`). In this case, you fullfill the responsibility of the IdP to verify the user's identity. The typical use case for this option is to support your own username password authentication. If set to `true`, __*UserIn*__ exposes an auth endpoint (in this example, it is hosted at [http://localhost:3000/default/oauth2](http://localhost:3000/default/oauth2)) that accepts a `user` object in its payload. |
 | `schemes.facebook` 		| NO 		| This object represents the Identity Provider. It contains two properties: `appId` and `appSecret`. All IdPs follow the same schema. Currently supported IdPs: `facebook`, `google`, `linkedin` and `github`. |
-| `redirectUrls.onSuccess.default` 	| YES 		| URL used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
-| `redirectUrls.onError.default` 	| YES 		| URL used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
+| `redirectUrls.onSuccess.default` 	| YES 		| URL (GET endpoint) used to redirect the user once he/she is successfully authenticated. [http://localhost:3500/success](http://localhost:3500/success) is an example used in this tutorial to link this step with the next one. |
+| `redirectUrls.onError.default` 	| YES 		| URL (GET endpoint) used to redirect the user if an error occured during the authentication process. [http://localhost:3500/error](http://localhost:3500/error) is an example used in this tutorial to link this step with the next one.|
 | `CORS.origins` 	| NO 		| Though it is optional, this field is highly recommended. This setup only allows access to the __*UserIn*__ from this websites list. More about CORS setup in section [How To Set Up CORS?](#how-to-set-up-cors).|
+| `devPort` | NO | Local port used in dev. If not specified, the default port is 3000. |
 
 > WARNING: `onSuccess.redirectUrl` and `onError.redirectUrl` are __NOT__ the redirect URLs that must be specified during the IdP configuration in the step 2. Please refer to step 2 to properly configure the redirect URL for each IdP. 
 
@@ -125,9 +134,9 @@ Where:
 
 This section explains the overall design requirements to engineer an Web API that acts as your __UserIn__ backend, shows an example of such API and finally details how to test that demo API. This content is broken down as follow
 
-[4.1. Overview](#41-overview)
-[4.2. Code Sample](#42-code-sample)
-[4.3. Test](#43-test)
+- [4.1. Overview](#41-overview)
+- [4.2. Code Sample](#42-code-sample)
+- [4.3. Test](#43-test)
 
 ### 4.1. Overview
 This step can be implemented however you want using any technology you feel comfortable with as long as the technology you're using allows to create web APIs.
@@ -397,7 +406,107 @@ __*UserIn Forms*__ are web forms typically built in HTML, CSS and Javacript that
 |----------|------------------------------------------------------------------------------------------------------------|
 |__Gray Quail__|[https://github.com/nicolasdao/userin-form-gray-quail](https://github.com/nicolasdao/userin-form-gray-quail)|
 
-# How To
+# Maintaining App secrets
+## Using the `.userinrc.json`
+
+As explained earlier, the easiest way to maintain IdP's secrets is to do it via the `.userinrc.json` file as follow:
+
+```js
+{
+	"userPortal": {
+		"api": "http://localhost:3500/user/in",
+		"key": "SECRET-01"
+	},
+	"schemes": {
+		"default": true,
+		"facebook": {
+			"appId": "FB-ID-SECRET",
+			"appSecret": "FB-SECRET"
+		},
+		"google": {
+			"appId": "GOOG-ID-SECRET",
+			"appSecret": "GOOG-SECRET"
+		},
+		"linkedin": {
+			"appId": "LINK-ID-SECRET",
+			"appSecret": "LINK-SECRET"
+		}
+		"github": {
+			"appId": "GIT-ID-SECRET",
+			"appSecret": "GIT-SECRET"
+		}
+	},
+	"redirectUrls": {
+		"onSuccess": {
+			"default": "http://localhost:3500/success"
+		},
+		"onError": {
+			"default": "http://localhost:3500/login"
+		}
+	},
+	"CORS": {
+		"origins": ["http://localhost:3500"]
+	},
+	"devPort": 3000
+}
+```
+
+## Using environment variables
+
+Because those secrets are highly sensitive, maintaining them in the `.userinrc.json` file could be against your organization security policy (especially if that file is put under source-control). For that reason, UserIn also supports storing each secret in environment variables. The table below maps the secret type with its environment variable name:
+
+| Secret | Environment variable |
+|:-------|:---------------------|
+| `userPortal.key` | `USERPORTAL_KEY` |
+| `facebook.appId` | `FACEBOOK_APP_ID` |
+| `facebook.appSecret` | `FACEBOOK_APP_SECRET` |
+| `google.appId` | `GOOGLE_APP_ID` |
+| `google.appSecret` | `GOOGLE_APP_SECRET` |
+| `linkedin.appId` | `LINKEDIN_APP_ID` |
+| `linkedin.appSecret` | `LINKEDIN_APP_SECRET` |
+| `github.appId` | `GITHUB_APP_ID` |
+| `github.appSecret` | `GITHUB_APP_SECRET` |
+
+> IMPORTANT: The `schemes` section in the `.userinrc.json` file must still be explicitly specified even when the secrets are stored in environment variables. Otherwise, the IdP OAuth2 endpoint and callback are not activated. For example, when the Facebook secrets are stored in their environment variables, the `schemes` section of the `.userinrc.json` should be written as follow:
+>	```js
+>		"schemes": {
+>			"facebook": {}
+>		}
+>	```
+
+# Configuring access token's scopes
+
+Out-of-the-box, all IdPs are pre-configured with the following scopes and profileFields (for those who support profileFields):
+
+- __`Facebook`__:
+	- `scopes`: `null`
+	- `profileFields`:`['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']`
+	- Exhaustive list of all scopes: https://developers.facebook.com/docs/permissions/reference#manage-pages
+- __`GitHub`__:
+	- `scopes`: `['r_basicprofile', 'r_emailaddress']`
+	- `profileFields`: Not applicable
+- __`Google`__:
+	- `scopes`: `['profile', 'email']`
+	- `profileFields`: Not applicable
+- __`LinkedIn`__:
+	- `scopes`: `['r_liteprofile', 'r_emailaddress']`
+	- `profileFields`: Not applicable
+
+To override an IdP's default settings, use the `.userinrc.json` file as follow:
+
+```js
+"schemes": {
+	"default": true,
+	"facebook": {
+		"appId": "FB-ID-SECRET",
+		"appSecret": "FB-SECRET",
+		"scopes": ["public_profile", "publish_action"],
+		"profileFields": ["first_name", "last_name", "email"]
+	}
+}
+```
+
+# FAQ
 ## How To Create An App In Facebook?
 #### Goal 
 
@@ -657,7 +766,10 @@ As explained above, using the `echoData` property in the `.userinrc.json` allows
 
 or use the same trick from the client (refer to section [How To Override The Redirect URIs?](#how-to-override-the-redirect-uris)).
 
-# FAQ
+## How to update the scope of an IdP?
+
+Please refer to the [Configuring access token's scopes](#configuring-access-tokens-scopes) section.
+
 ## How Does OAuth2 Work?
 
 OAuth2 fits multiple workflows. __*UserIn*__ implements one of the most common workflow. It is described in the [Theory & Concepts](#theory--concepts) section under [The UserIn Auth Workflow](#the-userin-auth-workflow). This should provide enough context to the reader.
@@ -749,6 +861,25 @@ Though the user seems to be in the App now, no authentication and authorization 
 
 #### Conclusion
 As you can see, the __*UserIn*__'s scope does not cover securing your App's API. This job is left to you. __*UserIn*__'s scope stops after the user is either created in your system or successfully authenticated and has landed on the `onSuccess.redirectUrl`. Using the `code` in that redirect URL, you're free to secure your App however you want.
+
+# Annex
+## LinkedIn API
+
+> The home page for the LinkedIn API documentation is https://docs.microsoft.com/en-us/linkedin/marketing/.
+
+Once you have the access token, simply call the API by passing the usual `Authorization: Bearer <ACCESS-TOKEN>` in the header.
+
+- Key concepts to understand: https://docs.microsoft.com/en-us/linkedin/shared/api-guide/concepts/urns?context=linkedin/marketing/context
+- How to create a post: https://docs.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/share-api#post-shares
+- There is no long-lived refresh token, but the access token last a while (60 days). [It can be refreshed](https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin/marketing/context#refreshing-a-token), and you can check its current expiry date with this API: https://docs.microsoft.com/en-us/linkedin/shared/authentication/token-introspection?context=linkedin/marketing/context
+
+## Facebook API
+
+The Facebook API is huge! It is broken down in various product types. The list below is far from exhaustive:
+
+- [User API (e.g.,creating posts)](https://developers.facebook.com/docs/graph-api/reference)
+- [Page API](https://developers.facebook.com/docs/pages/guides)
+- [Access token debug tool](https://developers.facebook.com/tools/debug/accesstoken)
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

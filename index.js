@@ -7,7 +7,6 @@
 */
 
 const { app, cors } = require('@neap/funky')
-const { obj: { merge } } = require('./src/utils')
 const authMethods = require('./src')
 const { schemes, redirectUrls, userPortal, CORS, devPort } = require('./.userinrc.json')
 
@@ -32,11 +31,17 @@ const SUPPORTED_SCHEMES = Object.keys(schemes)
 Object.keys(schemes).forEach(scheme => {
 	const authMethod = authMethods[scheme]
 	if (authMethod) {
-		const oauth = authMethod.setUp(merge({ 
+		const defaultConfig = {
 			scopes:authMethod.scopes,
+			profileFields:authMethod.profileFields,
 			redirectUrls,
 			userPortal
-		}, scheme == 'default' ? {} : schemes[scheme]))
+		}
+		const idpConfig = scheme == 'default' ? {} : (schemes[scheme] || {})
+		const oauth = authMethod.setUp({
+			...defaultConfig,
+			...idpConfig
+		})
 
 		// Create endpoints. To test, use: curl -X GET http://localhost:3000/<scheme>/oauth2
 		// NOTE: We've added 2 endpoints for both the auth request and the auth callback request. The 1st is the default, while the 2nd

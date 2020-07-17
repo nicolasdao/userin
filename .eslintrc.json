@@ -9,12 +9,13 @@
         "process": false,
         "describe": false,
         "it": false,
+        "xit": false,
         "Buffer": false,
         "__dirname": false
     },
     "parserOptions": {
         "sourceType": "module",
-        "ecmaVersion": 2017
+        "ecmaVersion": 2018
     },
     "rules": {
         "no-console":0,

@@ -871,7 +871,7 @@ As you can see, the __*UserIn*__'s scope does not cover securing your App's API.
 
 > The home page for the LinkedIn API documentation is https://docs.microsoft.com/en-us/linkedin/marketing/.
 
-Once you have the access token, simply call the API by passing the usual `Authorization: Bearer <ACCESS-TOKEN>` in the header.
+Once you have the access token, call the API with the `Authorization: Bearer <ACCESS-TOKEN>` in the header.
 
 ### LinkedIn usefull links
 
@@ -880,6 +880,10 @@ Once you have the access token, simply call the API by passing the usual `Author
 - There is no long-lived refresh token, but the access token last a while (60 days). [It can be refreshed](https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?context=linkedin/marketing/context#refreshing-a-token), and you can check its current expiry date with this API: https://docs.microsoft.com/en-us/linkedin/shared/authentication/token-introspection?context=linkedin/marketing/context
 
 ## Facebook API
+
+Once you have the access token, call the API using that token with one of the following techniques: 
+1. Use the `Authorization: Bearer <ACCESS-TOKEN>` in the header.
+2. Pass the access token in the URI query string as follow: `<API-URL>&access_token=<ACCESS-TOKEN>`.
 
 ### Facebook usefull links
 
@@ -904,13 +908,23 @@ If your intent is to access the basic details of your Facebook user (e.g., first
 
 Grant access to the Facebook user's email.
 
+#### `user_posts`
+
+> WARNING: To use this scope, your app must have been reviewed by Facebook. To know more about App reviews, please refer to Facebook official instructions at https://developers.facebook.com/docs/app-review.
+
+Grants access to user's posts. Without that this scope, requesting posts returns an empty array.
+
 #### `pages_manage_posts` 
 
-Allows to create and manage posts on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to read posts, which is why it usually works in pair with the [`pages_read_engagement`](#pages_read_engagement).
+> WARNING: This scope is only useful to interact with Facebook pages, as opposed to a user's feed. For user's feed access control, please refer to scopes starting with `user_...`.
+
+Allows to create and manage page posts on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to read posts, which is why it usually works in pair with the [`pages_read_engagement`](#pages_read_engagement).
 
 ### `pages_read_engagement`
 
-Allows to read posts, including the associated user generated data for each post, on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to manage posts, which is why it usually works in pair with the [`pages_manage_posts`](#pages_manage_posts).
+> WARNING: This scope is only useful to interact with Facebook pages, as opposed to a user's feed. For user's feed access control, please refer to scopes starting with `user_...`.
+
+Allows to read page posts, including the associated user generated data for each post, on Facebook pages (your Facebook user will be prompted to select which page your app is allowed to interact with). This scope does not allow your app to manage posts, which is why it usually works in pair with the [`pages_manage_posts`](#pages_manage_posts).
 
 # This Is What We re Up To
 We are Neap, an Australian Technology consultancy powering the startup ecosystem in Sydney. We simply love building Tech and also meeting new people, so don't hesitate to connect with us at [https://neap.co](https://neap.co).

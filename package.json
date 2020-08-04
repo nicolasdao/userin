@@ -28,7 +28,7 @@
     "eslint": "^6.8.0",
     "mocha": "^7.1.1",
     "node-dev": "^4.0.0",
-    "standard-version": "^8.0.1"
+    "standard-version": "^8.0.2"
   },
   "dependencies": {
     "@neap/funky": "^0.5.0",

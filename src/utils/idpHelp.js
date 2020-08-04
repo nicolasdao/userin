@@ -30,8 +30,11 @@ const getCallbackUrl = (req, pathname, options) => {
 	const { successRedirectUrl, errorRedirectUrl, success, failed } = req.params || {}
 	const onSuccessURI = successRedirectUrl || success
 	const onErrorURI = errorRedirectUrl || failed
+	const isLocalhost = (req.headers.host || '').indexOf('localhost') >= 0
+	const mustBeSecure = req.secure || !isLocalhost
+
 	let urlParams = { 
-		protocol: req.secure ? 'https:' : 'http:', 
+		protocol: mustBeSecure ? 'https:' : 'http:', 
 		host: req.headers.host
 	}
 

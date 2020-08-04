@@ -17,6 +17,8 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 > * [UserIn Forms](#userin-forms)
 > * [Maintaining App secrets](#maintaining-app-secrets)
 > * [Configuring access token's scopes](#configuring-access-tokens-scopes)
+> * [Maintaining this project](#maintaining-this-project)
+>	- [Where is the IdP callback URL set?](#where-is-the-idp-callback-url-set)
 > * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
@@ -509,6 +511,17 @@ To override an IdP's default settings, use the `.userinrc.json` file as follow:
 ```
 
 > INFO: To know more about IdPs scopes, we've documented some of the most common scopes in the [Annex](#annex) section.
+
+# Maintaining this project
+## Where is the IdP callback URL set?
+
+It is set in a function called `getCallbackUrl` located under `src/utils/idpHelp.js`. That function is used in almost all IdPs:
+- `src/facebook.js`
+- `src/github.js`
+- `src/google.js`
+- `src/linkedin.js`
+
+This function uses the current host URL to build the callback URL. It will force the using HTTPS unless the host is localhost.
 
 # FAQ
 ## How To Create An App In Facebook?

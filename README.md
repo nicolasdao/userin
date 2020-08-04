@@ -532,7 +532,7 @@ This error happens when you've stopped testing in dev mode (i.e., using localhos
 
 <img src="https://user-images.githubusercontent.com/3425269/89261172-f72faf00-d670-11ea-8fec-3078b07491dd.png" width="400px">
 
-The error message above should appear at the following URL: https://www.facebook.com/v3.2/dialog/oauth?response_type=code&redirect_uri=LONG_ENCODED_URL&scope=public_profile%2Cpages_manage_posts%2Cpages_read_engagement&client_id=3438065302870834
+The error message above should appear at the following URL: https://www.facebook.com/v3.2/dialog/oauth?response_type=code&redirect_uri=LONG_ENCODED_URL&scope=public_profile
 
 To fix this issue:
 - Copy the `LONG_ENCODED_URL`.

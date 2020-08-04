@@ -21,6 +21,7 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 >	- [Where is the IdP callback URL set?](#where-is-the-idp-callback-url-set)
 > * [Troubleshooting](#troubleshooting)
 >	- [Facebook - Can't Load URL: The domain of this URL isn't included in the app's domains](#facebook---cant-load-url-the-domain-of-this-url-isnt-included-in-the-apps-domains)
+>	- [LinkedIn - Bummer, something went wrong](#linkedin---bummer-something-went-wrong)
 > * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
@@ -539,6 +540,19 @@ To fix this issue:
 - Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
 - Use that decoded URL in step 5 of the [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook) section.
 
+## LinkedIn - Bummer, something went wrong
+
+This error happens when you've either forgot to proceed to step 5 in the [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin) section, or you've made a mistake in step 5.
+
+<img src="https://user-images.githubusercontent.com/3425269/89270120-3c0e1280-d67e-11ea-8545-a8b1664b70fc.png" width="400px">
+
+The error message above should appear at the following URL: https://www.linkedin.com/oauth/v2/authorization?response_type=LONG_ENCODED_URLcode&redirect_uri=&scope=r_liteprofile%20r_emailaddress%20w_member_social&client_id=123456
+
+To fix this issue:
+- Copy the `LONG_ENCODED_URL`.
+- Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
+- Use that decoded URL in step 5 of the [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin) section.
+
 # FAQ
 ## How To Create An App In Facebook?
 #### Goal 
@@ -629,6 +643,8 @@ To fix this issue:
 	}
 	```
 5. Still in the __*Auth*__ tab, under the __*OAuth 2.0 settings*__ section, enter the redirect URI [your-origin/linkedin/oauth2callback](your-origin/linkedin/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/linkedin/oauth2callback](http://localhost:3000/linkedin/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/linkedin/oauth2callback](https://youcool.com/linkedin/oauth2callback).
+
+> In case of issues, please refer to the [LinkedIn - Bummer, something went wrong](#linkedin---bummer-something-went-wrong) section.
 
 ## How To Create An App In GitHub?
 #### Goal 

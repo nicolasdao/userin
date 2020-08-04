@@ -530,7 +530,7 @@ This function uses the current host URL to build the callback URL. It will force
 
 This error happens when you've stopped testing in dev mode (i.e., using localhost) and you've either forgot to proceed to step 5 in the [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook) section, or you've made a mistake in step 5.
 
-<img src="https://user-images.githubusercontent.com/3425269/89261172-f72faf00-d670-11ea-8fec-3078b07491dd.png" width="200px">
+<img src="https://user-images.githubusercontent.com/3425269/89261172-f72faf00-d670-11ea-8fec-3078b07491dd.png" width="400px">
 
 The error message above should appear at the following URL: https://www.facebook.com/v3.2/dialog/oauth?response_type=code&redirect_uri=LONG_ENCODED_URL&scope=public_profile%2Cpages_manage_posts%2Cpages_read_engagement&client_id=3438065302870834
 

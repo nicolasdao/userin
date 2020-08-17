@@ -1,8 +1,8 @@
 # UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users access your App as quickly as possible and with minimum friction. It exposes a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
+__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users access your App as quickly as possible and with minimum friction. It exposes a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Federated Identity Providers such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication/Google Identity Platform and AWS Cognito (you can read more about the issues of those solution in the [Annex](#annex) section under [The issues with the other Identity as a Service platforms](#the-issues-with-the-other-identity-as-a-service-platforms)). It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general. 
+Like all its competitors, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth2 workflows in general. 
 
 Finally, we've also added some high-level documentation about IdPs APIs, as you may need to interact with them after acquiring their access token via UserIn. This documentation is located under the [Annex](#annex) section.
 
@@ -38,6 +38,10 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
 > * [Annex](#annex)
+>	- [The issues with the other Identity as a Service platforms](#the-issues-with-the-other-identity-as-a-service-platforms)
+>		- [Firebase Authentication/Google Identity Platform](#firebase-authenticationgoogle-identity-platform)
+>		- [AWS Cognito](#aws-cognito)
+>		- [Auth0](#auth0)
 >	- [Theory & Concepts](#theory--concepts)
 > 		- [Identity Provider](#identity-provider)
 > 		- [What UserIn Does & Does Not](#what-userin-does--does-not)
@@ -868,6 +872,25 @@ With the `facebook` scheme, the user is redirected to Facebook in order to captu
 >	```
 
 # Annex
+## The issues with the other Identity as a Service platforms
+
+In general the common issue with those platforms is that you're delegating the storage of your user's identities in a 3rd party storage. The reason this is a problem is that most systems need to access those user identities in some form of table joins. Not having your users in the same storage than the rest of your user's data (e.g., user accounts) adds an unecessary level of complexity. To solve this issue, the traditional approach is to duplicate the user identities so they live both in your 3rd party identity service and in your own persistent storage. However, by doing that, you start having other issues (e.g., data synching).
+
+The bottom line is that, when it comes to OAuth2 workflows, what software engineers need is not another user storage. What they need is a service that takes care of the OAuth2 workflow headache and let them store the user identities wherever they want. That's what UserIn focuses on.
+
+### Firebase Authentication/Google Identity Platform
+
+- The IdP configuration must be done in the client (e.g., setting up scopes). That's a pain when you have multiple clients. With UserIn, the IdPs are configured once in the middleware. The clients simply uses a single URL per IdP.
+- The ID token returned from Firebase Authentication or Google Identity Platform is a black box. You can open it with the Firebase SDK, but you have no clue on how it was created or, most importanty, which identity service created it. Because the identity service is not known, you cannot use that ID token to access another protected service (e.g., Cloud Run, Cloud Function). What needs to be done instead is to publicly expose the 3rd party service, and then manually verify the ID token for each request. This really defeats the purpose of using a Identity as a Service platform. With UserIn, you control how any token is created. In the case of Google Cloud Run or Cloud Function, you can create a new service account, authorize it to access the desired protected service and then use the `google-auth-library` to create an ID token that will give access to those protected resources.
+
+### AWS Cognito
+
+Coming soon...
+
+### Auth0
+
+Coming soon...
+
 ## Theory & Concepts
 ### Identity Provider
 

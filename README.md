@@ -1,8 +1,8 @@
 # UserIn &middot;  [![Tests](https://travis-ci.org/nicolasdao/userin.svg?branch=master)](https://travis-ci.org/nicolasdao/userin) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Neap](https://neap.co/img/made_by_neap.svg)](#this-is-what-we-re-up-to)
 
-__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users access your App as quickly as possible and with minimum friction. It exposes a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Identity Providers (IdPs) such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication and AWS Cognito. It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
+__*UserIn*__ is an open source 3-legged OAuth2 workflow implementation that lets your users access your App as quickly as possible and with minimum friction. It exposes a REST API built in NodeJS that lets App Engineers implement custom login/register middleware using Federated Identity Providers such as Facebook, Google, Github and many others. __*UserIn*__ is an open source alternative to Auth0, Firebase Authentication/Google Identity Platform and AWS Cognito (you can read more about the issues of those solution in the [Annex](#annex) section under [The issues with the other Identity as a Service platforms](#the-issues-with-the-other-identity-as-a-service-platforms)). It is initially designed to be hosted as a microservice (though any NodeJS system could integrate its codebase) in a serverless architecture (e.g., AWS Lambda, Google Functions, Google App Engine, ...).
 
-As for the other alternatives, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth workflows in general. 
+Like all its competitors, UserIn requires a good understanding of OAuth2. This topic is not trivial. This document contains a high-level introduction to OAuth2 in the [Theory & Concepts](#-theory--concepts) section. If using IdPs is new to you, we recommend reading that section. The section named [The UserIn Auth Workflow](#the-userin-auth-workflow) is especially useful to understand OAuth2 workflows in general. 
 
 Finally, we've also added some high-level documentation about IdPs APIs, as you may need to interact with them after acquiring their access token via UserIn. This documentation is located under the [Annex](#annex) section.
 
@@ -19,6 +19,9 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 > * [Configuring access token's scopes](#configuring-access-tokens-scopes)
 > * [Maintaining this project](#maintaining-this-project)
 >	- [Where is the IdP callback URL set?](#where-is-the-idp-callback-url-set)
+> * [Troubleshooting](#troubleshooting)
+>	- [Facebook - Can't Load URL: The domain of this URL isn't included in the app's domains](#facebook---cant-load-url-the-domain-of-this-url-isnt-included-in-the-apps-domains)
+>	- [LinkedIn - Bummer, something went wrong](#linkedin---bummer-something-went-wrong)
 > * [FAQ](#faq)
 > 	- [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook)
 > 	- [How To Create An App In Google?](#how-to-create-an-app-in-google)
@@ -34,13 +37,17 @@ Finally, we've also added some high-level documentation about IdPs APIs, as you 
 >	- [How to update the scope of an IdP?](#how-to-update-the-scope-of-an-idp)
 >	- [How Does OAuth2 Work?](#how-does-oauth2-work)
 >	- [How Does The `default` Scheme Work?](#how-does-the-default-scheme-work)
-> * [Theory & Concepts](#theory--concepts)
-> 	- [Identity Provider](#identity-provider)
-> 	- [What UserIn Does & Does Not](#what-userin-does--does-not)
->	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
->	- [Redirect URI](#redirect-uri)
->	- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 > * [Annex](#annex)
+>	- [The issues with the other Identity as a Service platforms](#the-issues-with-the-other-identity-as-a-service-platforms)
+>		- [Firebase Authentication/Google Identity Platform](#firebase-authenticationgoogle-identity-platform)
+>		- [AWS Cognito](#aws-cognito)
+>		- [Auth0](#auth0)
+>	- [Theory & Concepts](#theory--concepts)
+> 		- [Identity Provider](#identity-provider)
+> 		- [What UserIn Does & Does Not](#what-userin-does--does-not)
+>		- [The UserIn Auth Workflow](#the-userin-auth-workflow)
+>		- [Redirect URI](#redirect-uri)
+>		- [The UserIn Auth Workflow](#the-userin-auth-workflow)
 >	- [LinkedIn API](#linkedin-api)
 >	- [Facebook API](#facebook-api)
 > * [About Neap](#this-is-what-we-re-up-to)
@@ -523,6 +530,33 @@ It is set in a function called `getCallbackUrl` located under `src/utils/idpHelp
 
 This function uses the current host URL to build the callback URL. It will force the using HTTPS unless the host is localhost.
 
+# Troubleshooting
+## Facebook - Can't Load URL: The domain of this URL isn't included in the app's domains
+
+This error happens when you've stopped testing in dev mode (i.e., using localhost) and you've either forgot to proceed to step 5 in the [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook) section, or you've made a mistake in step 5.
+
+<img src="https://user-images.githubusercontent.com/3425269/89261172-f72faf00-d670-11ea-8fec-3078b07491dd.png" width="400px">
+
+The error message above should appear at the following URL: https://www.facebook.com/v3.2/dialog/oauth?response_type=code&redirect_uri=LONG_ENCODED_URL&scope=public_profile
+
+To fix this issue:
+- Copy the `LONG_ENCODED_URL`.
+- Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
+- Use that decoded URL in step 5 of the [How To Create An App In Facebook?](#how-to-create-an-app-in-facebook) section.
+
+## LinkedIn - Bummer, something went wrong
+
+This error happens when you've either forgot to proceed to step 5 in the [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin) section, or you've made a mistake in step 5.
+
+<img src="https://user-images.githubusercontent.com/3425269/89270120-3c0e1280-d67e-11ea-8545-a8b1664b70fc.png" width="400px">
+
+The error message above should appear at the following URL: https://www.linkedin.com/oauth/v2/authorization?response_type=LONG_ENCODED_URLcode&redirect_uri=&scope=r_liteprofile%20r_emailaddress%20w_member_social&client_id=123456
+
+To fix this issue:
+- Copy the `LONG_ENCODED_URL`.
+- Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
+- Use that decoded URL in step 5 of the [How To Create An App In LinkedIn?](#how-to-create-an-app-in-linkedin) section.
+
 # FAQ
 ## How To Create An App In Facebook?
 #### Goal 
@@ -555,7 +589,9 @@ This function uses the current host URL to build the callback URL. It will force
 	1. In the left menu, expand the __*Facebook Login*__ tab and click on __*Settings*__. 
 	2. Under __*Valid OAuth Redirect URIs*__, enter [your-origin/facebook/oauth2callback](your-origin/facebook/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/facebook/oauth2callback](http://localhost:3000/facebook/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/facebook/oauth2callback](https://youcool.com/facebook/oauth2callback).
 
-> NOTE: Step 5 is not required in Development mode (this is the default when the App is created). This assumes that your app is hosted locally using _http://localhost_. When going live, step 5 is required.
+> NOTE: 
+> - Step 5 is not required in Development mode (this is the default when the App is created). This assumes that your app is hosted locally using _http://localhost_. When going live, step 5 is required.
+> - In case of issues, please refer to the troubleshooting section [Facebook - Can't Load URL: The domain of this URL isn't included in the app's domains](#facebook---cant-load-url-the-domain-of-this-url-isnt-included-in-the-apps-domains].
 
 ## How To Create An App In Google?
 #### Goal 
@@ -611,6 +647,8 @@ This function uses the current host URL to build the callback URL. It will force
 	}
 	```
 5. Still in the __*Auth*__ tab, under the __*OAuth 2.0 settings*__ section, enter the redirect URI [your-origin/linkedin/oauth2callback](your-origin/linkedin/oauth2callback), where `your-origin` depends on your hosting configuration. In development mode, _userIn_ is probably hosted on your local machine and the redirect URI probably looks like [http://localhost:3000/linkedin/oauth2callback](http://localhost:3000/linkedin/oauth2callback). When releasing your app in production, _userIn_ will most likely be hosted under your custom domain (e.g., youcool.com). You will have to change the redirect URI to [https://youcool.com/linkedin/oauth2callback](https://youcool.com/linkedin/oauth2callback).
+
+> In case of issues, please refer to the [LinkedIn - Bummer, something went wrong](#linkedin---bummer-something-went-wrong) section.
 
 ## How To Create An App In GitHub?
 #### Goal 
@@ -833,53 +871,72 @@ With the `facebook` scheme, the user is redirected to Facebook in order to captu
 > 	</form>
 >	```
 
-# Theory & Concepts
-## Identity Provider
+# Annex
+## The issues with the other Identity as a Service platforms
+
+In general the common issue with those platforms is that you're delegating the storage of your user's identities in a 3rd party storage. The reason this is a problem is that most systems need to access those user identities in some form of table joins. Not having your users in the same storage than the rest of your user's data (e.g., user accounts) adds an unecessary level of complexity. To solve this issue, the traditional approach is to duplicate the user identities so they live both in your 3rd party identity service and in your own persistent storage. However, by doing that, you start having other issues (e.g., data synching).
+
+The bottom line is that, when it comes to OAuth2 workflows, what software engineers need is not another user storage. What they need is a service that takes care of the OAuth2 workflow headache and let them store the user identities wherever they want. That's what UserIn focuses on.
+
+### Firebase Authentication/Google Identity Platform
+
+- The IdP configuration must be done in the client (e.g., setting up scopes). That's a pain when you have multiple clients. With UserIn, the IdPs are configured once in the middleware. The clients simply uses a single URL per IdP.
+- The ID token returned from Firebase Authentication or Google Identity Platform is a black box. You can open it with the Firebase SDK, but you have no clue on how it was created or, most importanty, which identity service created it. Because the identity service is not known, you cannot use that ID token to access another protected service (e.g., Cloud Run, Cloud Function). What needs to be done instead is to publicly expose the 3rd party service, and then manually verify the ID token for each request. This really defeats the purpose of using a Identity as a Service platform. With UserIn, you control how any token is created. In the case of Google Cloud Run or Cloud Function, you can create a new service account, authorize it to access the desired protected service and then use the `google-auth-library` to create an ID token that will give access to those protected resources.
+
+### AWS Cognito
+
+Coming soon...
+
+### Auth0
+
+Coming soon...
+
+## Theory & Concepts
+### Identity Provider
 
 In the broad sense of the term, an identity provider (IdP) is an entity that can issue a referral stating that a user is indeed the owner of an identity piece (e.g., email address). The most well known IdPs are Facebook, Google, LinkedIn and Github. Those IdPs are also sometimes referred as __*Federated Idendity Providers*__ (FIP) as they help to federate identity across multiple apps. FIP is often contrasted with __*Single Sign On*__ (SSO) which is usually used to authorize access to multiple apps within the same context. In reality FIP is a form of SSO, but with a broader scope, as the Apps' context does not matter as much.
 
-## OAuth is an _Authorization Protocol_ NOT an _Authentication Protocol_
+### OAuth is an _Authorization Protocol_ NOT an _Authentication Protocol_
 
 Contrary to [OpenID](https://en.wikipedia.org/wiki/OpenID) which is a pure authentication protocol, OAuth's main purpose is to authorize 3rd parties to be granted limited access to APIs. When an App offers its user to register using his/her Facebook or Google account, that does not mean the user proves his/her identity through Facebook or Google. Instead, that means that the user grants that App limited access to his/her Facebook or Google account. However, as of today (2019), gaining limiting access to an Identity Provider's API is considered _good enough_ to prove one's identity. That's what is referred to as a __*pseudo authentication*__ method. This project aims at facilitating the implementation of such _pseudo authentication_ method.
 
-## What UserIn Does & Does Not
-### What It Does
+### What UserIn Does & Does Not
+#### What It Does
 
 __*UserIn*__ interfaces between the client (e.g., browser), configured IdPs (e.g., Facebook, Google, LinkedIn, ...) and the App middleware (Web API). The end goal is to share the user's identity details contained in the IdP with the App middleware so that the App middleware can either create a new user or let an existing user in without using a password or ask for extra details. 
 
-### What It Does Not
+#### What It Does Not
 
 __*UserIn*__ does NOT secure the App middleware using OAuth. Securing the App middleware has nothing to do with _UserIn_ nor does it have anything to do with Auth0, Firebase Authentication, or AWS Cognito. Controlling the App middleware access (with, for example, a JWT token) is a task that the App Engineer must implement separately from integrating with _UserIn_.
 
-## Redirect URI
+### Redirect URI
 
 A _Redirect URI_ is a URI that receives the IdP's response with the user details after successful authorizations. That URI is configured in your code. Because, in theory, any URI can be configured, the IdP wants to guarentee the App Engineer that they can control the permitted Redirect URI. Therefore, most IdPs require the App Engineers to whitelist their redirect URIs durin the App creation step.
 
-## The UserIn Auth Workflow
+### The UserIn Auth Workflow
 
 As with most OAuth worklows relying in IdPs, the key idea to understand is that the browser spends its time redirecting between all the parties involved (i.e., IdP and App middleware). This usually happens very fast, which makes it look like it happens behind the scene.
 
 The usual user sign-in process with __*UserIn*__ is as follow. 
 
-#### 1. UserIn Form (Browser)
+##### 1. UserIn Form (Browser)
 The user lands on a __*[UserIn Forms](#userin-forms)*__ which offers multiple ways to sign in to the App (e.g., Facebook, Google, username/password, ...).
 
-#### 2. IdP Authentication & Authorization (Browser To UserIn Back To Browser Then To IdP)
+##### 2. IdP Authentication & Authorization (Browser To UserIn Back To Browser Then To IdP)
 When the user uses Facebook for example, the browser sends an HTTP GET to __*UserIn*__, which in turn responds back to the browser with a redirect to the Facebook login page. This step might not be visible is the user is already logged in to Facebook. To witness it, make sure you're not logged in, or open your browser in incognito mode.
 
-#### 3. Sharing User Details With The App (IdP Back To UserIn Then To App Middleware Back To UserIn)
+##### 3. Sharing User Details With The App (IdP Back To UserIn Then To App Middleware Back To UserIn)
 Upon successfull authentication to Facebook, Facebook redirects the user to __*UserIn*__, which in turn POST the user's identity to a web endpoint that the App Engineer has to provide. The App Engineer is free to implement that web endpoint using any method or technology, as long as this endpoint accepts a JSON payload with as `user` property describing the user's identity and returns a JSON payload with a `code` property representing any string useful to the App Engineer (e.g., a JWT token, or a short-lived token that allows to access a JWT token through another REST API).
 
-#### 4. Letting The User In The App (UserIn To App)
+##### 4. Letting The User In The App (UserIn To App)
 Upon successful reception of that `code`, __*UserIn*__ redirects the user to the configured `onSuccess.redirectUrl` (which is typically the App). The `code` acquired through the App middleware in the previous step is included in the `redirectUrl` as a search parameters (e.g., [https://example.com/success?code=123456789](https://example.com/success?code=123456789)). A similar behavior occurs in case of failure. The redirect URL is determined by the `onError.redirectUrl` parameter. Details about the error are passed in the query string (e.g., [https://example.com/error?error_msg=something_bad_happened&code=500](https://example.com/error?error_msg=something_bad_happened&code=500)).
 
-#### 5. Authenticating/Authorizing Access To The App (Outside of UserIn's Scope!)
+##### 5. Authenticating/Authorizing Access To The App (Outside of UserIn's Scope!)
 Though the user seems to be in the App now, no authentication and authorization to access the app have been performed yet. Indeed, __*UserIn*__ has just skipped the pre-screening queue (no need to provide explicit user details and password) but the user still needs to show an ID to enter the party. That ID is contained in the search parameter of the current URI (that's the `code` parameter acquired in the previous step). In this step, the App Engineer is required to extract that code from the URI and use it to authenticate and authroize the user. This step can be done in any way the App Engineer wishes to. 
 
-#### Conclusion
+##### Conclusion
 As you can see, the __*UserIn*__'s scope does not cover securing your App's API. This job is left to you. __*UserIn*__'s scope stops after the user is either created in your system or successfully authenticated and has landed on the `onSuccess.redirectUrl`. Using the `code` in that redirect URL, you're free to secure your App however you want.
 
-# Annex
 ## LinkedIn API
 
 > The home page for the LinkedIn API documentation is https://docs.microsoft.com/en-us/linkedin/marketing/.

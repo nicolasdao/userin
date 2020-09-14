@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error: { InternalServerError, InvalidRequestError }, oauth2Params } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 
 /**
  * Creates a new access token using username and password.
@@ -22,20 +23,20 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 	const errorMsg = 'Failed to acquire tokens for grant_type \'password\''
 	// A. Validates input
 	if (!eventHandlerStore.get_service_account)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
 	if (!eventHandlerStore.get_end_user)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
 	if (!eventHandlerStore.generate_token)
-		throw new InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
 	if (!user)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'user'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user'`)
 	if (!user.username)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'user.username'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.username'`)
 	if (!user.password)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Verifying those scopes are allowed for that client_id
 	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_service_account.exec({ client_id })
@@ -53,7 +54,7 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 	
 	// D. Validate that the client_id is allowed to process this user. 
 	if (!validUser)
-		throw new InternalServerError(`${errorMsg}. Corrupted data. Processing the end user failed to return any data.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Corrupted data. Processing the end user failed to return any data.`)
 
 	const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id:validUser.id, user_client_ids:validUser.client_ids })
 	if (clientIdErrors)

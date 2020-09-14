@@ -1,5 +1,5 @@
 const tokenHelper = require('./token')
-const { Strategy } = require('../../src/_core')
+const { Strategy } = require('userin-core')
 
 const SCOPES = [
 	'profile',

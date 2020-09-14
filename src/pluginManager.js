@@ -1,6 +1,6 @@
 const passport = require('passport')
 const eventRegister = require('./eventRegister')
-const { Strategy, verifyStrategy } = require('./_core')
+const { Strategy, verifyStrategy } = require('userin-core')
 const { ConsentPageRequest, ConsentPageResponse } = require('./authorize')
 const passportManager = require('./passportManager')
 

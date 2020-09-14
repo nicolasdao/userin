@@ -1,6 +1,6 @@
 const passport = require('passport')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error: { InternalServerError } } = require('./_core')
+const { error: { InternalServerError } } = require('userin-core')
 
 const DUMMY_CALLBACK_URL = 'https:example.com'
 

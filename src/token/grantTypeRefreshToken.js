@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error: { InternalServerError, InvalidRequestError, InvalidTokenError, InvalidClientError }, oauth2Params } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 
 /**
  * Creates a new access token using a refresh token.
@@ -22,16 +23,16 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	const errorMsg = 'Failed to acquire tokens for grant_type \'refresh_token\''
 	// A. Validates input
 	if (!eventHandlerStore.get_token_claims)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
 	if (!eventHandlerStore.get_service_account)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
 	if (!eventHandlerStore.generate_token)
-		throw new InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
 	if (!refresh_token)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'refresh_token'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'refresh_token'`)
 
 	// B. Gets the service account's scopes and audiences as well as the claims originally associated with the refresh_token
 	const [[claimsErrors, claims], [serviceAccountErrors, serviceAccount]] = yield [
@@ -43,7 +44,7 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 
 	// C. Validates that the details match between the service account and the refresh_token.
 	if (!claims)
-		throw new InvalidTokenError(`${errorMsg}. Invalid refresh_token.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid refresh_token.`)
 	if (claims.exp) {
 		const [claimsExpiredErrors] = oauth2Params.verify.claimsExpired(claims)
 		if (claimsExpiredErrors)
@@ -51,9 +52,9 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	}
 
 	if (!claims.client_id)
-		throw new InvalidTokenError(`${errorMsg}. Corrupted refresh_token. This token is not associated with any client_id.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Corrupted refresh_token. This token is not associated with any client_id.`)
 	if (claims.client_id != client_id)
-		throw new InvalidClientError(`${errorMsg}. Unauthorized access.`)
+		throw new userInError.InvalidClientError(`${errorMsg}. Unauthorized access.`)
 
 	const refreshTokenScopes = claims.scope ? oauth2Params.convert.thingToThings(claims.scope) : serviceAccount.scopes
 	

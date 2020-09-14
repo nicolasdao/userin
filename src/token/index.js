@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { oauth2Params, error: { InvalidRequestError, UnsupportedGrantTypeError } } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 const grantTypeAuthorizationCode = require('./grantTypeAuthorizationCode')
 const grantTypeClientCredentials = require('./grantTypeClientCredentials')
 const grantTypePassword = require('./grantTypePassword')
@@ -49,25 +50,25 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	const scopes = oauth2Params.convert.thingToThings(scope)
 	// 1. Validates inputs
 	if (!grant_type)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'grant_type'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'grant_type'.`)
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id' argument`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id' argument`)
 
 	if (VALID_GRANT_TYPES.indexOf(grant_type) < 0)
-		throw new UnsupportedGrantTypeError(`${errorMsg}. grant_type '${grant_type}' is not supported.`)
+		throw new userInError.UnsupportedGrantTypeError(`${errorMsg}. grant_type '${grant_type}' is not supported.`)
 
 	if (grant_type == 'client_credentials' && (!client_id || !client_secret))
-		throw new InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'client_id' and 'client_secret' are required.`)	
+		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'client_id' and 'client_secret' are required.`)	
 	if (grant_type == 'password' && (!username || !password))
-		throw new InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'username' and 'password' are required.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'username' and 'password' are required.`)
 	if (grant_type == 'authorization_code') {
 		if (!code)
-			throw new InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'code' is required.`)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'code' is required.`)
 		if (!client_secret)
-			throw new InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'client_secret' is required.`)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'client_secret' is required.`)
 	}
 	if (grant_type == 'refresh_token' && !refresh_token)
-		throw new InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'refresh_token' is required.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'refresh_token' is required.`)
 
 	const user = extraData && typeof(extraData) == 'object' 
 		? { ...extraData, username, password } 

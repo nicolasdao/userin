@@ -1,8 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { 
-	error: { InternalServerError, InvalidRequestError, InvalidTokenError, InvalidClientError }, 
-	oauth2Params } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 
 /**
  * Creates a new access token using an authorization code.
@@ -27,20 +26,20 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
 	if (!eventHandlerStore.get_service_account)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
 
 	if (!eventHandlerStore.get_token_claims)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
 
 	if (!eventHandlerStore.generate_token)
-		throw new InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
 	if (!client_secret)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
 	if (!code)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'code'`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code'`)
 
 	// B. Gets the service account's scopes and audiences as well as the code's claims
 	const [[serviceAccountErrors, serviceAccount], [oidcClaimsErrors, oidcClaims]] = yield [
@@ -53,11 +52,11 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 		throw wrapErrors(errorMsg, serviceAccountErrors || oidcClaimsErrors)
 
 	if (!oidcClaims)
-		throw new InvalidTokenError(`${errorMsg}. Invalid authorization code.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid authorization code.`)
 	if (!oidcClaims.client_id)
-		throw new InvalidTokenError(`${errorMsg}. Invalid code. Failed to identified code's client_id.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid code. Failed to identified code's client_id.`)
 	if (oidcClaims.client_id != client_id)
-		throw new InvalidClientError(`${errorMsg}. Invalid client_id.`)
+		throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
 
 	const { scope, sub } = oidcClaims 
 	const scopes = oauth2Params.convert.thingToThings(scope) || []

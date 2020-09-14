@@ -1,10 +1,8 @@
 const { co } = require('core-async')
 const passport = require('passport')
 const { url: urlHelp, error: { catchErrors, wrapErrors } } = require('puffy')
-const { 
-	oauth2Params,
-	request: { getUrlInfo },
-	error: { InvalidRequestError, InternalServerError } } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params, request: { getUrlInfo } } = require('../_utils')
 const processTheFIPuser = require('./processTheFIPuser')
 
 const TRACE_ON = process.env.LOG_LEVEL == 'trace'
@@ -57,9 +55,9 @@ const _getMissingStateQueryParamError = (errorMsg, strategy, queryParam) =>
 module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
 	const classErrorMsg = 'Failed to create a new instance of ConsentPageResponseHandler'
 	if (!endpoint)
-		throw new InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
+		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
 	if (!strategy)
-		throw new InternalServerError(`${classErrorMsg}. Missing required 'strategy'.`)
+		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'strategy'.`)
 
 	this.endpoint = endpoint
 
@@ -81,15 +79,15 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
 		const errorMsg = `Failed to process authentication response from ${strategy}`
 		
 		if (!context.req)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.req'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.req'.`)
 		if (!context.res)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.res'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.res'.`)
 
 		if (TRACE_ON)
 			console.log(`INFO - Received redirect from ${strategy} to ${getUrlInfo(context.req).pathname}`)
 
 		if (!payload.state)
-			throw new InvalidRequestError(_getMissingQueryParamError(errorMsg, strategy, 'state'))
+			throw new userInError.InvalidRequestError(_getMissingQueryParamError(errorMsg, strategy, 'state'))
 		const [decodedStateErrors, decodedState] = oauth2Params.convert.base64ToObject(payload.state)
 		if (decodedStateErrors)
 			throw wrapErrors(errorMsg, decodedStateErrors)
@@ -97,13 +95,13 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
 		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state } = decodedState || {}
 
 		if (!client_id)
-			throw new InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
+			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
 		if (!redirect_uri)
-			throw new InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'redirect_uri'))
+			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'redirect_uri'))
 		if (!response_type)
-			throw new InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'response_type'))
+			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'response_type'))
 		if (!orig_redirectUri)
-			throw new InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'orig_redirectUri'))
+			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'orig_redirectUri'))
 
 		// The 'orig_redirectUri' URL is a security check. Certain IdPs (e.g., Facebook) requires that you 
 		// use the same redirect uri that then one used to get the 'code' in order to get the access_token.

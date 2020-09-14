@@ -7,7 +7,6 @@
 */
 
 const { url:urlHelp } = require('puffy')
-const { errorCode } = require('./error')
 
 // We cannot replace the following try/catch with:
 // 
@@ -53,8 +52,8 @@ const addErrorToUrl = (url, { code, message, verboseMessage, data }) => {
 }
 
 const formatResponseError = (errors, res) => {
-	let code = errorCode.internal_server_error.code
-	let category = errorCode.internal_server_error.text
+	let code = 500
+	let category = 'internal_server_error'
 	let error_description = 'Unknown'
 	if (errors && errors.length) {
 		errors.forEach(error => console.log(error.stack || error.message))

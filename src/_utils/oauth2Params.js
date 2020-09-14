@@ -1,5 +1,5 @@
 const { error: { catchErrors } } = require('puffy')
-const { InvalidScopeError, UnauthorizedClientError, InvalidClaimError, InvalidTokenError, InternalServerError, InvalidClientError, InvalidRequestError } = require('./error')
+const { error:userInError } = require('userin-core')
 
 const RESPONSE_TYPES = ['code', 'id_token', 'token']
 
@@ -39,7 +39,7 @@ const verifyScopes = ({ scopes=[], serviceAccountScopes=[] }) => catchErrors(() 
 		const invalidScopes = scopesWithoutOpenId.filter(s => serviceAccountScopes.indexOf(s) < 0)
 		const l = invalidScopes.length
 		if (l)
-			throw new InvalidScopeError(`Access to scope${l > 1 ? 's' : ''} ${invalidScopes.join(', ')} is not allowed.`)
+			throw new userInError.InvalidScopeError(`Access to scope${l > 1 ? 's' : ''} ${invalidScopes.join(', ')} is not allowed.`)
 	}
 })
 
@@ -48,25 +48,25 @@ const verifyAudiences = ({ audiences=[], serviceAccountAudiences=[] }) => catchE
 		const invalidAudiences = audiences.filter(s => serviceAccountAudiences.indexOf(s) < 0)
 		const l = invalidAudiences.length
 		if (l)
-			throw new UnauthorizedClientError(`Access to audience${l > 1 ? 's' : ''} ${invalidAudiences.join(', ')} is not allowed.`)
+			throw new userInError.UnauthorizedClientError(`Access to audience${l > 1 ? 's' : ''} ${invalidAudiences.join(', ')} is not allowed.`)
 	}
 })
 
 const areClaimsExpired = claims => catchErrors(() => {
 	if (!claims || !claims.exp || isNaN(claims.exp*1))
-		throw new InvalidClaimError('Claim is missing required \'exp\' field')
+		throw new userInError.InvalidClaimError('Claim is missing required \'exp\' field')
 
 	const exp = claims.exp*1000
 	if (Date.now() > exp)
-		throw new InvalidTokenError('Token or code has expired')
+		throw new userInError.InvalidTokenError('Token or code has expired')
 })
 
 const verifyClientIds = ({ client_id, user_id, user_client_ids=[] }) => catchErrors(() => {
 	if (!user_client_ids.length)
-		throw new InternalServerError(`Corrupted data. Failed to associate client_ids with user_id ${user_id}.`)
+		throw new userInError.InternalServerError(`Corrupted data. Failed to associate client_ids with user_id ${user_id}.`)
 	
 	if (!user_client_ids.some(id => id == client_id))
-		throw new InvalidClientError('Invalid client_id')
+		throw new userInError.InvalidClientError('Invalid client_id')
 })
 
 /**
@@ -78,16 +78,16 @@ const verifyClientIds = ({ client_id, user_id, user_client_ids=[] }) => catchErr
 const responseTypeToTypes = responseType => catchErrors(() => {
 	const errorMsg = 'Invalid \'response_type\''
 	if (!responseType) 
-		throw new InvalidRequestError(`${errorMsg}. 'response_type' is required.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. 'response_type' is required.`)
 
 
 	const responseTypes = thingToThings(responseType, {  })
 	if (!responseTypes.length)
-		throw new InvalidRequestError(`${errorMsg}. No value found in 'response_type'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. No value found in 'response_type'.`)
 
 	const invalidTypes = responseTypes.filter(t => !RESPONSE_TYPES.some(x => x == t))
 	if (invalidTypes.length)
-		throw new InvalidRequestError(`${errorMsg}. The value '${responseType}' is not a supported OIDC 'response_type'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. The value '${responseType}' is not a supported OIDC 'response_type'.`)
 
 	return responseTypes
 })
@@ -97,7 +97,7 @@ const base64ToObject = str64 => catchErrors(() => {
 	try {
 		return JSON.parse(Buffer.from(str64||'', 'base64').toString())
 	} catch(err) {
-		throw new InvalidRequestError(`Failed to decode 'state' query parameter (value: ${str64})`)
+		throw new userInError.InvalidRequestError(`Failed to decode 'state' query parameter (value: ${str64})`)
 	}
 })
 

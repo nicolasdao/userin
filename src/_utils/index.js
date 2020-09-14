@@ -8,7 +8,6 @@
 
 module.exports = {
 	config: require('./config'),
-	error: require('./error'),
 	oauth2Params: require('./oauth2Params'),
 	request: require('./request'),
 	response: require('./response')

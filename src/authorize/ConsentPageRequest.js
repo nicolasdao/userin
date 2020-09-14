@@ -1,10 +1,8 @@
 const { co } = require('core-async')
 const passport = require('passport')
 const { url: urlHelp, error: { catchErrors, wrapErrors } } = require('puffy')
-const { 
-	request: { getUrlInfo },
-	oauth2Params,
-	error: { InvalidRequestError, InternalServerError } } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { request: { getUrlInfo }, oauth2Params } = require('../_utils')
 const { verifyScopes } = require('./_utils')
 
 const TRACE_ON = process.env.LOG_LEVEL == 'trace'
@@ -45,11 +43,11 @@ const _getRedirectUri = (req, redirectPath) => {
 const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_type, redirect_uri, scope }, options) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to execute the \'authorization\' request'
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
 	if (!response_type)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'response_type'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'response_type'.`)
 	if (!redirect_uri)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
 
 	const [responseTypeErrors] = oauth2Params.convert.responseTypeToTypes(response_type)
 	if (responseTypeErrors)
@@ -79,11 +77,11 @@ const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_
 module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpointRedirectRef, scopes) {
 	const classErrorMsg = 'Failed to create a new instance of ConsentPageRequestHandler'
 	if (!endpoint)
-		throw new InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
+		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
 	if (!strategy)
-		throw new InternalServerError(`${classErrorMsg}. Missing required 'strategy'.`)
+		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'strategy'.`)
 	if (!endpointRedirectRef)
-		throw new InternalServerError(`${classErrorMsg}. Missing required 'endpointRedirectRef'.`)
+		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'endpointRedirectRef'.`)
 
 	this.endpoint = endpoint
 
@@ -108,16 +106,16 @@ module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpoint
 		const errorMsg = `Failed to browse to ${strategy} consent page`
 		
 		if (!context.req)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.req'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.req'.`)
 		if (!context.res)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.res'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.res'.`)
 		if (!context.endpoints)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.endpoints'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.endpoints'.`)
 
 		const redirectPathname = context.endpoints[endpointRedirectRef]
 
 		if (!redirectPathname)
-			throw new InternalServerError(`${errorMsg}. Missing required 'context.endpoints.${endpointRedirectRef}'.`)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing required 'context.endpoints.${endpointRedirectRef}'.`)
 
 		const { state, uri:callbackURL } = _getRedirectUri(context.req, redirectPathname)
 		
@@ -131,7 +129,7 @@ module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpoint
 		try {
 			passport.authenticate(strategy, { callbackURL, scope:scopes, state })(context.req, context.res)
 		} catch(err) {
-			throw new InternalServerError(`${errorMsg}. Passport authenticate failed. Details: ${err.message || err.stack}`)
+			throw new userInError.InternalServerError(`${errorMsg}. Passport authenticate failed. Details: ${err.message || err.stack}`)
 		}
 	}))
 }

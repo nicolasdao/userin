@@ -1,9 +1,8 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
+const { error:userInError } = require('userin-core')
 const { verifyScopes } = require('./_utils')
-const { 
-	oauth2Params,
-	error: { InvalidRequestError, InternalServerError } } = require('../_utils')
+const { oauth2Params } = require('../_utils')
 
 /**
  * Processes the user received from the FIP
@@ -27,20 +26,20 @@ const processTheFIPuser = ({ user, strategy, client_id, response_type, scopes, s
 	const errorMsg = `Failed to process ${strategy} user`
 	// A. Validates input
 	if (!eventHandlerStore.get_service_account)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
 	if (!eventHandlerStore.get_fip_user)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_fip_user' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_fip_user' handler.`)
 	if (!eventHandlerStore.generate_token)
-		throw new InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 	
 	if (!user)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'user' argument.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user' argument.`)
 	if (typeof(user) != 'object')
-		throw new InvalidRequestError(`${errorMsg}. The 'user' argument must be an object.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. The 'user' argument must be an object.`)
 	if (!user.id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'id' property in the 'user' object.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'id' property in the 'user' object.`)
 	if (!strategy)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'strategy' argument.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'strategy' argument.`)
 	
 	const [responseTypeErrors] = oauth2Params.convert.responseTypeToTypes(response_type)
 	if (responseTypeErrors)
@@ -58,7 +57,7 @@ const processTheFIPuser = ({ user, strategy, client_id, response_type, scopes, s
 
 	// D. Validate that the client_id is allowed to process this user. 
 	if (!validUser)
-		throw new InternalServerError(`${errorMsg}. Corrupted data. Processing the FIP user failed to return any data.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Corrupted data. Processing the FIP user failed to return any data.`)
 
 	const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id:validUser.id, user_client_ids:validUser.client_ids })
 	if (clientIdErrors)

@@ -1,6 +1,6 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error: { InvalidRequestError, InternalServerError, InvalidTokenError, InvalidClientError } } = require('../_utils')
+const { error:userInError } = require('userin-core')
 
 const endpoint = 'introspect' 
 
@@ -38,20 +38,20 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	const errorMsg = `Failed to introspect ${token_type_hint || 'unknown token type'}`
 	// A. Validates input
 	if (!eventHandlerStore.get_token_claims)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
 	if (!eventHandlerStore.get_service_account)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
 
 	if (!client_id)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
 	if (!client_secret)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
 	if (!token)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
 	if (!token_type_hint)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'token_type_hint'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token_type_hint'.`)
 	if (VALID_TOKEN_TYPES.indexOf(token_type_hint) < 0)
-		throw new InvalidRequestError(`${errorMsg}. token_type_hint '${token_type_hint}' is not supported.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. token_type_hint '${token_type_hint}' is not supported.`)
 
 	const [[serviceAccountErrors], [claimErrors, claims]] = yield [
 		eventHandlerStore.get_service_account.exec({ client_id, client_secret }),
@@ -65,13 +65,13 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		return { active:false }
 
 	if (!claims)
-		throw new InvalidTokenError(`${errorMsg}. Invalid ${token_type_hint}`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid ${token_type_hint}`)
 
 	if (claims.exp && !isNaN(claims.exp*1) && Date.now() > claims.exp*1000)
 		return { active:false }
 
 	if (claims.client_id != client_id)
-		throw new InvalidClientError(`${errorMsg}. client_id not found.`)
+		throw new userInError.InvalidClientError(`${errorMsg}. client_id not found.`)
 
 	return {
 		iss: claims.iss || null,

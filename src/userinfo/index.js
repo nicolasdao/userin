@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { oauth2Params, error: { InvalidRequestError, InternalServerError, InvalidTokenError } } = require('../_utils')
+const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 
 const endpoint = 'userinfo' 
 
@@ -29,19 +30,19 @@ const handler = (payload, eventHandlerStore, { authorization }) => catchErrors(c
 
 	// A. Validates input
 	if (!eventHandlerStore.get_token_claims)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
 	if (!eventHandlerStore.get_identity_claims)
-		throw new InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
 
 	if (!authorization)
-		throw new InvalidRequestError(`${errorMsg}. Missing required 'authorization'.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'authorization'.`)
 	if (typeof(authorization) != 'string')
-		throw new InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must be a string (current: ${typeof(authorization)}).`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must be a string (current: ${typeof(authorization)}).`)
 
 	const [,token] = authorization.match(/^[bB]earer\s+(.*?)$/) || []
 
 	if (!token)
-		throw new InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must contain a bearer access_token.`)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must contain a bearer access_token.`)
 	
 	// B. Extract claims from access_token
 	const [claimsErrors, claims] = yield eventHandlerStore.get_token_claims.exec({ type:'access_token', token })
@@ -50,11 +51,11 @@ const handler = (payload, eventHandlerStore, { authorization }) => catchErrors(c
 
 	// C. Validate claims
 	if (!claims)
-		throw new InvalidTokenError(`${errorMsg}. Invalid access_token.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid access_token.`)
 
 	const [claimsExpiredErrors] = oauth2Params.verify.claimsExpired(claims)
 	if (claimsExpiredErrors)
-		throw new InvalidTokenError(`${errorMsg}. access_token has expired.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. access_token has expired.`)
 
 	// D. Get identity claims based on the access_token's scope
 	const { client_id, sub:user_id, scope } = claims

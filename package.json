@@ -1,6 +1,6 @@
 {
   "name": "userin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "UserIn helps building an OpenID Connect web API as well as implemting OAuth 2.0 workflows that supports integration with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub)",
   "main": "src/index.js",
   "repository": {

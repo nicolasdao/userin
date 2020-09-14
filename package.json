@@ -5,12 +5,12 @@
   "main": "src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicolasdao/userin-core.git"
+    "url": "https://github.com/nicolasdao/userin.git"
   },
   "bugs": {
-    "url": "https://github.com/nicolasdao/userin-core/issues"
+    "url": "https://github.com/nicolasdao/userin/issues"
   },
-  "homepage": "https://github.com/nicolasdao/userin-core#readme",
+  "homepage": "https://github.com/nicolasdao/userin#readme",
   "scripts": {
     "dev": "TZ=UTC NODE_ENV=dev node-dev -r dotenv/config index.js",
     "lint": "eslint index.js src/ test/ --fix",

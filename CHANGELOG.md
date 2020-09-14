@@ -1,0 +1,18 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [1.0.0](https://github.com/nicolasdao/userin-core/compare/v0.1.3...v1.0.0) (2020-09-14)
+
+
+### Features
+
+* Add support for environment variables and scopes configuration for each IdP ([76ab6f1](https://github.com/nicolasdao/userin-core/commit/76ab6f17638b7794168a2aceaeff5b1bd04b0916))
+* Full major redesign. ([6716a52](https://github.com/nicolasdao/userin-core/commit/6716a5219a2a1703747a820fb07006012a5dd083))
+
+
+### Bug Fixes
+
+* vulnerability ([0ad55a4](https://github.com/nicolasdao/userin-core/commit/0ad55a42b532207de5cd5378e1e5cc3395883f31))
+* Vulnerability + force using HTTPS on calback URLs ([517683c](https://github.com/nicolasdao/userin-core/commit/517683c7d7c3b8f935b9eba5c685b9723e0bd66f))
+* Vulnerability issues related to standard-version ([710a358](https://github.com/nicolasdao/userin-core/commit/710a358fbd53256929e84c0830503d47cff73412))

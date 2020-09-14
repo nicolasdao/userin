@@ -1,9 +1,5 @@
 *.DS_Store
 *.orig
 node_modules/
-userinrc.json
-.userinrc.json
-LOCAL_DOC.md
-sample/
 .env
-.en.*
+.env.*

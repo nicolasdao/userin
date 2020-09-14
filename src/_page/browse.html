@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+		<title>UserIn - Discovery</title>
+		<style type="text/css">
+			.method-post {
+				color: #0aa90f;
+				font-weight: 600;
+			}
+
+			.method-get {
+				color: #0993c7;
+				font-weight: 600;
+				padding-right: 12px;
+			}
+			
+			.error-text {
+				color: #dc3545;
+			}
+
+			input.error-text, input.error-text:disabled {
+				background: #fff0f0;
+			}
+
+			.response-text {
+				color: #2e89d8;
+			}
+
+			input.response-text, input.response-text:disabled {
+				background: #f0f8ff;
+			}
+
+			span.text-muted {
+				font-size: 12px;
+			}
+
+			.dont-break-out {
+				/* These are technically the same, but use both */
+				overflow-wrap: break-word;
+				word-wrap: break-word;
+
+				-ms-word-break: break-all;
+				/* This is the dangerous one in WebKit, as it breaks things wherever */
+				word-break: break-all;
+				/* Instead use this non-standard one: */
+				word-break: break-word;
+
+				/* Adds a hyphen where the word breaks, if supported (No Blink) */
+				-ms-hyphens: auto;
+				-moz-hyphens: auto;
+				-webkit-hyphens: auto;
+				hyphens: auto;
+			}
+
+			/*Used to hack the lack of required support on select element*/
+			.invisible-input {
+				position: absolute;
+				height: 38px;
+				z-index: -9999;
+				opacity: 0;
+			}
+
+			.modified-dropdown {
+				border-top-left-radius: 4px !important;
+				border-bottom-left-radius: 4px !important;
+			}
+		</style>
+	</head>
+	<body>
+		<input id="clipboard-value" type="text" style="position: absolute;left: -999em;z-index: -9999;pointer-events: none;opacity: 0;">
+		<!-- MODAL -->
+		<div class="modal fade" id="jwt-token" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLabel">JWT details</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div id="valid-jwt-container" class="container" style="display: none;">
+							<div class="form-group">
+								<label for="jwt-headers">Header</label>
+								<pre id="jwt-headers" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div class="form-group">
+								<label for="jwt-payload">Payload</label>
+								<pre id="jwt-payload" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div class="form-group">
+								<label for="jwt-raw">Raw</label>
+								<pre id="jwt-raw" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div id="jwt-expiry-group" class="form-group">
+								<label for="jwt-expiry">Expiry date</label>
+								<pre id="jwt-expiry" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+						</div>
+						<div id="invalid-jwt-container" class="container" style="display: none;">
+							<div id="jwt-error" class="alert alert-danger" role="alert"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container mt-5">
+			<h1 class="mb-5">UserIn - Endpoints</h1>
+
+			<!-- OPENID-CONFIGURATION ENDPOINT -->
+			<div class="row mt-4">
+				<div class="col-auto">
+					<a id="openidconfig-form-btn" class="btn btn-primary btn-sm" data-toggle="collapse" href="#openidconfig-form" role="button" aria-expanded="false" aria-controls="openidconfig-form">Test</a>
+				</div>
+				<div class="col-9 d-flex align-items-center">
+					<div>
+						<span class="method-get mr-3">GET</span><span>
+							<code class="dont-break-out" id="openidconfig-endpoint">
+								{{ openidConfigurationEndpoint }}
+							</code>
+						</span>
+					</div>
+				</div>
+			</div>
+			<div id="openidconfig-form" class="row collapse mt-3">
+				<div class="card card-body">
+					<div class="mt-3">
+						<!-- USERINFO SUCCESS RESULTS -->
+						<div id="openidconfig-success" class="form-group">
+							<pre id="openidconfig-response" class="alert alert-secondary" role="alert">
+{{ openidConfiguration }}
+							</pre>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- TOKEN ENDPOINT -->
+			<div class="row mt-4">
+				<div class="col-auto">
+					<a id="test-token-btn" class="btn btn-primary btn-sm" data-toggle="collapse" href="#token-form" role="button" aria-expanded="false" aria-controls="token-form">Test</a>
+				</div>
+				<div class="col-9 d-flex align-items-center">
+					<div>
+						<span class="method-post mr-3">POST</span><span>
+							<code class="dont-break-out" id="token-endpoint">
+								{{ tokenEndpoint }}
+							</code>
+						</span>
+					</div>
+				</div>
+			</div>
+			<div id="token-form" class="row collapse mt-3">
+				<div class="card card-body">
+					<!-- TOKEN FORM -->
+					<form onsubmit="submitToken(this); return false">
+						<input type="text" name="hidden-select" required class="invisible-input">
+						<div class="form-group">
+							 <select required id="grant_type" name="grant_type" class="form-control" onchange="changeVisibleFields(this)">
+								<option selected="selected" disabled="disabled">Choose a grant type</option>
+								<option value="password">password</option>
+								<option value="authorization_code">authorization_code</option>
+								<option value="refresh_token">refresh_token</option>
+								<option value="client_credentials">client_credentials</option>
+							</select>
+						</div>
+						<div class="row">
+							<div class="form-group col">
+								<input type="text" class="form-control" placeholder="client_id" name="client_id" required>
+							</div>
+							<div class="form-group col">
+								<input type="password" class="form-control" placeholder="client_secret" name="client_secret" style="display: none;">
+							</div>
+						</div>
+						<div id="grant-type-fields-password" class="row" style="display: none;">
+							<div class="form-group col">
+								<input type="text" class="form-control" placeholder="username" name="username">
+							</div>
+							<div class="form-group col">
+								<input type="password" class="form-control" placeholder="password" name="password">
+							</div>
+						</div>
+						<div class="row">
+							<div class="form-group col">
+								<input type="test" class="form-control" placeholder="scope (e.g., profile email offline_access)" name="scope">
+							</div>
+							<div class="form-group col">
+								<input type="text" class="form-control" placeholder="state" name="state">
+							</div>
+						</div>
+						<div id="grant-type-fields-refresh-token" class="form-group" style="display: none;">
+							<input type="text" class="form-control" placeholder="refresh_token" name="refresh_token">
+						</div>
+						<div id="grant-type-fields-code" class="form-group" style="display: none;">
+							<input type="text" class="form-control" placeholder="code" name="code">
+						</div>
+						<button type="submit" class="btn btn-primary btn-sm mt-3">Submit</button>
+					</form>
+					<div class="mt-3">
+						<!-- TOKEN SUCCESS RESULTS -->
+						<form id="token-success" onsubmit="manageResponseToken(this); return false" style="display: none;">
+							<div id="token-id-token" class="form-group">
+								<label class="response-text">id_token</label>
+								<div class="row">
+									<div class="col-sm-9">
+										<input name="id_token_response" type="text" class="form-control response-text" disabled="" placeholder="No id_token">
+									</div>
+									<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+										<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:id_token">Copy</button></span>
+										<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:id_token">JWT</button></span>
+										<span>
+											<div class="input-group">
+												<div class="input-group-append">
+													<button class="btn btn-primary dropdown-toggle ml-2 modified-dropdown" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Use it</button>
+													<div class="dropdown-menu">
+														<a class="dropdown-item" href="javascript:{}" onclick="submitTokenForm('introspect:id_token')">Introspect</a>
+													</div>
+												</div>
+											</div>
+										</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="response-text">refresh_token</label>
+								<div class="row">
+									<div class="col-sm-9">
+										<input id="token-refresh-token" name="refresh_token_response" type="text" class="form-control response-text" disabled="" placeholder="No refresh_token">
+									</div>
+									<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+										<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:refresh_token">Copy</button></span>
+										<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:refresh_token">JWT</button></span>
+										<span>
+											<div class="input-group">
+												<div class="input-group-append">
+													<button class="btn btn-primary dropdown-toggle ml-2 modified-dropdown" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Use it</button>
+													<div class="dropdown-menu">
+														<a class="dropdown-item" href="javascript:{}" onclick="submitTokenForm('refresh:refresh_token')">Refresh tokens</a>
+														<a class="dropdown-item" href="javascript:{}" onclick="submitTokenForm('introspect:refresh_token')">Intropect</a>
+													</div>
+												</div>
+											</div>
+										</span>
+									</div>
+								</div>
+							</div>							
+
+							<div class="form-group">
+								<label class="response-text">access_token</label>
+								<div class="row">
+									<div class="col-sm-9">
+										<input id="token-access-token" name="access_token_response" type="text" class="form-control response-text" disabled="" placeholder="No access_token">
+									</div>
+									<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+										<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:access_token">Copy</button></span>
+										<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:access_token">JWT</button></span>
+										<span>
+											<div class="input-group">
+												<div class="input-group-append">
+													<button class="btn btn-primary dropdown-toggle ml-2 modified-dropdown" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Use it</button>
+													<div class="dropdown-menu">
+														<a class="dropdown-item" href="javascript:{}" onclick="submitTokenForm('userinfo:access_token')">User info</a>
+														<a class="dropdown-item" href="javascript:{}" onclick="submitTokenForm('introspect:access_token')">Introspect</a>
+													</div>
+												</div>
+											</div>
+										</span>
+									</div>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="response-text">token_type</label>
+								<input id="token-token-type" type="text" class="form-control response-text" disabled placeholder="No token_type">
+							</div>
+							<div class="form-group">
+								<label class="response-text">expires_in</label>
+								<input id="token-expires-in" type="text" class="form-control response-text" disabled placeholder="No expires_in">
+							</div>
+
+							<div id="token-state" class="form-group">
+								<label class="response-text">state</label>
+								<input name="state" type="text" class="form-control response-text" disabled placeholder="No state">
+							</div>
+							<div class="form-group">
+								<label class="response-text">scope</label>
+								<input id="token-scope" type="text" class="form-control response-text" disabled placeholder="No scope">
+							</div>
+						</form>
+
+						<!-- TOKEN FAIL RESULTS -->
+						<form id="token-failed" style="display: none">
+							<div class="form-group">
+								<label class="error-text">HTTP status</label>
+								<input id="token-error-status" type="text" class="form-control is-invalid error-text" disabled>
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error</label>
+								<input id="token-error" type="text" class="form-control is-invalid error-text" disabled placeholder="No error">
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error description</label>
+								<input id="token-error-description" type="text" class="form-control is-invalid error-text" disabled placeholder="No description">
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- AUTHORIZATION ENDPOINTS -->
+			{{ authorizationEndpointsHtml }}
+
+			<!-- INTROSPECT ENDPOINT -->
+			<div class="row mt-4">
+				<div class="col-auto">
+					<a id="introspect-form-btn" class="btn btn-primary btn-sm" data-toggle="collapse" href="#introspect-form" role="button" aria-expanded="false" aria-controls="introspect-form">Test</a>
+				</div>
+				<div class="col-9 d-flex align-items-center">
+					<div>
+						<span class="method-post mr-3">POST</span><span>
+							<code class="dont-break-out" id="introspect-endpoint">
+								{{ introspectionEndpoint }}
+							</code>
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<div id="introspect-form" class="row collapse mt-3">
+				<div class="card card-body">
+					<!-- INTROSPECT FORM -->
+					<form onsubmit="submitIntrospect(this); return false">
+						<input type="text" name="hidden-introspect-select" required class="invisible-input">
+						<div class="form-group">
+							 <select required id="token_type" name="token_type" class="form-control" onchange="changeTokenType(this)">
+								<option selected="selected" disabled="disabled">Choose a token type</option>
+								<option value="id_token">id_token</option>
+								<option value="access_token">access_token</option>
+								<option value="refresh_token">refresh_token</option>
+							</select>
+						</div>
+
+						<div class="row">
+							<div class="form-group col">
+								<input type="text" class="form-control" placeholder="client_id" name="client_id" required>
+							</div>
+							<div class="form-group col">
+								<input type="password" class="form-control" placeholder="client_secret" name="client_secret" required>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<input type="text" class="form-control" placeholder="token" name="introspect_token" required>
+						</div>
+						<button type="submit" class="btn btn-primary btn-sm mt-3">Submit</button>
+					</form>
+					<div class="mt-3">
+						<!-- INTROSPECT SUCCESS RESULTS -->
+						<div id="introspect-success" class="form-group" style="display: none">
+							<label for="introspect-response">Response:</label>
+							<pre id="introspect-response" class="alert alert-secondary" role="alert">
+							</pre>
+						</div>
+
+						<!-- INTROSPECT FAIL RESULTS -->
+						<form id="introspect-failed" style="display: none">
+							<div class="form-group">
+								<label class="error-text">HTTP status</label>
+								<input id="introspect-error-status" type="text" class="form-control is-invalid error-text" disabled>
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error</label>
+								<input id="introspect-error" type="text" class="form-control is-invalid error-text" disabled placeholder="No error">
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error description</label>
+								<input id="introspect-error-description" type="text" class="form-control is-invalid error-text" disabled placeholder="No description">
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- USERINFO ENDPOINT -->
+			<div class="row mt-4">
+				<div class="col-auto">
+					<a id="userinfo-form-btn" class="btn btn-primary btn-sm" data-toggle="collapse" href="#userinfo-form" role="button" aria-expanded="false" aria-controls="userinfo-form">Test</a>
+				</div>
+				<div class="col-9 d-flex align-items-center">
+					<div>
+						<span class="method-get mr-3">GET</span><span>
+							<code class="dont-break-out" id="userinfo-endpoint">
+								{{ userInfoEndpoint }}
+							</code>
+						</span>
+					</div>
+				</div>
+			</div>
+			<div id="userinfo-form" class="row collapse mt-3">
+				<div class="card card-body">
+					<!-- USERINFO FORM -->
+					<form onsubmit="submitUserInfo(this); return false">
+						<div class="form-group">
+							<input type="text" class="form-control" placeholder="access_token" name="userinfo_access_token" required>
+						</div>
+						<button type="submit" class="btn btn-primary btn-sm mt-3">Submit</button>
+					</form>
+					<div class="mt-3">
+						<!-- USERINFO SUCCESS RESULTS -->
+						<div id="userinfo-success" class="form-group" style="display: none">
+							<label for="userinfo-response">Response:</label>
+							<pre id="userinfo-response" class="alert alert-secondary" role="alert">
+							</pre>
+						</div>
+
+						<!-- USERINFO FAIL RESULTS -->
+						<form id="userinfo-failed" style="display: none">
+							<div class="form-group">
+								<label class="error-text">HTTP status</label>
+								<input id="userinfo-error-status" type="text" class="form-control is-invalid error-text" disabled>
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error</label>
+								<input id="userinfo-error" type="text" class="form-control is-invalid error-text" disabled placeholder="No error">
+							</div>
+							<div class="form-group">
+								<label class="error-text">Error description</label>
+								<input id="userinfo-error-description" type="text" class="form-control is-invalid error-text" disabled placeholder="No description">
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<div style="height: 200px;width: 100%">
+				
+			</div>
+		</div>
+
+		<!-- Optional JavaScript -->
+		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+		<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+		<script type="text/javascript">
+			function submitTokenForm(submitted) {
+				var tokenForm = document.getElementById('token-success')
+				tokenForm.submitted = submitted
+				manageResponseToken(tokenForm)
+			}
+
+			function getQueryString (field, url) {
+				var href = url ? url : window.location.href
+				var reg = new RegExp( '[?&]' + field + '=([^&#]*)', 'i' )
+				var string = reg.exec(href)
+				return string ? decodeURIComponent(string[1]||'') : null
+			}
+
+			var decodeJWT = val => {
+				if (!val || typeof(val) != 'string')
+					return null
+				else {
+					try {
+						var [base64Headers, base64Claims] = val.split('.') || []
+						if (!base64Headers || !base64Claims)
+							return null
+
+						var headers = JSON.parse(atob(base64Headers))
+						var payload = JSON.parse(atob(base64Claims))
+						return {
+							headers,
+							payload
+						}
+					} catch(err) {
+						console.log(`INFO - token is not a JWT. Details: ${err.message}`)
+						return null
+					}
+				}
+			}
+
+			function showJWT(token) {
+				var jwt = decodeJWT(token)
+
+				if (jwt) {
+					if (jwt.payload.exp) {
+						$('#jwt-expiry-group').show()
+						$('#jwt-expiry').text(new Date(jwt.payload.exp*1000))
+					} else
+						$('#jwt-expiry-group').hide()
+					$('#invalid-jwt-container').hide()
+					$('#valid-jwt-container').show()
+					$('#jwt-headers').text(JSON.stringify(jwt.headers, null, '  '))
+					$('#jwt-payload').text(JSON.stringify(jwt.payload, null, '  '))
+					$('#jwt-raw').text(token)
+				} else {
+					$('#invalid-jwt-container').show()
+					$('#valid-jwt-container').hide()
+					$('#jwt-error').text('This token is not a JWT.')
+				}
+				$('#jwt-token').modal('show')
+			}
+
+			function copyToClipboard(text) {
+				var clipboard = document.getElementById('clipboard-value')
+				clipboard.value = text
+				clipboard.select()
+				document.execCommand("copy")
+			}
+
+			var VALID_ACTIONS = ['copy', 'jwt', 'use', 'userinfo', 'introspect']
+			var VALID_TOKENS = ['id_token', 'access_token', 'refresh_token']
+			function manageResponseToken(form) {
+				try {
+					var [action, tokenType] = form.submitted.split(':')
+					console.log({ action, tokenType })
+					form.submitted = null
+
+					if (!action || !VALID_ACTIONS.some(a => a == action))
+						throw new Error(`Invalid action '${action||'unknown'}'`)
+					if (!tokenType || !VALID_TOKENS.some(a => a == tokenType))
+						throw new Error(`Invalid token type '${tokenType||'unknown'}'`)
+
+
+					var f = new FormData(form)
+					var id_token = (document.querySelector('input[name="id_token_response"]') || {}).value
+					var access_token = (document.querySelector('input[name="access_token_response"]') || {}).value
+					var refresh_token = (document.querySelector('input[name="refresh_token_response"]') || {}).value
+
+					var token = 
+						tokenType == 'id_token' ? id_token :
+						tokenType == 'access_token' ? access_token : refresh_token 
+
+					if (!token)
+						return
+
+					if (action == 'jwt' )
+						showJWT(token)
+					else if (action == 'copy')
+						copyToClipboard(token)
+					else {
+						if (action == 'refresh')
+							refreshToken({ type:tokenType, value:token })
+						else if (action == 'introspect')
+							introspectToken({ type:tokenType, value:token })
+						else if (action == 'userinfo')
+							userInfoToken(token)
+					}
+				} catch(err) {
+					console.log(err)
+				}
+			}
+
+			function refreshToken({ type, value }) {
+				if (!value)
+					return 
+
+				changeVisibleFields({ value:type })
+				document.querySelectorAll('#grant_type option')[3].selected = 'selected'
+				document.querySelector('input[name="refresh_token"]').value = value
+			}
+
+			function introspectToken({ type, value }) {
+				if (!value)
+					return 
+
+				// Copy the access_token into the userinfo input
+				$('input[name="introspect_token"]').val(value)
+				// collapse the token form
+				document.getElementById('test-token-btn').click()
+				setTimeout(function() {
+					// scrolls at the bottom of the page
+					window.scrollTo(0,document.body.scrollHeight)
+					var opened = false
+					document.getElementById('introspect-form').classList.forEach(x => {
+						if (x == 'show')
+							opened = true
+					})
+					if (!opened)
+						document.getElementById('introspect-form-btn').click()
+					// Select id_token
+					const idx = type == 'id_token' ? 1 : type == 'access_token' ? 2 : 3
+					changeTokenType({ value:type })
+					document.querySelectorAll('#token_type option')[idx].selected = 'selected'
+				}, 500)
+			}
+
+			function userInfoToken(accessToken) {
+				if (!accessToken)
+					return 
+
+				// Copy the access_token into the userinfo input
+				$('input[name="userinfo_access_token"]').val(accessToken)
+				// collapse the token form
+				document.getElementById('test-token-btn').click()
+				setTimeout(function() {
+					// scrolls at the bottom of the page
+					window.scrollTo(0,document.body.scrollHeight)
+					var opened = false
+					document.getElementById('userinfo-form').classList.forEach(x => {
+						if (x == 'show')
+							opened = true
+					})
+					if (!opened)
+						document.getElementById('userinfo-form-btn').click()
+				}, 500)
+			}
+
+			async function submitToken(form) {
+				var url = document.getElementById('token-endpoint').innerHTML
+				var formData = new FormData(form)
+				try {
+					var response = await fetch(url, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify(Object.fromEntries(formData))
+					})
+
+					var data = (await response.json()) || {}
+
+					if (response.status && response.status >= 200 && response.status < 300) {
+						$('#token-failed').hide()
+
+						if (data.id_token)
+							$('input[name="id_token_response"]').val(data.id_token)
+						if (data.access_token)
+							$('#token-access-token').val(data.access_token)
+						if (data.token_type)
+							$('#token-token-type').val(data.token_type)
+						if (data.expires_in)
+							$('#token-expires-in').val(data.expires_in)
+						if (data.refresh_token)
+							$('#token-refresh-token').val(data.refresh_token)
+						if (data.scope)
+							$('#token-scope').val(data.scope)
+
+						$('#token-success').show()
+					} else {
+						$('#token-success').hide()
+						$('#token-error-status').val(response.status || 500)
+						if (data.error)
+							$('#token-error').val(data.error)
+						if (data.error_description)
+							$('#token-error-description').val(data.error_description)
+						$('#token-failed').show()
+					}
+					// console.log('HOORAY')
+					// console.log(response.status)
+					// console.log()
+				} catch (err) {
+					console.log('submitToken failed')
+					console.log(err)
+				}
+			}
+
+			async function submitUserInfo(form) {
+				var url = document.getElementById('userinfo-endpoint').innerHTML
+				var { userinfo_access_token } = Object.fromEntries(new FormData(form))
+				try {
+					var response = await fetch(url, {
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${userinfo_access_token}`
+						}
+					})
+
+					var data = (await response.json()) || {}
+
+					if (response.status && response.status >= 200 && response.status < 300) {
+						$('#userinfo-failed').hide()
+
+						$('#userinfo-response').text(JSON.stringify(data, null, '  '))
+
+						$('#userinfo-success').show()
+					} else {
+						$('#userinfo-success').hide()
+						$('#userinfo-error-status').val(response.status || 500)
+						if (data.error)
+							$('#userinfo-error').val(data.error)
+						if (data.error_description)
+							$('#userinfo-error-description').val(data.error_description)
+						$('#userinfo-failed').show()
+					}
+					// console.log('HOORAY')
+					// console.log(response.status)
+					// console.log()
+				} catch (err) {
+					console.log('submitUserInfo failed')
+					console.log(err)
+				}
+			}
+
+			async function submitIntrospect(form) {
+				var url = document.getElementById('introspect-endpoint').innerHTML
+				var { token_type:token_type_hint, client_id, client_secret, introspect_token:token } = Object.fromEntries(new FormData(form))
+
+				try {
+					var response = await fetch(url, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ client_id, client_secret, token, token_type_hint })
+					})
+
+					var data = (await response.json()) || {}
+
+					if (response.status && response.status >= 200 && response.status < 300) {
+						$('#introspect-failed').hide()
+
+						$('#introspect-response').text(JSON.stringify(data, null, '  '))
+
+						$('#introspect-success').show()
+					} else {
+						$('#introspect-success').hide()
+						$('#introspect-error-status').val(response.status || 500)
+						if (data.error)
+							$('#introspect-error').val(data.error)
+						if (data.error_description)
+							$('#introspect-error-description').val(data.error_description)
+						$('#introspect-failed').show()
+					}
+					// console.log('HOORAY')
+					// console.log(response.status)
+					// console.log()
+				} catch (err) {
+					console.log('submitUserInfo failed')
+					console.log(err)
+				}
+			}
+
+			async function generateUri(form) {
+				var formData = new FormData(form)
+				var {
+					strategy,
+					strategyEndpoint,
+					response_type_code,
+					response_type_id_token,
+					response_type_token,
+					client_id,
+					redirect_uri,
+					state,
+					scope,
+					nonce
+				} = Object.fromEntries(formData)
+
+				var url = new URL(strategyEndpoint)
+				var response_types = []
+				if (response_type_code !== undefined)
+					response_types.push('code')
+				if (response_type_id_token !== undefined)
+					response_types.push('id_token')
+				if (response_type_token !== undefined)
+					response_types.push('token')
+				if (response_types.length)
+					url.searchParams.set('response_type', response_types.join(' '))
+
+				if (client_id)
+					url.searchParams.set('client_id', client_id)					
+				if (redirect_uri)
+					url.searchParams.set('redirect_uri', redirect_uri)					
+				if (state)
+					url.searchParams.set('state', state)					
+				if (scope)
+					url.searchParams.set('scope', scope)						
+				if (nonce)
+					url.searchParams.set('nonce', nonce)				
+
+				var ahref = $('#'+strategy+'-url')
+				ahref.attr('href', url.toString())
+				ahref.html(url.toString())
+			}
+
+			function passwordFieldDisplay(mode) {
+				var usernameEl = $('input[name="username"]')
+				var passwordEl = $('input[name="password"]')
+				var el = $('#grant-type-fields-password')
+				if (mode == 'show') {
+					usernameEl.prop('required', true)
+					passwordEl.prop('required', true)
+					el.show()
+				} else {
+					usernameEl.prop('required', false)
+					passwordEl.prop('required', false)
+					el.hide()
+				}
+			}
+
+			function credsFieldDisplay(mode) {
+				var el = $('#token-form input[name="client_secret"]')
+				if (mode == 'show') {
+					el.prop('required',true)
+					el.show()
+				} else {
+					el.prop('required',false)
+					el.hide()
+				}
+			}
+
+			function refreshTokenFieldDisplay(mode) {
+				var tokenEl = $('input[name="refresh_token"]')
+				var el = $('#grant-type-fields-refresh-token')
+				if (mode == 'show') {
+					tokenEl.prop('required',true)
+					el.show()
+				} else {
+					tokenEl.prop('required',false)
+					el.hide()
+				}
+			}
+
+			function codeFieldDisplay(mode) {
+				var tokenEl = $('input[name="code"]')
+				var el = $('#grant-type-fields-code')
+				if (mode == 'show') {
+					tokenEl.prop('required',true)
+					el.show()
+				} else {
+					tokenEl.prop('required',false)
+					el.hide()
+				}
+			}
+
+			/**
+			 * Changes the visibility of input fields based on the selected grant_type
+			 * 
+			 * @param  {String} grantType.value		Valid values: 'password', 'client_credentials', 'refresh_token', 'authorization_code'
+			 * @return {Void}
+			 */
+			function changeVisibleFields(grantType) {
+				$('input[name="hidden-select"]').val(grantType.value)
+				passwordFieldDisplay(grantType.value == 'password' ? 'show' : 'hide')
+				credsFieldDisplay(grantType.value == 'authorization_code' || grantType.value == 'client_credentials' ? 'show' : 'hide')
+				refreshTokenFieldDisplay(grantType.value == 'refresh_token' ? 'show' : 'hide')
+				codeFieldDisplay(grantType.value == 'authorization_code' ? 'show' : 'hide')
+			}
+
+			function changeTokenType(tokenType) {
+				$('input[name="hidden-introspect-select"]').val(tokenType.value)
+			}
+
+			function init() {
+				var state = getQueryString('state')
+				var code = getQueryString('code')
+				var access_token = getQueryString('access_token')
+				var refresh_token = getQueryString('refresh_token')
+				var id_token = getQueryString('id_token')
+				var error = getQueryString('error')
+				var error_description = getQueryString('error_description')
+				error_description = error_description ? decodeURIComponent(error_description) : '' 
+
+				if (code && !access_token && !refresh_token) {
+					document.querySelectorAll('#grant_type option')[2].selected = 'selected'
+					changeVisibleFields({ value:'authorization_code' })
+				}
+				if (code)
+					document.querySelector('input[name="code"]').value = code
+				if (refresh_token)
+					document.querySelector('input[name="refresh_token"]').value = refresh_token
+				if (access_token)
+					document.querySelector('#token-access-token').value = access_token
+				if (id_token)
+					document.querySelector('input[name="id_token"]').value = id_token
+				if (state)
+					document.querySelector('input[name="state"]').value = state
+				if (error)
+					document.querySelector('#token-error').value = error
+				if (error_description)
+					document.querySelector('#token-error-description').value = error_description
+
+				var showTokenFormResults = access_token || id_token
+				var showTokenFormErrorMessage = error || error_description
+				var showTokenForm = code || showTokenFormErrorMessage || showTokenFormResults
+
+				if (showTokenFormResults)
+					$('#token-success').show()
+				if (showTokenFormErrorMessage)
+					$('#token-failed').show()
+				if (showTokenForm)
+					document.getElementById('token-form').classList.add('show')
+
+			}
+
+			init()
+		</script>
+	</body>
+</html>

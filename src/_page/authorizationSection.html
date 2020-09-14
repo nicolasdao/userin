@@ -1,0 +1,65 @@
+<!-- {{ strategy }} AUTHORIZATION ENDPOINT -->
+<div class="row mt-4">
+	<div class="col-auto">
+		<a class="btn btn-primary btn-sm" data-toggle="collapse" href="#{{ strategy }}AuthorizationForm" role="button" aria-expanded="false" aria-controls="{{ strategy }}AuthorizationForm">Test</a>
+	</div>
+	<div class="col-9 d-flex align-items-center">
+		<div>
+			<span class="method-get mr-3">GET</span><span><code class="dont-break-out">{{ url }}</code></span>
+		</div>
+	</div>
+</div>
+
+<div class="row collapse mt-3" id="{{ strategy }}AuthorizationForm">
+	<div class="card card-body">
+		<form onsubmit="generateUri(this); return false">
+			<input type="hidden" name="strategy" value="{{ strategy }}">
+			<input type="hidden" name="strategyEndpoint" value="{{ url }}">
+			<label>response_type</label>
+			<div class="mb-3 ml-4">
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" name="response_type_code">
+					<label class="form-check-label">
+						code <span class="text-muted">(Authorization Code flow)</span>
+					</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" name="response_type_id_token">
+					<label class="form-check-label">
+						id_token <span class="text-muted">(Implicit flow)</span>
+					</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" value="" name="response_type_token">
+					<label class="form-check-label">
+						token <span class="text-muted">(Implicit flow)</span>
+					</label>
+				</div>
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="client_id" name="client_id">
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="redirect_uri" name="redirect_uri" value="{{ defaultRedirectUrl }}">
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="state" name="state">
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="scope (e.g., profile email offline_access)" name="scope">
+			</div>
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="nonce" name="nonce">
+			</div>
+			
+			<div class="d-flex align-items-center mt-4">
+				<span>
+					<button type="submit" class="btn btn-primary btn-sm" style="width: 220px;">Generate Authorization URI</button>
+				</span>
+				<span class="ml-4">
+					<a class="dont-break-out" id="{{ strategy }}-url" href="" target="_blank"></a>
+				</span>
+			</div>
+		</form>
+	</div>
+</div>

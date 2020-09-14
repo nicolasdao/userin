@@ -1,12 +1,13 @@
 /**
- * Copyright (c) 2017-2019, Neap Pty Ltd.
+ * Copyright (c) 2020, Cloudless Consulting Pty Ltd.
  * All rights reserved.
  * 
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
 */
 
-const urlHelp = require('./url')
+const { url:urlHelp } = require('puffy')
+const { errorCode } = require('./error')
 
 // We cannot replace the following try/catch with:
 // 
@@ -51,8 +52,30 @@ const addErrorToUrl = (url, { code, message, verboseMessage, data }) => {
 	return u
 }
 
+const formatResponseError = (errors, res) => {
+	let code = errorCode.internal_server_error.code
+	let category = errorCode.internal_server_error.text
+	let error_description = 'Unknown'
+	if (errors && errors.length) {
+		errors.forEach(error => console.log(error.stack || error.message))
+		category = (errors.find(e => e.category) || {}).category || category
+		code = (errors.find(e => e.code) || {}).code || code
+		error_description = errors
+			.filter(x => x && x.message)
+			.map(x => x.message)
+			.slice(0,5)
+			.join(' - ') || error_description
+	}
+
+	res.status(code).send({
+		error: category,
+		error_description
+	})
+}
+
 module.exports = {
 	send,
 	addErrorToUrl,
-	defaultErrorMessage: DEFAULT_ERROR_MSG
+	defaultErrorMessage: DEFAULT_ERROR_MSG,
+	formatResponseError
 }

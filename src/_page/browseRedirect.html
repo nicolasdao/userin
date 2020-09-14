@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+		<title>UserIn - Discovery</title>
+		<style type="text/css">
+			.method-post {
+				color: #0aa90f;
+				font-weight: 600;
+			}
+
+			.method-get {
+				color: #0993c7;
+				font-weight: 600;
+				padding-right: 12px;
+			}
+			
+			.error-text {
+				color: #dc3545;
+			}
+
+			input.error-text, input.error-text:disabled {
+				background: #fff0f0;
+			}
+
+			.response-text {
+				color: #2e89d8;
+			}
+
+			input.response-text, input.response-text:disabled {
+				background: #f0f8ff;
+			}
+
+			span.text-muted {
+				font-size: 12px;
+			}
+		</style>
+	</head>
+	<body>
+		<input id="clipboard-value" type="text" style="position: absolute;left: -999em;z-index: -9999;pointer-events: none;opacity: 0;">
+		<!-- MODAL -->
+		<div class="modal fade" id="jwt-token" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLabel">JWT details</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div id="valid-jwt-container" class="container" style="display: none;">
+							<div class="form-group">
+								<label for="jwt-headers">Header</label>
+								<pre id="jwt-headers" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div class="form-group">
+								<label for="jwt-payload">Payload</label>
+								<pre id="jwt-payload" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div class="form-group">
+								<label for="jwt-raw">Raw</label>
+								<pre id="jwt-raw" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+							<div id="jwt-expiry-group" class="form-group">
+								<label for="jwt-expiry">Expiry date</label>
+								<pre id="jwt-expiry" class="alert alert-secondary" role="alert">
+								</pre>
+							</div>
+						</div>
+						<div id="invalid-jwt-container" class="container" style="display: none;">
+							<div id="jwt-error" class="alert alert-danger" role="alert"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- FORM -->
+		<div class="container mt-5">
+			<h1 class="mb-5">UserIn - Authorization Code Flow Response</h1>
+
+			<div class="row mt-3">
+				<div class="card card-body">
+					<form onsubmit="submitToken(this); return false">
+
+						<!-- CODE -->
+						<div class="form-group row">
+							<label class="col-sm-2 col-form-label">Code:</label>
+							<div class="col-sm-7">
+								<input type="text" class="form-control" id="code" name="code">
+							</div>
+							<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+								<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:code">Copy</button></span>
+								<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:code">JWT</button></span>
+								<span><button type="submit" class="btn btn-primary ml-2" onclick="this.form.submitted=this.value" value="use:code">Use it</button></span>
+							</div>
+						</div>
+
+						<!-- ID TOKEN -->
+						<div class="form-group row">
+							<label class="col-sm-2 col-form-label">ID token:</label>
+							<div class="col-sm-7">
+								<input type="text" class="form-control" id="id_token" name="id_token">
+							</div>
+							<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+								<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:id_token">Copy</button></span>
+								<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:id_token">JWT</button></span>
+								<span><button type="submit" class="btn btn-primary ml-2" onclick="this.form.submitted=this.value" value="use:id_token">Use it</button></span>
+							</div>
+						</div>
+
+						<!-- ACCESS TOKEN -->
+						<div class="form-group row">
+							<label class="col-sm-2 col-form-label">Access token:</label>
+							<div class="col-sm-7">
+								<input type="text" class="form-control" id="access_token" name="access_token">
+							</div>
+							<div class="col-sm-3 d-flex justify-content-end mt-3 mt-sm-0">
+								<span><button type="submit" class="btn btn-outline-primary" onclick="this.form.submitted=this.value" value="copy:access_token">Copy</button></span>
+								<span><button type="submit" class="btn btn-warning ml-2" onclick="this.form.submitted=this.value" value="jwt:access_token">JWT</button></span>
+								<span><button type="submit" class="btn btn-primary ml-2" onclick="this.form.submitted=this.value" value="use:access_token">Use it</button></span>
+							</div>
+						</div>
+
+						<!-- STATE -->
+						<div class="form-group row">
+							<label class="col-sm-2 col-form-label">State:</label>
+							<div class="col-sm-7">
+								<input type="text" class="form-control" name="state" disabled>
+							</div>
+						</div>				
+					</form>
+				</div>
+			</div>
+
+
+			<div style="height: 200px;width: 100%">
+				
+			</div>
+		</div>
+
+		<!-- Optional JavaScript -->
+		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+		<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+		<script type="text/javascript">
+			function getQueryString (field, url) {
+				var href = url ? url : window.location.href
+				var reg = new RegExp( '[?&]' + field + '=([^&#]*)', 'i' )
+				var string = reg.exec(href)
+				return string ? decodeURIComponent(string[1]||'') : null
+			}
+
+			function init() {
+				var code = getQueryString('code')
+				var id_token = getQueryString('id_token')
+				var access_token = getQueryString('access_token')
+				var state = getQueryString('state')
+
+				if (code)
+					document.getElementById('code').value = code
+				if (id_token)
+					document.getElementById('id_token').value = id_token
+				if (access_token)
+					document.getElementById('access_token').value = access_token
+				if (state)
+					document.querySelector('input[name="state"]').value = state.replace(/\++/g, ' ')
+			}
+
+			var decodeJWT = val => {
+				if (!val || typeof(val) != 'string')
+					return null
+				else {
+					try {
+						var [base64Headers, base64Claims] = val.split('.') || []
+						if (!base64Headers || !base64Claims)
+							return null
+
+						var headers = JSON.parse(atob(base64Headers))
+						var payload = JSON.parse(atob(base64Claims))
+						return {
+							headers,
+							payload
+						}
+					} catch(err) {
+						console.log(`INFO - token is not a JWT. Details: ${err.message}`)
+						return null
+					}
+				}
+			}
+
+			var VALID_ACTIONS = ['copy', 'jwt', 'use']
+			var VALID_TOKENS = ['code', 'id_token', 'access_token']
+			function submitToken(form) {
+				if (!form.submitted)
+					throw new Error(`Missing required 'form.submitted'`)
+
+				var [action, tokenType] = form.submitted.split(':')
+
+				if (!action || !VALID_ACTIONS.some(a => a == action))
+					throw new Error(`Invalid action '${action||'unknown'}'`)
+				if (!tokenType || !VALID_TOKENS.some(a => a == tokenType))
+					throw new Error(`Invalid token type '${tokenType||'unknown'}'`)
+
+				var f = new FormData(form)
+				var code = f.get('code')
+				var id_token = f.get('id_token')
+				var access_token = f.get('access_token')
+
+				var token = 
+					tokenType == 'code' ? code :
+					tokenType == 'id_token' ? id_token : access_token
+
+				if (!token)
+					return
+
+				if (action == 'jwt' )
+						showJWT(token)
+				else if (action == 'copy')
+					copyToClipboard(token)
+				else
+					useToken({ type:tokenType, value:token })
+			}
+
+			function showJWT(token) {
+				var jwt = decodeJWT(token)
+
+				if (jwt) {
+					if (jwt.payload.exp) {
+						$('#jwt-expiry-group').show()
+						$('#jwt-expiry').text(new Date(jwt.payload.exp*1000))
+					} else
+						$('#jwt-expiry-group').hide()
+					$('#invalid-jwt-container').hide()
+					$('#valid-jwt-container').show()
+					$('#jwt-headers').text(JSON.stringify(jwt.headers, null, '  '))
+					$('#jwt-payload').text(JSON.stringify(jwt.payload, null, '  '))
+					$('#jwt-raw').text(token)
+				} else {
+					$('#invalid-jwt-container').show()
+					$('#valid-jwt-container').hide()
+					$('#jwt-error').text('This token is not a JWT.')
+				}
+				$('#jwt-token').modal('show')
+			}
+
+			function copyToClipboard(text) {
+				var clipboard = document.getElementById('clipboard-value')
+				clipboard.value = text
+				clipboard.select()
+				document.execCommand("copy")
+			}
+
+			function useToken({ type, value }) {
+				window.open(`{{ browseEndpointUrl }}?${type}=${value}`, '_blank')
+			}
+
+			init()
+		</script>
+	</body>
+</html>

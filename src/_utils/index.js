@@ -1,16 +1,15 @@
 /**
- * Copyright (c) 2017-2019, Neap Pty Ltd.
+ * Copyright (c) 2020, Cloudless Consulting Pty Ltd.
  * All rights reserved.
  * 
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
 */
 
-module.exports = Object.assign(require('./core'), {
+module.exports = {
+	config: require('./config'),
 	error: require('./error'),
-	fetch: require('./fetch'),
-	promise: require('./promise'),
-	url: require('./url'),
-	idpHelp: require('./idpHelp'),
+	oauth2Params: require('./oauth2Params'),
+	request: require('./request'),
 	response: require('./response')
-})
+}

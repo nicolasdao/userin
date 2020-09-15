@@ -28,6 +28,8 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
 	if (!eventHandlerStore.generate_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.get_token_expiry)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_expiry' handler.`)
 
 	if (!client_id)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)

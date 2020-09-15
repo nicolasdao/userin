@@ -11,6 +11,16 @@ const createToken = delay => claims => {
 	} 
 }
 
+const createValid = claims => {
+	claims = claims || {}
+	const expires_in = (claims.exp||0) - Math.floor(Date.now()/1000)
+
+	return {
+		token: jwt.sign(claims, KEY),
+		expires_in: expires_in < 0 ? 0 : expires_in
+	}
+}
+
 const decryptToken = token => jwt.decode(token)
 
 const areClaimsExpired = claims => {
@@ -22,7 +32,7 @@ const areClaimsExpired = claims => {
 }
 
 module.exports = {
-	createValid: createToken(3600),
+	createValid,
 	createExpired: createToken(-3600),
 	decrypt: decryptToken,
 	claims: {

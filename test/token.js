@@ -68,7 +68,21 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('04 - Should return an access_token when the code is valid.', done => {
+		it('04 - Should fail when the \'get_token_expiry\' event handler is not defined.', done => {
+			const eventHandlerStore = {}
+			const registerEventHandler = eventRegister(eventHandlerStore)
+			registerEventHandler('get_service_account', strategy.get_service_account)
+			registerEventHandler('get_token_claims', strategy.get_token_claims)
+			registerEventHandler('generate_token', strategy.generate_token)
+			co(function *() {
+				const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, stubbedPayload)
+				assert.isOk(errors, '01')
+				assert.isOk(errors.length, '02')
+				assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_expiry\' handler') >= 0), '03')
+				done()
+			}).catch(done)
+		})
+		it('05 - Should return an access_token when the code is valid.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -94,7 +108,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('05 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
+		it('06 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -138,7 +152,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('06 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
+		it('07 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -153,7 +167,7 @@ describe('token', () => {
 				assert.isOk(codeResults.token, '03')
 				
 				const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { ...stubbedPayload, code:codeResults.token })
-					
+			
 				assert.isNotOk(errors, '04')
 				assert.isOk(result, '05')
 				assert.isOk(result.access_token, '06')
@@ -167,7 +181,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('07 - Should return a valid id_token with email claims when the code is valid and the scopes include \'openid\', \'profile\', \'email\'.', done => {
+		it('08 - Should return a valid id_token with email claims when the code is valid and the scopes include \'openid\', \'profile\', \'email\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -210,7 +224,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('08 - Should fail when the code has expired.', done => {
+		it('09 - Should fail when the code has expired.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -232,7 +246,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('09 - Should fail when the client_id is incorrect.', done => {
+		it('10 - Should fail when the client_id is incorrect.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -258,7 +272,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('10 - Should fail when the client_id is missing.', done => {
+		it('11 - Should fail when the client_id is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -284,7 +298,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('11 - Should fail when the client_secret is missing.', done => {
+		it('12 - Should fail when the client_secret is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -310,7 +324,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('12 - Should fail when the code is missing.', done => {
+		it('13 - Should fail when the code is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -335,7 +349,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('13 - Should fail when the code is incorrect.', done => {
+		it('14 - Should fail when the code is incorrect.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -376,7 +390,20 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('03 - Should return an access_token when the credentials are valid.', done => {
+		it('03 - Should fail when the \'get_token_expiry\' event handler is not defined.', done => {
+			const eventHandlerStore = {}
+			const registerEventHandler = eventRegister(eventHandlerStore)
+			registerEventHandler('get_service_account', strategy.get_service_account)
+			registerEventHandler('generate_token', strategy.generate_token)
+			co(function *() {
+				const [errors] = yield grantTypeClientCredentials.exec(eventHandlerStore, stubbedServiceAccount)
+				assert.isOk(errors, '01')
+				assert.isOk(errors.length, '02')
+				assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_expiry\' handler') >= 0), '03')
+				done()
+			}).catch(done)
+		})
+		it('04 - Should return an access_token when the credentials are valid.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -397,7 +424,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('04 - Should fail when the client_id is missing.', done => {
+		it('05 - Should fail when the client_id is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -414,7 +441,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('05 - Should fail when the client_secret is missing.', done => {
+		it('06 - Should fail when the client_secret is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -431,7 +458,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('05 - Should fail when the scopes are not allowed.', done => {
+		it('07 - Should fail when the scopes are not allowed.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -448,7 +475,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('06 - Should fail when the client_id is incorrect.', done => {
+		it('08 - Should fail when the client_id is incorrect.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -465,7 +492,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('07 - Should fail when the client_secret is incorrect.', done => {
+		it('09 - Should fail when the client_secret is incorrect.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -482,7 +509,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('08 - Should not return an id_token when the credentials are valid even when the \'openid\' scope is provided.', done => {
+		it('10 - Should not return an id_token when the credentials are valid even when the \'openid\' scope is provided.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -506,7 +533,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('09 - Should not return a refresh_token when the credentials are valid even when the \'offline_access\' scope is provided.', done => {
+		it('11 - Should not return a refresh_token when the credentials are valid even when the \'offline_access\' scope is provided.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -577,7 +604,21 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('04 - Should return an access_token when the username and password are valid.', done => {
+		it('04 - Should fail when the \'get_token_expiry\' event handler is not defined.', done => {
+			const eventHandlerStore = {}
+			const registerEventHandler = eventRegister(eventHandlerStore)
+			registerEventHandler('get_service_account', strategy.get_service_account)
+			registerEventHandler('get_end_user', strategy.get_end_user)
+			registerEventHandler('generate_token', strategy.generate_token)
+			co(function *() {
+				const [errors] = yield grantTypePassword.exec(eventHandlerStore, stubbedUser)
+				assert.isOk(errors, '01')
+				assert.isOk(errors.length, '02')
+				assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_expiry\' handler') >= 0), '03')
+				done()
+			}).catch(done)
+		})
+		it('05 - Should return an access_token when the username and password are valid.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -598,7 +639,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('05 - Should return an access_token and a valid id_token when the username and password are valid and the scopes contain \'openid\'.', done => {
+		it('06 - Should return an access_token and a valid id_token when the username and password are valid and the scopes contain \'openid\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -634,7 +675,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('06 - Should not return a refresh_token when the username and password are valid and the scopes contain \'offline_access\'.', done => {
+		it('07 - Should not return a refresh_token when the username and password are valid and the scopes contain \'offline_access\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -670,7 +711,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('07 - Should fail when the client_id is missing.', done => {
+		it('08 - Should fail when the client_id is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -689,7 +730,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('08 - Should fail when the user is missing.', done => {
+		it('09 - Should fail when the user is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -708,7 +749,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('09 - Should fail when the user.username is missing.', done => {
+		it('10 - Should fail when the user.username is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -730,7 +771,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('10 - Should fail when the user.password is missing.', done => {
+		it('11 - Should fail when the user.password is missing.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -752,7 +793,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('11 - Should fail when the username and password are incorrect.', done => {
+		it('12 - Should fail when the username and password are incorrect.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -774,7 +815,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('12 - Should fail when scopes are not allowed.', done => {
+		it('13 - Should fail when scopes are not allowed.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -792,7 +833,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('13 - Should fail when the client_id and client_secret are from an unauthorized account.', done => {
+		it('14 - Should fail when the client_id and client_secret are from an unauthorized account.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -866,7 +907,21 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('04 - Should return an access_token when a valid refresh_token is provided.', done => {
+		it('04 - Should fail when the \'get_token_expiry\' event handler is not defined.', done => {
+			const eventHandlerStore = {}
+			const registerEventHandler = eventRegister(eventHandlerStore)
+			registerEventHandler('get_token_claims', strategy.get_token_claims)
+			registerEventHandler('get_service_account', strategy.get_service_account)
+			registerEventHandler('generate_token', strategy.generate_token)
+			co(function *() {
+				const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, stubbedPayload)
+				assert.isOk(errors, '01')
+				assert.isOk(errors.length, '02')
+				assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_expiry\' handler') >= 0), '03')
+				done()
+			}).catch(done)
+		})
+		it('05 - Should return an access_token when a valid refresh_token is provided.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)
@@ -890,7 +945,7 @@ describe('token', () => {
 				done()
 			}).catch(done)
 		})
-		it('05 - Should return an access_token and a valid id_token when a valid refresh_token is provided and the scopes contain \'openid\'.', done => {
+		it('06 - Should return an access_token and a valid id_token when a valid refresh_token is provided and the scopes contain \'openid\'.', done => {
 
 			const eventHandlerStore = {}
 			registerAllHandlers(eventHandlerStore)

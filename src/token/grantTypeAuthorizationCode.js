@@ -27,12 +27,12 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	// A. Validates input
 	if (!eventHandlerStore.get_service_account)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
-
 	if (!eventHandlerStore.get_token_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
-
 	if (!eventHandlerStore.generate_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.get_token_expiry)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_expiry' handler.`)
 
 	if (!client_id)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)

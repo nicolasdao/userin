@@ -130,9 +130,6 @@ class MockStrategy extends Strategy {
  * @return {[String]}	output.scopes		Service account's scopes.	
  */
 MockStrategy.prototype.get_service_account = (root, { client_id, client_secret }) => {
-	if (!client_id)
-		throw new Error('Missing required \'client_id\'')
-
 	const serviceAccount = SERVICE_ACCOUNT_STORE.find(x => x.client_id == client_id)
 	if (!serviceAccount)
 		throw new Error(`Service account ${client_id} not found`)
@@ -162,16 +159,7 @@ MockStrategy.prototype.get_service_account = (root, { client_id, client_secret }
  * @return {String}		claims.scope
  */
 MockStrategy.prototype.get_token_claims = (root, { type, token }) => {
-	
-	if (!type)
-		throw new Error('Missing required \'type\'.')
-	if (type != 'code' && type != 'access_token' && type != 'id_token' && type != 'refresh_token')
-		throw new Error(`Invalid 'type'. '${type}' is not supported. Valid values are: 'code', 'access_token', 'id_token', 'refresh_token'.`)
-	if (!token)
-		throw new Error('Missing required \'token\'.')
-
-	const claims = tokenHelper.decrypt(token)
-	
+	const claims = tokenHelper.decrypt(token,type)
 	return claims
 }
 
@@ -187,10 +175,7 @@ MockStrategy.prototype.get_token_claims = (root, { type, token }) => {
  * @return {Number}		output.expires_in
  */
 MockStrategy.prototype.generate_token = (root, { type, claims }) => {
-	if (type != 'code' && type != 'access_token' && type != 'id_token' && type != 'refresh_token')
-		throw new Error(`Invalid 'type'. '${type}' is not supported. Valid values are: 'code', 'access_token', 'id_token', 'refresh_token'.`)
-
-	return tokenHelper.createValid(claims)
+	return tokenHelper.createValid(claims,type)
 }
 
 /**
@@ -206,8 +191,6 @@ MockStrategy.prototype.generate_token = (root, { type, claims }) => {
  * @return {[Object]}	output.client_ids
  */
 MockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }) => {
-	if (!user_id)
-		throw new Error('Missing required \'user_id\'')
 
 	const user = USER_STORE.find(x => x.id == user_id)
 	if (!user)
@@ -248,12 +231,6 @@ MockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }) => {
  * @return {[Object]}	user.client_ids		
  */
 MockStrategy.prototype.get_end_user = (root, { user }) => {
-	if (!user)
-		throw new Error('Missing required \'user\'')
-	if (!user.username)
-		throw new Error('Missing required \'user.username\'')
-	if (!user.password)
-		throw new Error('Missing required \'user.password\'')
 
 	const existingUser = USER_STORE.find(x => x.email == user.username)
 	if (!existingUser)
@@ -284,12 +261,6 @@ MockStrategy.prototype.get_end_user = (root, { user }) => {
  * @return {[Object]}	user.client_ids		
  */
 MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
-	if (!user)
-		throw new Error('Missing required \'user\'')
-	if (!user.id)
-		throw new Error('Missing required \'user.id\'')
-	if (!strategy)
-		throw new Error('Missing required \'strategy\'')
 
 	const existingUser = USER_TO_FIP_STORE.find(x => x.strategy == strategy && x.strategy_user_id == user.id)
 	if (!existingUser)
@@ -300,6 +271,24 @@ MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
 	return {
 		id: existingUser.user_id,
 		client_ids
+	}
+}
+
+/**
+ * Gets the expiry time in seconds for each token.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * 
+ * @return {Number}		id_token			
+ * @return {Number}		access_token		
+ * @return {Number}		refresh_token		
+ * @return {Number}		code	
+ */
+MockStrategy.prototype.get_token_expiry = () => {
+	return {
+		id_token: 3600,
+		access_token: 3600,
+		code: 30
 	}
 }
 

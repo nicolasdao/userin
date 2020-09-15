@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/nicolasdao/userin/compare/v1.1.0...v1.2.0) (2020-09-15)
+
+
+### Bug Fixes
+
+* Linting issue ([0a6727b](https://github.com/nicolasdao/userin/commit/0a6727b8088e4a46a70ffc94bc0ee39df6759f63))
+
 ## [1.1.0](https://github.com/nicolasdao/userin/compare/v1.0.2...v1.1.0) (2020-09-15)
 
 

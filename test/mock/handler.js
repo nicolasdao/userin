@@ -171,8 +171,7 @@ MockStrategy.prototype.get_token_claims = (root, { type, token }) => {
  * @param  {Object}		claims
  * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
  * 
- * @return {String}		output.token
- * @return {Number}		output.expires_in
+ * @return {String}		token
  */
 MockStrategy.prototype.generate_token = (root, { type, claims }) => {
 	return tokenHelper.createValid(claims,type)

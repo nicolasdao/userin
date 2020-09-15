@@ -219,7 +219,7 @@ describe('userinfo', () => {
 			registerAllHandlers(eventHandlerStore)
 
 			co(function *() {
-				const { token:access_token } = tokenHelper.createExpired({
+				const access_token = tokenHelper.createExpired({
 					iss: 'https://userin.com',
 					sub: 1,
 					aud: 'https://unittest.com',

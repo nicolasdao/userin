@@ -5,20 +5,12 @@ const KEY = 'supersecret'
 const createToken = delay => claims => {
 	claims = claims || {}
 	const exp = Math.floor(Date.now()/1000) + delay
-	return {
-		token: jwt.sign({ ...claims, exp }, KEY),
-		expires_in: delay	
-	} 
+	return jwt.sign({ ...claims, exp }, KEY)
 }
 
 const createValid = claims => {
 	claims = claims || {}
-	const expires_in = (claims.exp||0) - Math.floor(Date.now()/1000)
-
-	return {
-		token: jwt.sign(claims, KEY),
-		expires_in: expires_in < 0 ? 0 : expires_in
-	}
+	return jwt.sign(claims, KEY)
 }
 
 const decryptToken = token => jwt.decode(token)

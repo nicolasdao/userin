@@ -46,14 +46,17 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 				audiences, 
 				scopes
 			}),
-			...tokenOIDCtime
+			...tokenOIDCtime.claims
 		}
 
-		const [errors, result] = yield eventHandlerStore.generate_token.exec({ type, claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type, claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
-			return result
+			return {
+				token,
+				expires_in: tokenOIDCtime.expires_in
+			}
 	})
 
 	eventHandlerStore[eventName] = new EventHandler(handler)
@@ -100,14 +103,17 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 				scopes,
 				extra: identityClaims.claims||{}
 			}),
-			...tokenOIDCtime
+			...tokenOIDCtime.claims
 		}
 
-		const [errors, result] = yield eventHandlerStore.generate_token.exec({ type:'id_token', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'id_token', claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
-			return result
+			return {
+				token,
+				expires_in: tokenOIDCtime.expires_in
+			}
 	})
 
 	eventHandlerStore[eventName] = new EventHandler(handler)
@@ -134,14 +140,17 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 				user_id, 
 				scopes
 			}),
-			...tokenOIDCtime
+			...tokenOIDCtime.claims
 		}
 
-		const [errors, result] = yield eventHandlerStore.generate_token.exec({ type:'code', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'code', claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
-			return result
+			return {
+				token,
+				expires_in: tokenOIDCtime.expires_in
+			}
 	})
 
 	eventHandlerStore[eventName] = new EventHandler(handler)

@@ -230,7 +230,7 @@ describe('token', () => {
 			registerAllHandlers(eventHandlerStore)
 
 			co(function *() {
-				const { token:code } = tokenHelper.createExpired({
+				const code = tokenHelper.createExpired({
 					iss: 'https://userin.com',
 					sub: stubbedUser.user_id,
 					aud: '',
@@ -238,7 +238,7 @@ describe('token', () => {
 					scope: 'openid profile email'
 				})
 
-				const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { ...stubbedPayload, code })
+				const [errors, data] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { ...stubbedPayload, code })
 				
 				assert.isOk(errors, '01')
 				assert.isOk(errors.some(e => e.message && e.message.indexOf('Token or code has expired') >= 0), '02')

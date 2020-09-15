@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/nicolasdao/userin/compare/v1.0.2...v1.1.0) (2020-09-15)
+
+
+### Features
+
+* Add support for configuring the token expiry time ([59dc5c2](https://github.com/nicolasdao/userin/commit/59dc5c2653867879e1f4de3a0b0dd9f2532d94ef))
+
 ### [1.0.2](https://github.com/nicolasdao/userin/compare/v1.0.1...v1.0.2) (2020-09-14)
 
 ### [1.0.1](https://github.com/nicolasdao/userin-core/compare/v1.0.0...v1.0.1) (2020-09-14)

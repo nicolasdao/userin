@@ -33,20 +33,19 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 		if (!eventHandlerStore.generate_token)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 		
-		const getTokenOIDCtime = oauth2Params.getTokenOIDCtime(type)
-		const [tokenOIDCtimeErrors, tokenOIDCtime] = yield getTokenOIDCtime(eventHandlerStore)
-		if (tokenOIDCtimeErrors)
-			throw wrapErrors(errorMsg, tokenOIDCtimeErrors)
+		const getBasicOIDCclaims = oauth2Params.getBasicOIDCclaims(type)
+		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield getBasicOIDCclaims(eventHandlerStore)
+		if (basicOIDCclaimsErrors)
+			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
 		
 		const claims = { 
-			...oauth2Params.convert.toOIDCClaims({ 
-				iss: process.env.ISS, 
+			...oauth2Params.convert.toOIDCClaims({  
 				client_id, 
 				user_id, 
 				audiences, 
 				scopes
 			}),
-			...tokenOIDCtime.claims
+			...basicOIDCclaims.claims
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type, claims, state })
@@ -55,7 +54,7 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 		else 
 			return {
 				token,
-				expires_in: tokenOIDCtime.expires_in
+				expires_in: basicOIDCclaims.expires_in
 			}
 	})
 
@@ -74,12 +73,12 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
 		if (!eventHandlerStore.generate_token)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
-		if (!eventHandlerStore.get_token_expiry)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_expiry' handler.`)
+		if (!eventHandlerStore.get_config)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
-		const [tokenOIDCtimeErrors, tokenOIDCtime] = yield oauth2Params.getIdTokenOIDCtime(eventHandlerStore)
-		if (tokenOIDCtimeErrors)
-			throw wrapErrors(errorMsg, tokenOIDCtimeErrors)
+		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield oauth2Params.getIdTokenBasicClaims(eventHandlerStore)
+		if (basicOIDCclaimsErrors)
+			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
 		
 		if (!client_id)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
@@ -95,15 +94,14 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 			throw wrapErrors(errorMsg, clientIdErrors)
 					
 		const claims = {
-			...oauth2Params.convert.toOIDCClaims({ 
-				iss: process.env.ISS, 
+			...oauth2Params.convert.toOIDCClaims({  
 				client_id, 
 				user_id, 
 				audiences, 
 				scopes,
 				extra: identityClaims.claims||{}
 			}),
-			...tokenOIDCtime.claims
+			...basicOIDCclaims.claims
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'id_token', claims, state })
@@ -112,7 +110,7 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 		else 
 			return {
 				token,
-				expires_in: tokenOIDCtime.expires_in
+				expires_in: basicOIDCclaims.expires_in
 			}
 	})
 
@@ -126,21 +124,20 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 		const errorMsg = 'Failed to generate authorization code'
 		if (!eventHandlerStore.generate_token)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
-		if (!eventHandlerStore.get_token_expiry)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_expiry' handler.`)
+		if (!eventHandlerStore.get_config)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 		
-		const [tokenOIDCtimeErrors, tokenOIDCtime] = yield oauth2Params.getAuthorizationCodeOIDCtime(eventHandlerStore)
-		if (tokenOIDCtimeErrors)
-			throw wrapErrors(errorMsg, tokenOIDCtimeErrors)
+		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield oauth2Params.getAuthorizationCodeBasicClaims(eventHandlerStore)
+		if (basicOIDCclaimsErrors)
+			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
 		
 		const claims = {
-			...oauth2Params.convert.toOIDCClaims({ 
-				iss: process.env.ISS, 
+			...oauth2Params.convert.toOIDCClaims({  
 				client_id, 
 				user_id, 
 				scopes
 			}),
-			...tokenOIDCtime.claims
+			...basicOIDCclaims.claims
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'code', claims, state })
@@ -149,7 +146,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 		else 
 			return {
 				token,
-				expires_in: tokenOIDCtime.expires_in
+				expires_in: basicOIDCclaims.expires_in
 			}
 	})
 
@@ -180,9 +177,9 @@ const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
 	if (!eventName)
 		throw new Error('Missing required \'eventName\'')
 	if (!handler)
-		throw new Error('Missing required \'handler\'')
+		throw new Error(`Missing required ${eventName} 'handler'`)
 	if (typeof(handler) != 'function')
-		throw new Error(`Invalid 'handler'. Expect 'handler' to be a function, but found ${typeof(handler)} instead.`)
+		throw new Error(`Invalid ${eventName} handler. Expect 'handler' to be a function, but found ${typeof(handler)} instead.`)
 
 	const supportedEvents = [...SUPPORTED_EVENTS, 'process_fip_auth_response']
 

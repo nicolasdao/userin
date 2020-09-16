@@ -41,7 +41,6 @@ const CLAIMS = [
 	'phone_number_verified'
 ]
 
-process.env.ISS = 'https://userin.com'
 const AUDIENCES = ['https://unittest.com']
 
 const SERVICE_ACCOUNT_STORE = [{
@@ -274,20 +273,24 @@ MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
 }
 
 /**
- * Gets the expiry time in seconds for each token.
+ * Gets the strategy's configuration object. 
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
  * 
- * @return {Number}		id_token			
- * @return {Number}		access_token		
- * @return {Number}		refresh_token		
- * @return {Number}		code	
+ * @return {String}		output.iss		
+ * @return {Number}		output.expiry.id_token			
+ * @return {Number}		output.expiry.access_token		
+ * @return {Number}		output.expiry.refresh_token		
+ * @return {Number}		output.expiry.code	
  */
-MockStrategy.prototype.get_token_expiry = () => {
+MockStrategy.prototype.get_config = () => {
 	return {
-		id_token: 3600,
-		access_token: 3600,
-		code: 30
+		iss: 'https://userin.com',
+		expiry: {
+			id_token: 3600,
+			access_token: 3600,
+			code: 30
+		}
 	}
 }
 

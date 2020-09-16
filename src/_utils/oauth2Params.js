@@ -102,7 +102,7 @@ const base64ToObject = str64 => catchErrors(() => {
 	}
 })
 
-const getTokenOIDCtime = type => 
+const getBasicOIDCclaims = type => 
 /**
  * Gets the time OIDC claims for a specific token type. 
  * 
@@ -115,31 +115,35 @@ const getTokenOIDCtime = type =>
  */
 	eventHandlerStore => catchErrors(co(function *() {
 		const errorMsg = `Failed to get ${type} expiry time`
-		if (!eventHandlerStore.get_token_expiry)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_expiry' handler.`)
+		if (!eventHandlerStore.get_config)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
-		const [tokenExpiryErrors, tokenExpiry] = yield eventHandlerStore.get_token_expiry.exec()
-		if (tokenExpiryErrors)
-			throw wrapErrors(errorMsg, tokenExpiryErrors)
-
-		if (!tokenExpiry)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing configuration tokens expiry times.`)
-
-		if (type == 'id_token' && !tokenExpiry.id_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing configuration id_token expiry time.`)
-		if (type == 'access_token' && !tokenExpiry.access_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing configuration access_token expiry time.`)
-		if (type == 'code' && !tokenExpiry.code)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing configuration code expiry time.`)
+		const [strategyConfigErrors, strategyConfig] = yield eventHandlerStore.get_config.exec()
+		if (strategyConfigErrors)
+			throw wrapErrors(errorMsg, strategyConfigErrors)
+		
+		if (!strategyConfig)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing strategy configuration object.`)
+		if (!strategyConfig.iss)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required OIDC 'iss' property.`)
+		if (!strategyConfig.expiry)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required 'expiry' property.`)
+		if (type == 'id_token' && !strategyConfig.expiry.id_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.id_token' expiry time.`)
+		if (type == 'access_token' && !strategyConfig.expiry.access_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.access_token' expiry time.`)
+		if (type == 'code' && !strategyConfig.expiry.code)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.code' expiry time.`)
 
 		const now = Math.floor(Date.now()/1000)
-		const expityTime = tokenExpiry[type]
+		const expiryTime = strategyConfig.expiry[type]
 
-		if (expityTime && isNaN(expityTime*1))
-			throw new userInError.InternalServerError(`${errorMsg}. ${type} expiry time ${expityTime} is not a number.`)
+		if (expiryTime && isNaN(expiryTime*1))
+			throw new userInError.InternalServerError(`${errorMsg}. ${type} expiry time ${expiryTime} is not a number.`)
 
-		const claims = expityTime ? { iat: now, exp: now+(expityTime*1) } : { iat: now } 
-		const expires_in = expityTime || null
+		const basicClaims = { iss:strategyConfig.iss, iat: now }
+		const claims = expiryTime ? { ...basicClaims, exp: now+(expiryTime*1) } : basicClaims
+		const expires_in = expiryTime || null
 
 		return {
 			claims,
@@ -162,9 +166,9 @@ module.exports = {
 		claimsExpired: areClaimsExpired,
 		clientId: verifyClientIds
 	},
-	getIdTokenOIDCtime: getTokenOIDCtime('id_token'),
-	getAccessTokenOIDCtime: getTokenOIDCtime('access_token'),
-	getRefreshTokenOIDCtime: getTokenOIDCtime('refresh_token'),
-	getAuthorizationCodeOIDCtime: getTokenOIDCtime('code'),
-	getTokenOIDCtime
+	getIdTokenBasicClaims: getBasicOIDCclaims('id_token'),
+	getAccessTokenBasicClaims: getBasicOIDCclaims('access_token'),
+	getRefreshTokenBasicClaims: getBasicOIDCclaims('refresh_token'),
+	getAuthorizationCodeBasicClaims: getBasicOIDCclaims('code'),
+	getBasicOIDCclaims
 }

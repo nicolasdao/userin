@@ -7,6 +7,7 @@ const userinfoApi = require('./userinfo')
 const defaultConfig = require('./config')
 const eventRegister = require('./eventRegister')
 const pluginManager = require('./pluginManager')
+const runTestSuite = require('../src/test')
 const { request: { getParams }, config:{ prefixPathname }, response: { formatResponseError } } = require('./_utils')
 
 /**
@@ -99,7 +100,11 @@ class UserIn extends express.Router {
 	}
 }
 
-module.exports = UserIn
+module.exports = {
+	UserIn,
+	...require('userin-core'),
+	runTestSuite
+}
 
 
 

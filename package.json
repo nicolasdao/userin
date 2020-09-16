@@ -1,7 +1,7 @@
 {
   "name": "userin",
   "version": "1.2.0",
-  "description": "UserIn helps building an OpenID Connect web API as well as implemting OAuth 2.0 workflows that supports integration with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub)",
+  "description": "UserIn is an Express middleware to build OAuth 2.0 workflows that support integration with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). It also complies to the OpenID Connect specification.",
   "main": "src/index.js",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
     "puffy": "^1.2.1",
     "raw-body": "^2.4.1",
     "simple-template-utils": "0.0.6",
-    "userin-core": "^1.0.3"
+    "userin-core": "^1.1.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",

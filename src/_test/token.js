@@ -26,8 +26,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 		altClientId, 
 		strategy, 
 		accessTokenExpiresIn,
-		user: { id: user_id, username, password },
-		iss
+		user: { id: user_id, username, password }
 	} = data
 
 	const registerAllHandlers = eventHandlerStore => {
@@ -167,8 +166,8 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '11')
-					assert.equal(claims.iss, iss, '12')
-					assert.equal(claims.sub, 1, '13')
+					assert.equal(claims.iss, strategy.config.iss, '12')
+					assert.equal(claims.sub, user_id, '13')
 					assert.isOk(claims.aud != undefined, '14')
 					assert.equal(claims.client_id, client_id, '15')
 					assert.scopes(claims.scope, ['openid'], 15)
@@ -220,7 +219,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_config', (root) => {
 					const clone = JSON.parse(JSON.stringify(root))
-					clone.expiry.code = -1000
+					clone.tokenExpiry.code = -1000
 					return clone
 				})
 
@@ -697,7 +696,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '11')
-					assert.equal(claims.sub, 1, '12')
+					assert.equal(claims.sub, user_id, '12')
 					assert.isOk(claims.aud != undefined, '13')
 					assert.equal(claims.client_id, client_id, '14')
 					assert.scopes(claims.scope, ['openid'], 15)
@@ -731,7 +730,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '11')
-					assert.equal(claims.sub, 1, '12')
+					assert.equal(claims.sub, user_id, '12')
 					assert.isOk(claims.aud != undefined, '13')
 					assert.equal(claims.client_id, client_id, '14')
 					assert.isOk(claims.exp != undefined, '16')
@@ -1023,7 +1022,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '09')
-					assert.equal(claims.sub, 1, '10')
+					assert.equal(claims.sub, user_id, '10')
 					assert.isOk(claims.aud != undefined, '11')
 					assert.equal(claims.client_id, client_id, '12')
 					assert.scopes(claims.scope, ['openid', 'offline_access'], 13)

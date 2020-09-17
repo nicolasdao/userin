@@ -153,7 +153,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_config', (root) => {
 					const clone = JSON.parse(JSON.stringify(root))
-					clone.expiry.access_token = -1000
+					clone.tokenExpiry.access_token = -1000
 					return clone
 				})
 

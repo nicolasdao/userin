@@ -17,7 +17,7 @@ const { setUpScopeAssertion, logTestErrors } = require('./_core')
 setUpScopeAssertion(assert)
 
 module.exports = function runTest (data, skip, verboseLog) {
-	const { clientId:client_id, identityProvider, identityProviderUserId, altClientId, strategy } = data
+	const { clientId:client_id, identityProvider, identityProviderUserId, userId, altClientId, strategy } = data
 	const registerAllHandlers = eventHandlerStore => {
 		const registerEventHandler = eventRegister(eventHandlerStore)
 		registerEventHandler(strategy)
@@ -232,7 +232,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '11')
-					assert.equal(claims.sub, 1, '12')
+					assert.equal(claims.sub, userId, '12')
 					assert.isOk(claims.aud != undefined, '13')
 					assert.equal(claims.client_id, client_id, '14')
 					assert.scopes(claims.scope, ['openid'], 15)
@@ -264,7 +264,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					const claims = jwt.decode(result.id_token)
 					assert.isOk(claims, '11')
-					assert.equal(claims.sub, 1, '12')
+					assert.equal(claims.sub, userId, '12')
 					assert.isOk(claims.aud != undefined, '13')
 					assert.equal(claims.client_id, client_id, '14')
 					assert.scopes(claims.scope, ['openid', 'offline_access'], 15)

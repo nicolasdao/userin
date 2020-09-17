@@ -6,6 +6,15 @@ UserIn is an Express middleware to build OAuth 2.0 workflows that support integr
 > * [Getting started](#getting-started)
 > * [UserIn Strategy](#userin-strategy)
 > * [Events management](#events-management)
+>	- [`create_end_user`](#create_end_user)
+>	- [`generate_token`](#generate_token)
+>	- [`get_client`](#get_client)
+>	- [`get_config`](#get_config)
+>	- [`get_end_user`](#get_end_user)
+>	- [`get_fip_user`](#get_fip_user)
+>	- [`get_identity_claims`](#get_identity_claims)
+>	- [`get_token_claims`](#get_token_claims)
+>	- [`process_fip_auth_response`](#process_fip_auth_response)
 > * [Tokens & Authorization code requirements](#tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
 >	- [`access_token` requirements](#access_token-requirements)
@@ -37,13 +46,13 @@ class YourStrategy extends Strategy {
 	constructor() {
 		super()
 		this.name = 'yourstrategyname',
+		this.create_end_user = (root, user) => { /* Implement your logic here */ }
 		this.generate_token = (root, { type, claims }) => { /* Implement your logic here */ }
 		this.get_end_user = (root, { user }) => { /* Implement your logic here */ }
 		this.get_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
 		this.get_identity_claims = (root, { user_id, scopes }) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }) => { /* Implement your logic here */ }
 		this.get_token_claims = (root, { type, token }) => { /* Implement your logic here */ }
-		this.get_config = (root) => { /* Implement your logic here */ }
 	}
 }
 
@@ -65,17 +74,19 @@ app.listen(3330)
 
 # Events management
 
-UserIn allows to listen to certain key events as well as modify the output produced by event handlers. Each event is managed by a specific handler (originally defined in the [UserIn Strategy](#userin-strategy)). In reality, when an event is emitted, it passes a payload to a chain of handlers. Be default, that event handler chain contains only one handler. UserIn exposes an `on` API that allows to add new handlers on specific events. The supported events are:
+UserIn behaviors are managed via events and event handlers. Specific events are emitted to power OAuth 2.0 flows. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineers, this is your job to implement those event handlers in adequation with your own custom business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all:
 
-- `generate_token`
-- `get_end_user`
-- `get_fip_user`
-- `get_identity_claims`
-- `get_client`
-- `get_token_claims`
-- `get_config`
+1. `create_end_user`
+2. `generate_token`
+3. `get_client`
+4. `get_config`: Automatically implemented.
+5. `get_end_user`
+6. `get_fip_user`
+7. `get_identity_claims`
+8. `get_token_claims`
+9. `process_fip_auth_response`: Automatically implemented.
 
-To add a new handler use the `on` API on the `UserIn` instance as follow:
+Each of those events, triggers a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your own [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
 
 ```js
 userIn.on('generate_token', (root, payload) => {
@@ -99,6 +110,69 @@ userIn.on('generate_token', (root, payload) => {
 ```
 
 If, on the other hand, your handler returns a response, that response overrides `root`. 
+
+## `create_end_user`
+
+## `generate_token`
+
+## `get_client`
+
+## `get_config`
+
+```js
+/**
+ * Gets the strategy's configuration object. 
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there 
+ *                              						are multiple handlers defined for the same event. 
+ * @return {String}		output.iss		
+ * @return {Number}		output.expiry.id_token			
+ * @return {Number}		output.expiry.access_token		
+ * @return {Number}		output.expiry.refresh_token		
+ * @return {Number}		output.expiry.code	
+ */
+const get_config = (root) => {
+	console.log('get_config fired')
+	console.log('Previous handler response:')
+	console.log(root)
+	
+	return {
+		iss: 'https://userin.com',
+		expiry: {
+			id_token: 3600,
+			access_token: 3600,
+			code: 30
+		}
+	}
+}
+```
+
+## `get_end_user`
+
+## `get_fip_user`
+
+## `get_identity_claims`
+
+## `get_token_claims`
+
+## `process_fip_auth_response`
+
+```js
+const handler = (root, { accessToken, refreshToken, profile }) => {
+	console.log('process_fip_auth_response fired')
+	console.log('Previous handler response:')
+	console.log(root)
+	
+	const id = profile.id
+	const { givenName: firstName, middleName, familyName: lastName } = profile.name || {}
+	const email = ((profile.emails || [])[0] || {}).value || null
+	const profileImg = ((profile.photos || [])[0] || {}).value
+
+	const user = { id, firstName, middleName, lastName, email, profileImg, accessToken, refreshToken }
+
+	return user
+}
+```
 
 # Tokens & Authorization code requirements
 ## `id_token` requirements

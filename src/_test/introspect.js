@@ -24,8 +24,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 		altClientId,
 		altClientSecret,
 		strategy, 
-		user: { username, password },
-		iss,
+		user: { id: user_id, username, password },
 		aud
 	} = data
 
@@ -59,7 +58,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const stubbedServiceAccount = { client_id, client_secret }
 				const [codeErrors, { token:code }] = yield eventHandlerStore.generate_authorization_code.exec({
 					...stubbedServiceAccount, 
-					user_id:1, 
+					user_id, 
 					scopes:['openid', 'offline_access']
 				})
 				if (codeErrors)
@@ -119,8 +118,8 @@ module.exports = function runTest (data, skip, verboseLog) {
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, iss, '06')
-					assert.equal(tokenInfo.sub, 1, '07')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
 					assert.equal(tokenInfo.aud, aud, '08')
 					assert.equal(tokenInfo.client_id, client_id, '09')
 					assert.equal(tokenInfo.token_type, 'Bearer', '10')
@@ -150,8 +149,8 @@ module.exports = function runTest (data, skip, verboseLog) {
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, iss, '06')
-					assert.equal(tokenInfo.sub, 1, '07')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
 					assert.equal(tokenInfo.aud, aud, '08')
 					assert.equal(tokenInfo.client_id, client_id, '09')
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
@@ -182,8 +181,8 @@ module.exports = function runTest (data, skip, verboseLog) {
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, iss, '06')
-					assert.equal(tokenInfo.sub, 1, '07')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
 					assert.equal(tokenInfo.aud, aud, '08')
 					assert.equal(tokenInfo.client_id, client_id, '09')
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
@@ -378,7 +377,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_config', (root) => {
 					const clone = JSON.parse(JSON.stringify(root))
-					clone.expiry.access_token = -1000
+					clone.tokenExpiry.access_token = -1000
 					return clone
 				})
 

@@ -126,17 +126,17 @@ const getBasicOIDCclaims = type =>
 			throw new userInError.InternalServerError(`${errorMsg}. Missing strategy configuration object.`)
 		if (!strategyConfig.iss)
 			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required OIDC 'iss' property.`)
-		if (!strategyConfig.expiry)
-			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required 'expiry' property.`)
-		if (type == 'id_token' && !strategyConfig.expiry.id_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.id_token' expiry time.`)
-		if (type == 'access_token' && !strategyConfig.expiry.access_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.access_token' expiry time.`)
-		if (type == 'code' && !strategyConfig.expiry.code)
-			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'expiry.code' expiry time.`)
+		if (!strategyConfig.tokenExpiry)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required 'tokenExpiry' property.`)
+		if (type == 'id_token' && !strategyConfig.tokenExpiry.id_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'tokenExpiry.id_token' expiry time.`)
+		if (type == 'access_token' && !strategyConfig.tokenExpiry.access_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'tokenExpiry.access_token' expiry time.`)
+		if (type == 'code' && !strategyConfig.tokenExpiry.code)
+			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration  is missing the required 'tokenExpiry.code' expiry time.`)
 
 		const now = Math.floor(Date.now()/1000)
-		const expiryTime = strategyConfig.expiry[type]
+		const expiryTime = strategyConfig.tokenExpiry[type]
 
 		if (expiryTime && isNaN(expiryTime*1))
 			throw new userInError.InternalServerError(`${errorMsg}. ${type} expiry time ${expiryTime} is not a number.`)

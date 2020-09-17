@@ -1,8 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error:userInError } = require('userin-core')
 const { oauth2Params } = require('./_utils')
-const { Strategy, SUPPORTED_EVENTS } = require('userin-core')
+const { error:userInError, Strategy, verifyStrategy, getEvents } = require('userin-core')
 
 function EventHandler(handler) {
 	let _this = this
@@ -181,11 +180,6 @@ const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
 	if (typeof(handler) != 'function')
 		throw new Error(`Invalid ${eventName} handler. Expect 'handler' to be a function, but found ${typeof(handler)} instead.`)
 
-	const supportedEvents = [...SUPPORTED_EVENTS, 'process_fip_auth_response']
-
-	if (supportedEvents.indexOf(eventName) < 0)
-		throw new Error(`Invalid 'eventName'. ${eventName} is not supported. Expect 'eventName' to be equal to one of the following values: ${SUPPORTED_EVENTS.join(', ')}.`)
-
 	if (eventHandlerStore[eventName])
 		eventHandlerStore[eventName].addHandler(handler)
 	else
@@ -226,9 +220,18 @@ module.exports = eventHandlerStore => {
 	 */
 	const registerEventHandler = (...args) => {
 		const strategyHandler = args[0]
-		if (strategyHandler && strategyHandler instanceof Strategy)
-			SUPPORTED_EVENTS.forEach(eventName => registerEvent(eventName, strategyHandler[eventName]))
-		else {
+		if (strategyHandler && strategyHandler instanceof Strategy) {
+			// 1. Verify the UserIn strategy
+			verifyStrategy(strategyHandler)
+			// 2. Register the default 'get_config' event handler
+			registerEventHandler('get_config', () => strategyHandler.config)
+			// 3. Regsiter all the strategy's events handler
+			const events = getEvents()
+			events.forEach(eventName => {
+				if (strategyHandler[eventName])
+					registerEvent(eventName, strategyHandler[eventName])
+			})
+		} else {
 			const [eventName, handler] = args
 			registerEvent(eventName, handler)
 		}

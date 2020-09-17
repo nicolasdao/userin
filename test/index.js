@@ -11,9 +11,19 @@
 const { assert } = require('chai')
 const express = require('express')
 const { UserIn, verifyStrategy, runTestSuite } = require('../src')
-const { MockStrategy } = require('./mock/handler')
+const { MockStrategy, GOOD_CLIENT, BAD_CLIENT, END_USER, FIP_USER_TO_STRATEGY } = require('./mock/handler')
 
-const strategy = new MockStrategy()
+const strategy = new MockStrategy({
+	modes:['openid'],
+	openid: {
+		iss: 'https://www.userin.com',
+		tokenExpiry: {
+			id_token: 3600,
+			access_token: 3600,
+			code: 30
+		}
+	}
+})
 
 describe('UserIn', () => {
 	describe('constructor', () => {
@@ -38,52 +48,54 @@ describe('MockStrategy', () => {
 runTestSuite({
 	// skip: [
 	// 	'authorize',
-	// 	'introspect',
+	// 	// 'introspect',
 	// 	'token',
 	// 	'userinfo'
 	// ],
 	verbose: true,
 	strategy,
 	client: { 
-		id: 'default', 
-		secret: 123, 
+		id: GOOD_CLIENT.client_id, 
+		secret: GOOD_CLIENT.client_secret, 
+		aud: GOOD_CLIENT.audiences.join(' '),
 		user: { 
-			id: 1,
-			username: 'nic@cloudlessconsulting.com', 
-			password: 123456
+			id: END_USER.id,
+			username: END_USER.email, 
+			password: END_USER.password
 		},
 		fipUser: { 
-			id: 23, 
-			fip: 'facebook'
+			id: FIP_USER_TO_STRATEGY.user_id,
+			fipUserId: FIP_USER_TO_STRATEGY.strategy_user_id, 
+			fip: FIP_USER_TO_STRATEGY.strategy
 		}
 	},
 	altClient: { 
-		id: 'fraudster', 
-		secret: 456 
+		id: BAD_CLIENT.client_id, 
+		secret: BAD_CLIENT.client_secret
 	},
 	claimStubs: [{
 		scope:'profile',
 		claims: {
-			given_name: 'Nic',
-			family_name: 'Dao',
-			zoneinfo: 'Australia/Sydney'
+			given_name: END_USER.given_name,
+			family_name: END_USER.family_name,
+			zoneinfo: END_USER.zoneinfo
 		}
 	}, {
 		scope:'email',
 		claims: {
-			email: 'nic@cloudlessconsulting.com',
-			email_verified: true
+			email: END_USER.email,
+			email_verified: END_USER.email_verified
 		}
 	}, {
 		scope:'phone',
 		claims: {
-			phone: '+6112345678',
-			phone_number_verified: false
+			phone: END_USER.phone,
+			phone_number_verified: END_USER.phone_number_verified
 		}
 	}, {
 		scope:'address',
 		claims: {
-			address: 'Some street in Sydney'
+			address: END_USER.address
 		}
 	}]
 })

@@ -37,6 +37,7 @@ module.exports = function runTestSuite({
 	strategy,
 	client: { 
 		id: clientId, 
+		aud,
 		secret: clientSecret, 
 		user: { 
 			id:userId, 
@@ -44,7 +45,8 @@ module.exports = function runTestSuite({
 			password
 		}, 
 		fipUser: { 
-			id:fipUserId, 
+			id: userIdCreatedFromFip,
+			fipUserId, 
 			fip 
 		} 
 	},
@@ -61,6 +63,7 @@ module.exports = function runTestSuite({
 		clientId, 
 		identityProvider: fip, 
 		identityProviderUserId: fipUserId, 
+		userId: userIdCreatedFromFip,
 		altClientId, 
 		strategy
 	}, skipTest('authorize', skip, only), verbose)
@@ -72,11 +75,11 @@ module.exports = function runTestSuite({
 		altClientSecret,
 		strategy, 
 		user: { 
+			id:userId,
 			username, 
 			password
 		},
-		iss: 'https://userin.com',
-		aud: 'https://unittest.com'
+		aud
 	}, skipTest('introspect', skip, only), verbose)
 
 	tokenTest({
@@ -89,8 +92,7 @@ module.exports = function runTestSuite({
 			id: userId, 
 			username, 
 			password
-		},
-		iss: 'https://userin.com'
+		}
 	}, skipTest('token', skip, only), verbose)
 
 	userinfoTest({

@@ -41,22 +41,24 @@ const CLAIMS = [
 	'phone_number_verified'
 ]
 
-const AUDIENCES = ['https://unittest.com']
+const AUDIENCES = ['https://www.unittest.com']
 
-const CLIENT_STORE = [{
-	client_id:'default', 
-	client_secret:123, 
+const GOOD_CLIENT = {
+	client_id:'app123', 
+	client_secret:98765, 
 	scopes:SCOPES, 
 	audiences:AUDIENCES
-}, {
-	client_id:'fraudster', 
-	client_secret:456, 
+}
+
+const BAD_CLIENT = {
+	client_id:'badapp123', 
+	client_secret:468269832, 
 	scopes:['profile'], 
 	audiences:AUDIENCES
-}]
+}
 
-const USER_STORE = [{
-	id:1,
+const END_USER = {
+	id:11,
 	given_name:'Nic',
 	family_name:'Dao',
 	zoneinfo: 'Australia/Sydney',
@@ -66,17 +68,35 @@ const USER_STORE = [{
 	phone: '+6112345678',
 	phone_number_verified: false,
 	password: 123456
-}]
+}
 
-const USER_TO_CLIENT_STORE = [{
-	user_id: 1,
-	client_id: 'default'
-}]
+const FIP_USER = {
+	id:23,
+	given_name:'Tom',
+	family_name:'Cruise',
+	zoneinfo: 'Australia/Sydney',
+	email:'tom@cruise.com',
+	email_verified:true,
+	address:'Some street in LA',
+	phone: '+112345678',
+	phone_number_verified: false
+}
 
-const USER_TO_FIP_STORE = [{
-	user_id:1,
+const FIP_USER_TO_STRATEGY = {
+	user_id:FIP_USER.id,
 	strategy:'facebook',
-	strategy_user_id:23
+	strategy_user_id:76
+}
+
+const CLIENT_STORE = [GOOD_CLIENT, BAD_CLIENT]
+const USER_STORE = [END_USER, FIP_USER]
+const USER_TO_FIP_STORE = [FIP_USER_TO_STRATEGY]
+const USER_TO_CLIENT_STORE = [{
+	user_id: USER_STORE[0].id,
+	client_id: CLIENT_STORE[0].client_id
+},{
+	user_id: USER_STORE[1].id,
+	client_id: CLIENT_STORE[0].client_id
 }]
 
 const getProfileClaims = entity => {
@@ -112,8 +132,8 @@ const getAddressClaims = entity => {
 }
 
 class MockStrategy extends Strategy {
-	constructor() {
-		super()
+	constructor(config) {
+		super(config)
 		this.name = 'mock'
 	}
 }
@@ -272,31 +292,14 @@ MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
 	}
 }
 
-/**
- * Gets the strategy's configuration object. 
- * 
- * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * 
- * @return {String}		output.iss		
- * @return {Number}		output.expiry.id_token			
- * @return {Number}		output.expiry.access_token		
- * @return {Number}		output.expiry.refresh_token		
- * @return {Number}		output.expiry.code	
- */
-MockStrategy.prototype.get_config = () => {
-	return {
-		iss: 'https://userin.com',
-		expiry: {
-			id_token: 3600,
-			access_token: 3600,
-			code: 30
-		}
-	}
-}
-
 module.exports = {
 	MockStrategy,
-	getClaims: () => CLAIMS
+	getClaims: () => CLAIMS,
+	GOOD_CLIENT,
+	BAD_CLIENT,
+	END_USER,
+	FIP_USER,
+	FIP_USER_TO_STRATEGY
 }
 
 

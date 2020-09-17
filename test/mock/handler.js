@@ -1,5 +1,6 @@
 const tokenHelper = require('./token')
-const { Strategy } = require('userin-core')
+const { Strategy, error: { NotFoundError } } = require('userin-core')
+const crypto = require('crypto')
 
 const SCOPES = [
 	'profile',
@@ -168,7 +169,7 @@ MockStrategy.prototype.get_client = (root, { client_id, client_secret }) => {
  * @param  {String}		type				Values are restricted to: `code`, `access_token`, `id_token`, `refresh_token`
  * @param  {Object}		token
  * 
- * @return {Object}		claims				This object should always defined the following properties at a mimumum.
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
  * @return {String}		claims.iss			
  * @return {Object}		claims.sub			String or number
  * @return {String}		claims.aud
@@ -244,7 +245,7 @@ MockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }) => {
  * @param  {String}		client_id			Optional. Might be useful for logging or other custom business logic.
  * @param  {String}		state				Optional. Might be useful for logging or other custom business logic.
  * 
- * @return {Object}		user				This object should always defined the following properties at a mimumum.
+ * @return {Object}		user				This object should always defined the following properties at a minimum.
  * @return {Object}		user.id				String ot number
  * @return {[Object]}	user.client_ids		
  */
@@ -252,8 +253,8 @@ MockStrategy.prototype.get_end_user = (root, { user }) => {
 
 	const existingUser = USER_STORE.find(x => x.email == user.username)
 	if (!existingUser)
-		throw new Error(`user ${user.username} not found`)
-	if (existingUser.password != user.password)
+		throw new NotFoundError(`user ${user.username} not found`)
+	if (user.password && existingUser.password != user.password)
 		throw new Error('Incorrect username or password')
 
 	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
@@ -274,7 +275,7 @@ MockStrategy.prototype.get_end_user = (root, { user }) => {
  * @param  {String}		client_id			Optional. Might be useful for logging or other custom business logic.
  * @param  {String}		state				Optional. Might be useful for logging or other custom business logic.
  * 
- * @return {Object}		user				This object should always defined the following properties at a mimumum.
+ * @return {Object}		user				This object should always defined the following properties at a minimum.
  * @return {Object}		user.id				String ot number
  * @return {[Object]}	user.client_ids		
  */
@@ -289,6 +290,26 @@ MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
 	return {
 		id: existingUser.user_id,
 		client_ids
+	}
+}
+
+/**
+ * Inserts new user.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		user.username		
+ * @param  {String}		user.password		
+ * @param  {String}		user...				More properties
+ * 
+ * @return {Object}		user				This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id				String ot number
+ */
+MockStrategy.prototype.create_end_user = (root, { user }) => {
+	const id = crypto.randomBytes(7).toString('base64')
+	USER_STORE.push({ ...user, id })
+
+	return {
+		id
 	}
 }
 

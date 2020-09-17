@@ -37,7 +37,7 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	const scopes = oauth2Params.convert.thingToThings(payload.scope||'')
 
 	if (TRACE_ON)
-		console.log('INFO - Request to login user')
+		console.log(`INFO - Request to login user ${payload.username||'unknown username'}`)
 	// A. Validates input
 	if (!eventHandlerStore.get_end_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
@@ -50,7 +50,7 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Login user
-	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec(user)
+	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec({ user })
 	if (existingUserErrors)
 		throw wrapErrors(errorMsg, existingUserErrors)
 

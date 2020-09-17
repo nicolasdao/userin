@@ -37,7 +37,7 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	const scopes = oauth2Params.convert.thingToThings(payload.scope||'')
 
 	if (TRACE_ON)
-		console.log('INFO - Request to login user')
+		console.log(`INFO - Request to signup user ${payload.username||'unknown username'}`)
 	// A. Validates input
 	if (!eventHandlerStore.get_end_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
@@ -52,15 +52,15 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Checks if the user already exists
-	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec({ username:user.username })
-	if (existingUserErrors)
+	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec({ user: { username:user.username } })
+	if (existingUserErrors && !existingUserErrors.some(e => e.code == 404))
 		throw wrapErrors(errorMsg, existingUserErrors)
 
 	if (existingUser)
 		throw new userInError.InvalidUserError(`${errorMsg}. User ${user.username} already exists.`)
 
 	// Creates the new user
-	const [newUserErrors, newUser] = yield eventHandlerStore.create_end_user.exec(user)
+	const [newUserErrors, newUser] = yield eventHandlerStore.create_end_user.exec({ user })
 	if (newUserErrors)
 		throw wrapErrors(errorMsg, newUserErrors)
 

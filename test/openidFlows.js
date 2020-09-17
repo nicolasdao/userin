@@ -8,12 +8,10 @@
 
 // To skip a test, either use 'xit' instead of 'it', or 'describe.skip' instead of 'describe'
 
-const { assert } = require('chai')
-const express = require('express')
-const { UserIn, verifyStrategy, runTestSuite } = require('../src')
+const { testSuite } = require('../src')
 const { MockStrategy, GOOD_CLIENT, BAD_CLIENT, END_USER, FIP_USER_TO_STRATEGY } = require('./mock/handler')
 
-const strategy = new MockStrategy({
+const openIdConfig = {
 	modes:['openid'],
 	openid: {
 		iss: 'https://www.userin.com',
@@ -23,29 +21,11 @@ const strategy = new MockStrategy({
 			code: 30
 		}
 	}
-})
+}
 
-describe('UserIn', () => {
-	describe('constructor', () => {
-		it('Should inherits from Express Router', () => {
-			assert.isOk(UserIn.prototype instanceof express.Router, '01')
-		})
-	})
-})
+const strategy = new MockStrategy(openIdConfig)
 
-describe('MockStrategy', () => {
-	it('Should pass the basic verification', done => {
-		try {
-			verifyStrategy(strategy)
-			assert.isOk('MockStrategy passes the basic veriication step', '01')
-			done()
-		} catch (err) {
-			done(err)
-		}
-	})
-})
-
-runTestSuite({
+testSuite.testOpenId({
 	// skip: [
 	// 	'authorize',
 	// 	// 'introspect',

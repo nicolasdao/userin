@@ -121,11 +121,10 @@ const getBasicOIDCclaims = type =>
 		const [strategyConfigErrors, strategyConfig] = yield eventHandlerStore.get_config.exec()
 		if (strategyConfigErrors)
 			throw wrapErrors(errorMsg, strategyConfigErrors)
-		
+
 		if (!strategyConfig)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing strategy configuration object.`)
-		if (!strategyConfig.iss)
-			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required OIDC 'iss' property.`)
+
 		if (!strategyConfig.tokenExpiry)
 			throw new userInError.InternalServerError(`${errorMsg}. Strategy configuration is missing the required 'tokenExpiry' property.`)
 		if (type == 'id_token' && !strategyConfig.tokenExpiry.id_token)
@@ -141,7 +140,7 @@ const getBasicOIDCclaims = type =>
 		if (expiryTime && isNaN(expiryTime*1))
 			throw new userInError.InternalServerError(`${errorMsg}. ${type} expiry time ${expiryTime} is not a number.`)
 
-		const basicClaims = { iss:strategyConfig.iss, iat: now }
+		const basicClaims = { iss:strategyConfig.iss||null, iat: now }
 		const claims = expiryTime ? { ...basicClaims, exp: now+(expiryTime*1) } : basicClaims
 		const expires_in = expiryTime || null
 

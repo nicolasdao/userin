@@ -2,6 +2,8 @@ const authorizeTest = require('./authorize')
 const introspectTest = require('./introspect')
 const tokenTest = require('./token')
 const userinfoTest = require('./userinfo')
+const loginTest = require('./login')
+const signupTest = require('./signup')
 
 const skipTest = (name, skip, only) => {
 	if (skip)
@@ -33,7 +35,7 @@ const skipTest = (name, skip, only) => {
  * 
  * @return {Void}
  */
-module.exports = function runTestSuite({
+const testOpenId = ({
 	strategy,
 	client: { 
 		id: clientId, 
@@ -58,7 +60,7 @@ module.exports = function runTestSuite({
 	skip,
 	only, 
 	verbose
-}) {
+}) => {
 	authorizeTest({
 		clientId, 
 		identityProvider: fip, 
@@ -105,3 +107,22 @@ module.exports = function runTestSuite({
 		claimStubs
 	}, skipTest('userinfo', skip, only), verbose)
 }
+
+const testLoginSignup = ({
+	strategy,
+	user,
+	skip,
+	only, 
+	verbose
+}) => {
+	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
+	signupTest({ strategy, user }, skipTest('signup', skip, only), verbose)
+}
+
+module.exports = {
+	testOpenId,
+	testLoginSignup
+}
+
+
+

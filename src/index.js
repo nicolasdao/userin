@@ -152,7 +152,7 @@ class UserIn extends express.Router {
 module.exports = {
 	UserIn,
 	...require('userin-core'),
-	runTestSuite: require('../src/_test')
+	testSuite: require('../src/_test')
 }
 
 

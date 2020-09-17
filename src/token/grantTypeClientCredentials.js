@@ -4,7 +4,7 @@ const { error:userInError } = require('userin-core')
 const { oauth2Params } = require('../_utils')
 
 /**
- * Creates a new access token using service account credentials.
+ * Creates a new access token using the client credentials.
  *
  * @param {Object}		eventHandlerStore
  * @param {String}		client_id	
@@ -21,8 +21,8 @@ const { oauth2Params } = require('../_utils')
 const exec = (eventHandlerStore={}, { client_id, client_secret, scopes, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'client_credentials\''
 	// A. Validates input
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.generate_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 	if (!eventHandlerStore.get_config)
@@ -33,8 +33,8 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, scopes, state })
 	if (!client_secret)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
 
-	// B. Gets the service account's scopes and audiences
-	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_service_account.exec({ client_id, client_secret })
+	// B. Gets the client's scopes and audiences
+	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
 	if (serviceAccountErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors)
 	

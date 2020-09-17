@@ -15,7 +15,7 @@ const { oauth2Params } = require('../_utils')
  */
 const verifyScopes = (eventHandlerStore, { client_id, scopes }) => catchErrors(co(function *(){
 	const errorMsg = `Failed to verifies scopes access for client_id ${client_id||'unknown'}`
-	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_service_account.exec({ client_id })
+	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_client.exec({ client_id })
 	if (serviceAccountErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors)
 

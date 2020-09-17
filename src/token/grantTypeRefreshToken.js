@@ -24,8 +24,8 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	// A. Validates input
 	if (!eventHandlerStore.get_token_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.generate_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
 	if (!eventHandlerStore.get_config)
@@ -36,15 +36,15 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	if (!refresh_token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'refresh_token'`)
 
-	// B. Gets the service account's scopes and audiences as well as the claims originally associated with the refresh_token
+	// B. Gets the client's scopes and audiences as well as the claims originally associated with the refresh_token
 	const [[claimsErrors, claims], [serviceAccountErrors, serviceAccount]] = yield [
 		eventHandlerStore.get_token_claims.exec({ type:'refresh_token', token:refresh_token }),
-		eventHandlerStore.get_service_account.exec({ client_id })
+		eventHandlerStore.get_client.exec({ client_id })
 	]
 	if (claimsErrors || serviceAccountErrors)
 		throw wrapErrors(errorMsg, claimsErrors || serviceAccountErrors)
 
-	// C. Validates that the details match between the service account and the refresh_token.
+	// C. Validates that the details match between the client and the refresh_token.
 	if (!claims)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid refresh_token.`)
 	if (claims.exp) {

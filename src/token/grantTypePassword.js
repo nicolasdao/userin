@@ -22,8 +22,8 @@ const { oauth2Params } = require('../_utils')
 const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'password\''
 	// A. Validates input
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.get_end_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
 	if (!eventHandlerStore.generate_token)
@@ -41,7 +41,7 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Verifying those scopes are allowed for that client_id
-	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_service_account.exec({ client_id })
+	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_client.exec({ client_id })
 	if (serviceAccountErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors)
 

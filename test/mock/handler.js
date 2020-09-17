@@ -43,7 +43,7 @@ const CLAIMS = [
 
 const AUDIENCES = ['https://unittest.com']
 
-const SERVICE_ACCOUNT_STORE = [{
+const CLIENT_STORE = [{
 	client_id:'default', 
 	client_secret:123, 
 	scopes:SCOPES, 
@@ -68,7 +68,7 @@ const USER_STORE = [{
 	password: 123456
 }]
 
-const USER_TO_SERVICE_ACCOUNT_STORE = [{
+const USER_TO_CLIENT_STORE = [{
 	user_id: 1,
 	client_id: 'default'
 }]
@@ -119,7 +119,7 @@ class MockStrategy extends Strategy {
 }
 
 /**
- * Gets the service account's audiences and scopes. 
+ * Gets the client's audiences and scopes. 
  *  
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
  * @param  {String}		client_id
@@ -128,8 +128,8 @@ class MockStrategy extends Strategy {
  * @return {[String]}	output.audiences	Service account's audiences.	
  * @return {[String]}	output.scopes		Service account's scopes.	
  */
-MockStrategy.prototype.get_service_account = (root, { client_id, client_secret }) => {
-	const serviceAccount = SERVICE_ACCOUNT_STORE.find(x => x.client_id == client_id)
+MockStrategy.prototype.get_client = (root, { client_id, client_secret }) => {
+	const serviceAccount = CLIENT_STORE.find(x => x.client_id == client_id)
 	if (!serviceAccount)
 		throw new Error(`Service account ${client_id} not found`)
 	if (client_secret && serviceAccount.client_secret != client_secret)
@@ -194,7 +194,7 @@ MockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }) => {
 	if (!user)
 		throw new Error(`user_id ${user_id} not found.`)
 	
-	const client_ids = USER_TO_SERVICE_ACCOUNT_STORE.filter(x => x.user_id == user.id).map(x => x.client_id)
+	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == user.id).map(x => x.client_id)
 
 	if (!scopes || !scopes.filter(s => s != 'openid').length)
 		return {
@@ -236,7 +236,7 @@ MockStrategy.prototype.get_end_user = (root, { user }) => {
 	if (existingUser.password != user.password)
 		throw new Error('Incorrect username or password')
 
-	const client_ids = USER_TO_SERVICE_ACCOUNT_STORE.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
+	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
 
 	return {
 		id: existingUser.id,
@@ -264,7 +264,7 @@ MockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
 	if (!existingUser)
 		throw new Error(`${strategy} user ID ${user.id} not found`)
 
-	const client_ids = USER_TO_SERVICE_ACCOUNT_STORE.filter(x => x.user_id == existingUser.user_id).map(x => x.client_id)
+	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == existingUser.user_id).map(x => x.client_id)
 
 	return {
 		id: existingUser.user_id,

@@ -39,8 +39,8 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	// A. Validates input
 	if (!eventHandlerStore.get_token_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 
 	if (!client_id)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
@@ -54,7 +54,7 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. token_type_hint '${token_type_hint}' is not supported.`)
 
 	const [[serviceAccountErrors], [claimErrors, claims]] = yield [
-		eventHandlerStore.get_service_account.exec({ client_id, client_secret }),
+		eventHandlerStore.get_client.exec({ client_id, client_secret }),
 		eventHandlerStore.get_token_claims.exec({ type:token_type_hint, token })
 	]
 	

@@ -23,7 +23,7 @@ userIn.on('generate_token', (root, args) => log('generate_token', root, args))
 userIn.on('get_identity_claims', (root, args) => log('get_identity_claims', root, args))
 userIn.on('get_end_user', (root, args) => log('get_end_user', root, args))
 userIn.on('get_fip_user', (root, args) => log('get_fip_user', root, args))
-userIn.on('get_service_account', (root, args) => log('get_service_account', root, args))
+userIn.on('get_client', (root, args) => log('get_client', root, args))
 userIn.on('get_token_claims', (root, args) => log('get_token_claims', root, args))
 userIn.on('process_fip_auth_response', (root, args) => {
 	log('process_fip_auth_response', root, args)

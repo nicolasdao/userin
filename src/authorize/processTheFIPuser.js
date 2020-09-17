@@ -25,8 +25,8 @@ const { oauth2Params } = require('../_utils')
 const processTheFIPuser = ({ user, strategy, client_id, response_type, scopes, state }, eventHandlerStore={}) => catchErrors(co(function *() {
 	const errorMsg = `Failed to process ${strategy} user`
 	// A. Validates input
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.get_fip_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_fip_user' handler.`)
 	if (!eventHandlerStore.generate_token)

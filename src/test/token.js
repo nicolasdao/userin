@@ -49,7 +49,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 			const stubbedUser = { user_id }
 			const stubbedPayload = { ...stubbedServiceAccount, ...stubbedUser, code:invalidCode }
 
-			it('01 - Should fail when the \'get_service_account\' event handler is not defined.', done => {
+			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -58,7 +58,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_service_account\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -66,7 +66,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, stubbedPayload)
 					
@@ -81,7 +81,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('get_token_claims', strategy.get_token_claims)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, stubbedPayload)
@@ -97,7 +97,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('get_token_claims', strategy.get_token_claims)
 				registerEventHandler('generate_token', strategy.generate_token)
 				logE.run(co(function *() {
@@ -379,7 +379,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 			
 			const stubbedServiceAccount = { client_id:client_id, client_secret:client_secret, scopes:['profile'] }
 
-			it('01 - Should fail when the \'get_service_account\' event handler is not defined.', done => {
+			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -387,7 +387,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_service_account\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -395,7 +395,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeClientCredentials.exec(eventHandlerStore, stubbedServiceAccount)
 					logE.push(errors)
@@ -409,7 +409,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('generate_token', strategy.generate_token)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeClientCredentials.exec(eventHandlerStore, stubbedServiceAccount)
@@ -596,7 +596,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				scopes:[]
 			}
 
-			it('01 - Should fail when the \'get_service_account\' event handler is not defined.', done => {
+			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -604,7 +604,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_service_account\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -612,7 +612,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypePassword.exec(eventHandlerStore, stubbedUser)
 					logE.push(errors)
@@ -626,7 +626,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('get_end_user', strategy.get_end_user)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypePassword.exec(eventHandlerStore, stubbedUser)
@@ -641,7 +641,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('get_end_user', strategy.get_end_user)
 				registerEventHandler('generate_token', strategy.generate_token)
 				logE.run(co(function *() {
@@ -927,7 +927,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('02 - Should fail when the \'get_service_account\' event handler is not defined.', done => {
+			it('02 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -937,7 +937,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_service_account\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -946,7 +946,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_token_claims', strategy.get_token_claims)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, stubbedPayload)
 					logE.push(errors)
@@ -961,7 +961,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_token_claims', strategy.get_token_claims)
-				registerEventHandler('get_service_account', strategy.get_service_account)
+				registerEventHandler('get_client', strategy.get_client)
 				registerEventHandler('generate_token', strategy.generate_token)
 				logE.run(co(function *() {
 					const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, stubbedPayload)

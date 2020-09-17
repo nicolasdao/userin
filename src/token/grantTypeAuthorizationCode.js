@@ -25,8 +25,8 @@ const { oauth2Params } = require('../_utils')
 const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
-	if (!eventHandlerStore.get_service_account)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_service_account' handler.`)
+	if (!eventHandlerStore.get_client)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.get_token_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
 	if (!eventHandlerStore.generate_token)
@@ -41,9 +41,9 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	if (!code)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code'`)
 
-	// B. Gets the service account's scopes and audiences as well as the code's claims
+	// B. Gets the client's scopes and audiences as well as the code's claims
 	const [[serviceAccountErrors, serviceAccount], [oidcClaimsErrors, oidcClaims]] = yield [
-		eventHandlerStore.get_service_account.exec({ client_id, client_secret }),
+		eventHandlerStore.get_client.exec({ client_id, client_secret }),
 		eventHandlerStore.get_token_claims.exec({ type:'code', token:code, state })
 	]
 

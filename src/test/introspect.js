@@ -85,7 +85,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('02 - Should fail when the \'get_service_account\' event handler is not defined.', done => {
+			it('02 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -95,7 +95,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_service_account\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -339,7 +339,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('11 - Should fail when the client_id and client_secret are not the service account associated with the token.', done => {
+			it('11 - Should fail when the client_id and client_secret are not the identifying the client associated with the token.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}

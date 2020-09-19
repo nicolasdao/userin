@@ -9,7 +9,7 @@
 // To skip a test, either use 'xit' instead of 'it', or 'describe.skip' instead of 'describe'
 
 const { testSuite } = require('../src')
-const { OpenIdStrategy } = require('./mock/strategy')
+const { ExhaustiveStrategy } = require('./mock/strategy')
 const { GOOD_CLIENT, BAD_CLIENT, END_USER, FIP_USER_TO_STRATEGY } = require('./mock/stub')
 
 const config = {
@@ -67,11 +67,13 @@ const stub = {
 	altClient: { 
 		id: BAD_CLIENT.client_id, 
 		secret: BAD_CLIENT.client_secret
+	},
+	user: {
+		username: END_USER.email,
+		password: END_USER.password
 	}
 }
 
 const options = { verbose: true }
 
-testSuite.testOpenId(OpenIdStrategy, config, stub, options)
-
-
+testSuite.testAll(ExhaustiveStrategy, config, stub, options)

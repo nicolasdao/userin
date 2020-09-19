@@ -9,12 +9,13 @@
 // To skip a test, either use 'xit' instead of 'it', or 'describe.skip' instead of 'describe'
 
 const { testSuite } = require('../src')
-const { LoginSignupStrategy } = require('./mock/strategy')
+const { LoginSignupFIPStrategy } = require('./mock/strategy')
 const { END_USER } = require('./mock/stub')
 
 const config = {
 	tokenExpiry: {
-		access_token: 3600
+		access_token: 3600,
+		code: 30
 	}
 }
 
@@ -27,6 +28,7 @@ const stub = {
 
 const options = { verbose: true }
 
-testSuite.testLoginSignup(LoginSignupStrategy, config, stub, options)
+testSuite.testLoginSignupFIP(LoginSignupFIPStrategy, config, stub, options)
+
 
 

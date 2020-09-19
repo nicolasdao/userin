@@ -2,7 +2,7 @@ const { co } = require('core-async')
 const { error: { catchErrors } } = require('puffy')
 const { request: { getFullUrl } } = require('../_utils')
 const { getBrowseRedirectHtml, getBrowseHtml } = require('./page')
-const openidConfiguration = require('../openid-configuration')
+const dicovery = require('../discovery')
 
 const endpoint = 'browse' 
 const endpointRedirect = 'browse/redirect' 
@@ -21,13 +21,17 @@ const endpointRedirect = 'browse/redirect'
  */
 const handler = (payload, eventHandlerStore, context={}) => catchErrors(co(function *() {
 
-	const [[, oidcEndpoints], [, detailedEndpoints]] = yield [
-		openidConfiguration.handler(payload, eventHandlerStore, context),
-		openidConfiguration.handler(payload, eventHandlerStore, { ...context, includeNonStandard:true })
+	const [[, openIdEndpoints], [, detailedEndpoints]] = yield [
+		dicovery.openid.handler(payload, eventHandlerStore, context),
+		dicovery.nonOAuth.handler(payload, eventHandlerStore, context)
 	]
 
+	console.log('detailedEndpoints')
+	console.log(detailedEndpoints)
+	console.log('openIdEndpoints')
+	console.log(openIdEndpoints)
 
-	const html = yield getBrowseHtml(detailedEndpoints, oidcEndpoints, payload)
+	const html = yield getBrowseHtml(detailedEndpoints, openIdEndpoints, payload)
 
 	return html
 }))

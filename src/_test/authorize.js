@@ -11,7 +11,7 @@
 const { co } = require('core-async')
 const jwt = require('jsonwebtoken')
 const { assert } = require('chai')
-const processTheFIPuser = require('../authorize/processTheFIPuser')
+const processTheFIPuser = require('../fipauthorize/processTheFIPuser')
 const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors } = require('./_core')
 setUpScopeAssertion(assert)
@@ -187,7 +187,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('11 - Should return an access_token when the FIP user ID exists.', done => {
+			it('11 - Should return a code only when the FIP user ID exists and the response_type contains \'code\'.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -201,16 +201,129 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 					assert.isOk(result, '02')
-					assert.isOk(result.access_token, '03')
-					assert.equal(result.token_type, 'bearer', '04')
-					assert.equal(result.expires_in, 3600, '05')
+					assert.isOk(result.code, '03')
+					assert.isNotOk(result.access_token, '03')
+					assert.isNotOk(result.token_type, 'bearer', '04')
+					assert.isNotOk(result.expires_in, 3600, '05')
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
 					done()
 				}))
 			})
-			it('12 - Should return an access_token and a valid id_token when FIP user ID exists and the scopes contain \'openid\'.', done => {
+			it('12 - Should return an access_token only when the FIP user ID exists and the response_type contains \'token\'.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors, result] = yield processTheFIPuser({
+						...payload,	
+						response_type: 'token',
+						scopes: []	
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isNotOk(errors, '01')
+					assert.isOk(result, '02')
+					assert.isNotOk(result.code, '03')
+					assert.isOk(result.access_token, '03')
+					assert.isOk(result.token_type, 'bearer', '04')
+					assert.isOk(result.expires_in, 3600, '05')
+					assert.isNotOk(result.id_token, '06')
+					assert.isNotOk(result.refresh_token, '07')
+
+					done()
+				}))
+			})
+			it('13 - Should fail to return an id_token only when the FIP user ID exists and the response_type contains \'id_token\' and the scope does not include \'openid\'.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors] = yield processTheFIPuser({
+						...payload,	
+						response_type: 'id_token',
+						scopes: []	
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('response_type \'id_token\' is invalid without the \'openid\' scope') >= 0), '03')
+					done()
+				}))
+			})
+			it('14 - Should return an id_token only when the FIP user ID exists and the response_type contains \'id_token\' and the scope contains \'openid\'.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors, result] = yield processTheFIPuser({
+						...payload,	
+						response_type: 'id_token',
+						scopes: ['openid']	
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isNotOk(errors, '01')
+					assert.isOk(result, '02')
+					assert.isNotOk(result.code, '03')
+					assert.isNotOk(result.access_token, '03')
+					assert.isNotOk(result.token_type, 'bearer', '04')
+					assert.isNotOk(result.expires_in, 3600, '05')
+					assert.isOk(result.id_token, '06')
+					assert.isNotOk(result.refresh_token, '07')
+
+					const claims = jwt.decode(result.id_token)
+					assert.isOk(claims, '11')
+					assert.equal(claims.sub, userId, '12')
+					assert.isOk(claims.aud != undefined, '13')
+					assert.equal(claims.client_id, client_id, '14')
+					assert.scopes(claims.scope, ['openid'], 15)
+					assert.isOk(claims.exp != undefined, '17')
+					assert.isOk(claims.iat != undefined, '18')
+					assert.scopes(result.scope, ['openid'], 19)
+					done()
+				}))
+			})
+			it('15 - Should return an id_token, access_token and code when the FIP user ID exists and the response_type contains \'id_token token code\' and the scope contains \'openid\'.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors, result] = yield processTheFIPuser({
+						...payload,	
+						response_type: 'id_token token code',
+						scopes: ['openid']	
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isNotOk(errors, '01')
+					assert.isOk(result, '02')
+					assert.isOk(result.code, '03')
+					assert.isOk(result.access_token, '03')
+					assert.isOk(result.token_type, 'bearer', '04')
+					assert.isOk(result.expires_in, 3600, '05')
+					assert.isOk(result.id_token, '06')
+					assert.isNotOk(result.refresh_token, '07')
+
+					const claims = jwt.decode(result.id_token)
+					assert.isOk(claims, '11')
+					assert.equal(claims.sub, userId, '12')
+					assert.isOk(claims.aud != undefined, '13')
+					assert.equal(claims.client_id, client_id, '14')
+					assert.scopes(claims.scope, ['openid'], 15)
+					assert.isOk(claims.exp != undefined, '17')
+					assert.isOk(claims.iat != undefined, '18')
+					assert.scopes(result.scope, ['openid'], 19)
+					done()
+				}))
+			})
+			it('16 - Should return an access_token and a valid id_token when FIP user ID exists and the response_type contains \'id_token token\' and the scopes contain \'openid\'.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -219,6 +332,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				logE.run(co(function *() {
 					const [errors, result] = yield processTheFIPuser({
 						...payload,		
+						response_type: 'id_token token',
 						scopes: ['openid']
 					}, eventHandlerStore)
 					logE.push(errors)
@@ -242,7 +356,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('13 - Should not return a refresh_token when FIP user ID exists and the scopes contain \'offline_access\'.', done => {
+			it('17 - Should not return a refresh_token when FIP user ID exists and the response_type contains \'id_token token\' and the scopes contain \'offline_access\'.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -251,6 +365,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				logE.run(co(function *() {
 					const [errors, result] = yield processTheFIPuser({
 						...payload,	
+						response_type: 'id_token token',
 						scopes: ['openid', 'offline_access']	
 					}, eventHandlerStore)
 					logE.push(errors)

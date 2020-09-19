@@ -106,7 +106,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('user dew&(IU67if not found') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid username or password.') >= 0), '03')
 					done()
 				}))
 			})

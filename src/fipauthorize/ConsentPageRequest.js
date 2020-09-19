@@ -32,18 +32,19 @@ const _getRedirectUri = (req, redirectPath) => {
 /**
  * Validates the authorization request before it is sent to the IdP. 
  * 
- * @param {String}		client_id			e.g., '123445'
- * @param {String}		response_type		e.g., 'code+id_token'
- * @param {String}		redirect_uri		e.g., 'https%3A%2F%2Fneap.co'
- * @param {String}		scope				e.g., 'profile%20email'
- * @param {[String]}	options.scopes		Extra scopes that need to be added to the original 'scope'
+ * @param {String}		client_id					e.g., '123445'
+ * @param {String}		response_type				e.g., 'code+id_token'
+ * @param {String}		redirect_uri				e.g., 'https%3A%2F%2Fneap.co'
+ * @param {String}		scope						e.g., 'profile%20email'
+ * @param {[String]}	options.scopes				Extra scopes that need to be added to the original 'scope'
+ * @param {Boolean}		options.verifyClientId		False is used with flows where no client_id is used (e.g., 'loginsignupfip').
  *
  * @yield {Void}
  */
-const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_type, redirect_uri, scope }, options) => catchErrors(co(function *() {
+const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_type, redirect_uri, scope }, options={}) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to execute the \'authorization\' request'
-	if (!client_id)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
+	// if (!client_id)
+	// 	throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
 	if (!response_type)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'response_type'.`)
 	if (!redirect_uri)
@@ -54,10 +55,10 @@ const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_
 		throw wrapErrors(errorMsg, responseTypeErrors)
 
 	const scopes = oauth2Params.convert.thingToThings(scope)
-	if (options && options.scopes && Array.isArray(options.scopes))
+	if (options.scopes && Array.isArray(options.scopes))
 		scopes.push(...options.scopes)
 
-	if (scopes.length) {
+	if (options.verifyClientId && scopes.length) {
 		// B. Verifying those scopes are allowed for that client_id
 		const [serviceAccountErrors] = yield verifyScopes(eventHandlerStore, { client_id, scopes })
 		if (serviceAccountErrors)
@@ -72,9 +73,10 @@ const _validateAuthorizationRequest = (eventHandlerStore, { client_id, response_
  * @param {String}		strategy			e.g., 'facebook'
  * @param {String}		redirectPathname	e.g., '/facebook/authorizecallback'			
  * @param {[String]}	scopes		
+ * @param {Boolean}		verifyClientId		Default true. False is used with flows where no client_id is used (e.g., 'loginsignupfip').
  * 
  */
-module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpointRedirectRef, scopes) {
+module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpointRedirectRef, scopes, verifyClientId=true) {
 	const classErrorMsg = 'Failed to create a new instance of ConsentPageRequestHandler'
 	if (!endpoint)
 		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
@@ -122,7 +124,7 @@ module.exports = function ConsentPageRequestHandler(endpoint, strategy, endpoint
 		if (TRACE_ON)
 			console.log(`INFO - Request received to browse to ${strategy} for scopes ${scopes.map(s => `'${s}'`).join(', ')} (callback URL: ${callbackURL})`)
 		
-		const [errors] = yield _validateAuthorizationRequest(eventHandlerStore, payload)
+		const [errors] = yield _validateAuthorizationRequest(eventHandlerStore, payload, { verifyClientId })
 		if (errors) 
 			throw wrapErrors(errorMsg, errors)
 

@@ -56,7 +56,7 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 	
 	// D. Validate that the client_id is allowed to process this user. 
 	if (!validUser)
-		throw new userInError.InternalServerError(`${errorMsg}. Corrupted data. Processing the end user failed to return any data.`)
+		throw new userInError.InternalServerError(`${errorMsg}. Invalid username or password.`)
 
 	const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id:validUser.id, user_client_ids:validUser.client_ids })
 	if (clientIdErrors)

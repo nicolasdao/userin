@@ -8,7 +8,7 @@ const endpoint = 'login'
 const TRACE_ON = process.env.LOG_LEVEL == 'trace'
 
 /**
- * Verifies that a token is valid and returns the claims associated with that token if it is valid. 
+ * Handler to manage login with username and password.
  * 												
  * @param {String}		payload.username
  * @param {String}		payload.password

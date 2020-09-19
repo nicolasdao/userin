@@ -8,7 +8,7 @@ const endpoint = 'signup'
 const TRACE_ON = process.env.LOG_LEVEL == 'trace'
 
 /**
- * Verifies that a token is valid and returns the claims associated with that token if it is valid. 
+ * Handler to manage signup with username and password.
  * 												
  * @param {String}		payload.username
  * @param {String}		payload.password
@@ -53,7 +53,7 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 
 	// B. Checks if the user already exists
 	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec({ user: { username:user.username } })
-	if (existingUserErrors && !existingUserErrors.some(e => e.code == 404))
+	if (existingUserErrors)
 		throw wrapErrors(errorMsg, existingUserErrors)
 
 	if (existingUser)

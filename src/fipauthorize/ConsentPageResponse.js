@@ -49,10 +49,11 @@ const _getMissingStateQueryParamError = (errorMsg, strategy, queryParam) =>
  * Class ConsentPageRequestHandler definition
  *
  * @param {String}		endpoint			e.g., '/facebook/authorizecallback'
- * @param {String}		strategy			e.g., 'facebook'	
+ * @param {String}		strategy			e.g., 'facebook'
+ * @param {Boolean}		verifyClientId		Default true. False is used with flows where no client_id is used (e.g., 'loginsignupfip').	
  * 
  */
-module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
+module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyClientId=true) {
 	const classErrorMsg = 'Failed to create a new instance of ConsentPageResponseHandler'
 	if (!endpoint)
 		throw new userInError.InternalServerError(`${classErrorMsg}. Missing required 'endpoint'.`)
@@ -94,8 +95,8 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
 
 		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state } = decodedState || {}
 
-		if (!client_id)
-			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
+		// if (!client_id)
+		// 	throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
 		if (!redirect_uri)
 			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'redirect_uri'))
 		if (!response_type)
@@ -110,29 +111,29 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy) {
 		if (idpErrors)
 			throw wrapErrors(errorMsg, idpErrors)
 
-		const [authAPIerrors, authAPIresp] = yield processTheFIPuser({ 
+		const [tokenResultErrors, tokenResult] = yield processTheFIPuser({ 
 			user, 
 			strategy, 
 			client_id,
 			response_type,
 			scopes: oauth2Params.convert.thingToThings(scope),
-			state
-		}, eventHandlerStore)
+			state,
+		}, eventHandlerStore, verifyClientId)
 
-		if (authAPIerrors)
-			throw wrapErrors(errorMsg, authAPIerrors)
+		if (tokenResultErrors)
+			throw wrapErrors(errorMsg, tokenResultErrors)
 
 		if (TRACE_ON)
 			console.log(`INFO - ${strategy} user successfully authenticated`)
 
 		// Builds the redirect_uri
 		const urlInfo = urlHelp.getInfo(redirect_uri)
-		if (authAPIresp && authAPIresp.code)
-			urlInfo.query.code = authAPIresp.code
-		if (authAPIresp && authAPIresp.access_token)
-			urlInfo.query.access_token = authAPIresp.access_token
-		if (authAPIresp && authAPIresp.id_token)
-			urlInfo.query.id_token = authAPIresp.id_token
+		if (tokenResult && tokenResult.code)
+			urlInfo.query.code = tokenResult.code
+		if (tokenResult && tokenResult.access_token)
+			urlInfo.query.access_token = tokenResult.access_token
+		if (tokenResult && tokenResult.id_token)
+			urlInfo.query.id_token = tokenResult.id_token
 		if (state)
 			urlInfo.query.state = state
 		

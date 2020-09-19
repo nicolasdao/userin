@@ -174,7 +174,11 @@ module.exports = function runTest (data, skip, verboseLog) {
 				}))
 			})
 
-			let i = 8
+			it('08 - Should have at least one set of claims to be tested', () => {
+				assert.isOk(claimStubs.length, '01 - Your test is missing some claim stubs to assert whether the userinfo works as expected.')
+			})
+
+			let i = 9
 			for(let claimStub of claimStubs) {
 				const { scope, claims } = claimStub || {}
 				if (!scope)

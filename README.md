@@ -1,5 +1,5 @@
 # userin-core &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an Express middleware to build OAuth 2.0 workflows that support integration with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). It also complies to the OpenID Connect specification.
+UserIn is an Express middleware to build Authorization Server that support OAuth 2.0 workflows an integrate with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. UserIn's goal is to let developers implement basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice while UserIn takes care of all the OAuth 2.0/OpenID Connect flows.
 
 # Table of contents
 
@@ -13,13 +13,20 @@ UserIn is an Express middleware to build OAuth 2.0 workflows that support integr
 >		- [`openid`](#openid-mode)
 >	- [Event APIs](#event-apis)
 >		- [`create_end_user`](#create_end_user)
->		- [`generate_token`](#generate_token)
+>		- [`create_fip_user`](#create_fip_user)
+>		- [`generate_access_token`](#generate_access_token)
+>		- [`generate_authorization_code`](#generate_authorization_code)
+>		- [`generate_id_token`](#generate_id_token)
+>		- [`generate_refresh_token`](#generate_refresh_token)
+>		- [`get_access_token_claims`](#get_access_token_claims)
+>		- [`get_authorization_code_claims`](#get_authorization_code_claims)
 >		- [`get_client`](#get_client)
 >		- [`get_config`](#get_config)
 >		- [`get_end_user`](#get_end_user)
 >		- [`get_fip_user`](#get_fip_user)
+>		- [`get_id_token_claims`](#get_id_token_claims)
 >		- [`get_identity_claims`](#get_identity_claims)
->		- [`get_token_claims`](#get_token_claims)
+>		- [`get_refresh_token_claims`](#get_refresh_token_claims)
 >		- [`process_fip_auth_response`](#process_fip_auth_response)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
@@ -48,15 +55,6 @@ If you need to support authentication using Facebook, install the Facebook passp
 npm i passport-facebook
 ```
 
-	'create_end_user',
-	// Gets a user's details
-	'get_end_user',
-	// Generates tokens
-	'generate_access_token',
-	'generate_refresh_token',
-	// Gets tokens' details
-	'get_refresh_token_claims',
-
 ```js
 const express = require('express')
 const { UserIn, Strategy } = require('userin')
@@ -68,15 +66,16 @@ class YourStrategy extends Strategy {
 		this.name = 'yourstrategyname',
 
 		// Implement those five methods if you need to support the 'loginsignup' 
-		// mode (i.e., allowing login and signup with their username and password only)
+		// mode (i.e., allowing users to login/signup with their username and password only)
 		this.create_end_user = (root, { strategy, user }) => { /* Implement your logic here */ }
 		this.get_end_user = (root, { user }) => { /* Implement your logic here */ }
 		this.generate_access_token = (root, { claims }) => { /* Implement your logic here */ }
 		this.generate_refresh_token = (root, { claims }) => { /* Implement your logic here */ }
 		this.get_refresh_token_claims = (root, { token }) => { /* Implement your logic here */ }
 
-		// Implement those three methods if also need to support login and signup with Identity 
+		// Implement those four methods if you also need to support login and signup with Identity 
 		// Providers such as Facebook, Google, ...
+		this.create_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
 		this.get_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
 		this.generate_authorization_code = (root, { claims }) => { /* Implement your logic here */ }
 		this.get_authorization_code_claims = (root, { token }) => { /* Implement your logic here */ }
@@ -87,6 +86,7 @@ class YourStrategy extends Strategy {
 		this.get_client = (root, { client_id, client_secret }) => { /* Implement your logic here */ }
 		this.get_access_token_claims = (root, { token }) => { /* Implement your logic here */ }
 		this.get_id_token_claims = (root, { token }) => { /* Implement your logic here */ }
+		this.generate_id_token = (root, { claims }) => { /* Implement your logic here */ }
 	}
 }
 
@@ -125,20 +125,27 @@ app.listen(3330)
 UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineers, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
 
 1. `create_end_user`
-2. `generate_token`
-3. `get_client`
-4. `get_config`: Automatically implemented.
-5. `get_end_user`
-6. `get_fip_user`
-7. `get_identity_claims`
-8. `get_token_claims`
-9. `process_fip_auth_response`: Automatically implemented.
+2. `create_fip_user`
+3. `get_end_user`
+4. `get_fip_user`
+5. `generate_access_token`
+6. `generate_authorization_code`
+7. `generate_id_token`
+8. `generate_refresh_token`
+9. `get_access_token_claims`
+10. `get_authorization_code_claims`
+11. `get_id_token_claims`
+12. `get_refresh_token_claims`
+13. `get_client`
+14. `get_identity_claims`
+15. `get_config`: Automatically implemented.
+16. `process_fip_auth_response`: Automatically implemented.
 
-Each of those events, triggers a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your own [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
+Each of those events, triggers a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
 
 ```js
-userIn.on('generate_token', (root, payload) => {
-	console.log(`'generate_token' event fired. Payload:`)
+userIn.on('generate_access_token', (root, payload) => {
+	console.log(`'generate_access_token' event fired. Payload:`)
 	console.log(payload)
 	console.log('Previous handler response:')
 	console.log(root)
@@ -148,8 +155,8 @@ userIn.on('generate_token', (root, payload) => {
 `root` is the response returned by the previous event handler. If your handler does not return anything, `root` is passed to the next handler. The code above is similar to this:
 
 ```js
-userIn.on('generate_token', (root, payload) => {
-	console.log(`'generate_token' event fired. Payload:`)
+userIn.on('generate_access_token', (root, payload) => {
+	console.log(`'generate_access_token' event fired. Payload:`)
 	console.log(payload)
 	console.log('Previous handler response:')
 	console.log(root)
@@ -185,13 +192,17 @@ UserIn supports multiple flows grouped in three modes:
 	> 	}
 	> })
 	> ```
-- Required event handlers:
-	- `create_end_user`
-	- `generate_token`: Must support generating an `access_token` and a `refresh_token`.
-	- `get_end_user`
+- Requires five event handlers:
+	1. `create_end_user`
+	2. `get_end_user`
+	3. `generate_access_token`
+	4. `generate_refresh_token`
+	5. `get_refresh_token_claims`
 
 ### `loginsignupfip` mode
 #### `loginsignupfip` strategy requirements
+
+This mode is a superset of _loginsignup_.
 
 - Constructor required fields:
 	- `modes`: Must be set to `['loginsignupfip']`.
@@ -207,11 +218,16 @@ UserIn supports multiple flows grouped in three modes:
 	> 	}
 	> })
 	> ```
-- Required event handlers:
-	- `create_end_user`
-	- `generate_token`: Must support generating an `access_token` a `refresh_token` and a `code`.
-	- `get_end_user`
-	- `get_fip_user`
+- Requires eight event handlers:
+	1. `create_end_user` (same as _loginsignup_)
+	2. `get_end_user` (same as _loginsignup_)
+	3. `generate_access_token` (same as _loginsignup_)
+	4. `generate_refresh_token` (same as _loginsignup_)
+	5. `get_refresh_token_claims` (same as _loginsignup_)
+	6. `create_fip_user`
+	7. `get_fip_user`
+	8. `generate_authorization_code`
+	9. `get_authorization_code_claims`
 
 ### `openid` mode
 #### `openid` strategy requirements
@@ -236,22 +252,36 @@ UserIn supports multiple flows grouped in three modes:
 	> 	}
 	> })
 	> ```
-- Required event handlers:
-	- `generate_token`: Must support generating all tokens: 
-		- `access_token`
-		- `refresh_token`
-		- `code`
-		- `id_token` (must be a JWT)
-	- `get_end_user`
-	- `get_fip_user`
-	- `get_client`
-	- `get_identity_claims`
-	- `get_token_claims`
+- Requires eleven event handlers:
+	1. `get_end_user` (same as _loginsignup_ and _loginsignupfip_)
+	2. `generate_access_token` (same as _loginsignup_ and _loginsignupfip_)
+	4. `generate_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
+	3. `get_refresh_token_claims` (same as _loginsignup_ and _loginsignupfip_)
+	4. `generate_authorization_code` (same as _loginsignupfip_)
+	5. `get_authorization_code_claims` (same as _loginsignupfip_)
+	6. `generate_id_token`
+	7. `generate_refresh_token`
+	8. `get_access_token_claims`
+	9. `get_id_token_claims`
+	10. `get_identity_claims`
+	11. `get_client`
 
 ## Event APIs
 ### `create_end_user`
 
-### `generate_token`
+### `create_fip_user`
+
+### `generate_access_token`
+
+### `generate_authorization_code`
+
+### `generate_id_token`
+
+### `generate_refresh_token`
+
+### `get_access_token_claims`
+
+### `get_authorization_code_claims`
 
 ### `get_client`
 
@@ -292,9 +322,11 @@ Must fail when the `username` and `password` are incorrect.
 
 ### `get_fip_user`
 
+### `get_id_token_claims`
+
 ### `get_identity_claims`
 
-### `get_token_claims`
+### `get_refresh_token_claims`
 
 ### `process_fip_auth_response`
 

@@ -3,7 +3,7 @@ const passport = require('passport')
 const { url: urlHelp, error: { catchErrors, wrapErrors } } = require('puffy')
 const { error:userInError } = require('userin-core')
 const { oauth2Params, request: { getUrlInfo } } = require('../_utils')
-const processTheFIPuser = require('./processTheFIPuser')
+const getFIPuserProcessor = require('./processTheFIPuser')
 
 const TRACE_ON = process.env.LOG_LEVEL == 'trace'
 
@@ -111,6 +111,7 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 		if (idpErrors)
 			throw wrapErrors(errorMsg, idpErrors)
 
+		const processTheFIPuser = getFIPuserProcessor('login')(verifyClientId)
 		const [tokenResultErrors, tokenResult] = yield processTheFIPuser({ 
 			user, 
 			strategy, 
@@ -118,7 +119,7 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 			response_type,
 			scopes: oauth2Params.convert.thingToThings(scope),
 			state,
-		}, eventHandlerStore, verifyClientId)
+		}, eventHandlerStore)
 
 		if (tokenResultErrors)
 			throw wrapErrors(errorMsg, tokenResultErrors)

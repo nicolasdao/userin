@@ -27,10 +27,10 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
-	if (!eventHandlerStore.get_token_claims)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
-	if (!eventHandlerStore.generate_token)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.get_authorization_code_claims)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_authorization_code_claims' handler.`)
+	if (!eventHandlerStore.generate_access_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -44,7 +44,7 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	// B. Gets the client's scopes and audiences as well as the code's claims
 	const [[serviceAccountErrors, serviceAccount], [oidcClaimsErrors, oidcClaims]] = yield [
 		eventHandlerStore.get_client.exec({ client_id, client_secret }),
-		eventHandlerStore.get_token_claims.exec({ type:'code', token:code, state })
+		eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state })
 	]
 
 	// C. Verifies the details are correct
@@ -60,6 +60,13 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 
 	const { scope, sub } = oidcClaims 
 	const scopes = oauth2Params.convert.thingToThings(scope) || []
+	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
+	const requestRefreshToken = scopes && scopes.indexOf('offline_access') >= 0
+	
+	if (requestIdToken && !eventHandlerStore.generate_id_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler. This event handler is required when 'scope' contains 'openid'.`)
+	if (requestRefreshToken && !eventHandlerStore.generate_refresh_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_refresh_token' handler. This event handler is required when 'scope' contains 'offline_access'.`)
 
 	const [claimsError] = oauth2Params.verify.claimsExpired(oidcClaims)
 	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, serviceAccountScopes:serviceAccount.scopes })
@@ -67,16 +74,13 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 		throw wrapErrors(errorMsg, claimsError || scopeErrors)
 
 	// D. Get the access_token, id_token, and potentially the refresh_token for that user_id
-	const requestRefreshToken = scopes && scopes.indexOf('offline_access') >= 0
-	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
-
 	const config = { client_id, user_id:sub, audiences:serviceAccount.audiences, scopes, state }
 
 	const emptyPromise = Promise.resolve([null, null])
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult], [refreshTokenErrors, refresfTokenResult]] = yield [
-		eventHandlerStore.generate_access_token.exec(config),
-		requestIdToken ? eventHandlerStore.generate_id_token.exec(config) : emptyPromise,
-		requestRefreshToken ? eventHandlerStore.generate_refresh_token.exec(config) : emptyPromise
+		eventHandlerStore.generate_openid_access_token.exec(config),
+		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : emptyPromise,
+		requestRefreshToken ? eventHandlerStore.generate_openid_refresh_token.exec(config) : emptyPromise
 	]
 
 	if (accessTokenErrors || idTokenErrors || refreshTokenErrors)

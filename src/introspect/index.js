@@ -37,8 +37,16 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 
 	const errorMsg = `Failed to introspect ${token_type_hint || 'unknown token type'}`
 	// A. Validates input
-	if (!eventHandlerStore.get_token_claims)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+
+	if (!token_type_hint)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token_type_hint'.`)
+	if (VALID_TOKEN_TYPES.indexOf(token_type_hint) < 0)
+		throw new userInError.InvalidRequestError(`${errorMsg}. token_type_hint '${token_type_hint}' is not supported.`)
+
+	const tokenClaimsEventName = `get_${token_type_hint}_claims`
+
+	if (!eventHandlerStore[tokenClaimsEventName])
+		throw new userInError.InternalServerError(`${errorMsg}. Missing '${tokenClaimsEventName}' handler.`)
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 
@@ -48,14 +56,10 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
 	if (!token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
-	if (!token_type_hint)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token_type_hint'.`)
-	if (VALID_TOKEN_TYPES.indexOf(token_type_hint) < 0)
-		throw new userInError.InvalidRequestError(`${errorMsg}. token_type_hint '${token_type_hint}' is not supported.`)
 
 	const [[serviceAccountErrors], [claimErrors, claims]] = yield [
 		eventHandlerStore.get_client.exec({ client_id, client_secret }),
-		eventHandlerStore.get_token_claims.exec({ type:token_type_hint, token })
+		eventHandlerStore[tokenClaimsEventName].exec({ token })
 	]
 	
 	if (serviceAccountErrors)

@@ -12,6 +12,9 @@ const { testSuite } = require('../src')
 const { OpenIdStrategy } = require('./mock/strategy')
 const { GOOD_CLIENT, BAD_CLIENT, END_USER, FIP_USER_TO_STRATEGY } = require('./mock/stub')
 
+// skip values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
+const options = { skip:'' }
+
 const config = {
 	openid: {
 		iss: 'https://www.userin.com',
@@ -69,8 +72,6 @@ const stub = {
 		secret: BAD_CLIENT.client_secret
 	}
 }
-
-const options = { verbose: true }
 
 testSuite.testOpenId(OpenIdStrategy, config, stub, options)
 

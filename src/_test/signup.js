@@ -10,9 +10,8 @@ const { logTestErrors } = require('./_core')
  * @param  {String}		data.user.username
  * @param  {String}		data.user.password
  * @param  {Boolean}	skip					
- * @param  {Boolean}	verboseLog		
  */
-module.exports = function runTest (data, skip, verboseLog) {
+module.exports = function runTest (data, skip) {
 	const {
 		user,
 		strategy
@@ -24,7 +23,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 	}
 
 	const fn = skip ? describe.skip : describe
-	const logTest = logTestErrors(verboseLog)
+	const logTest = logTestErrors()
 
 	fn('signup', () => {
 		describe('handler', () => {
@@ -44,7 +43,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('02 - Should fail when the \'generate_token\' event handler is not defined.', done => {
+			it('02 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -55,11 +54,72 @@ module.exports = function runTest (data, skip, verboseLog) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_token\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
 					done()
 				}))
 			})
-			it('03 - Should fail when the username is missing.', done => {
+			it('03 - Should fail when the \'generate_refresh_token\' event handler is not defined and the scope contains \'offline_access\'.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				const registerEventHandler = eventRegister(eventHandlerStore)
+				registerEventHandler('get_config', () => strategy.config)
+				registerEventHandler('generate_access_token', strategy.generate_access_token)
+				registerEventHandler('get_end_user', strategy.get_end_user)
+
+				logE.run(co(function *() {
+					const [errors] = yield signupHandler({
+						...payload,
+						scope:'offline_access'
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_refresh_token\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('04 - Should fail when the \'create_end_user\' event handler is not defined when the \'generate_refresh_token\' event handler is not defined but the scope did not include \'offline_access\'.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				const registerEventHandler = eventRegister(eventHandlerStore)
+				registerEventHandler('get_config', () => strategy.config)
+				registerEventHandler('generate_access_token', strategy.generate_access_token)
+				registerEventHandler('get_end_user', strategy.get_end_user)
+
+				logE.run(co(function *() {
+					const [errors] = yield signupHandler({
+						...payload,
+						username: null
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'create_end_user\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('05 - Should fail when the \'create_end_user\' event handler is not defined.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				const registerEventHandler = eventRegister(eventHandlerStore)
+				registerEventHandler('get_config', () => strategy.config)
+				registerEventHandler('generate_access_token', strategy.generate_access_token)
+				registerEventHandler('generate_refresh_token', strategy.generate_refresh_token)
+				registerEventHandler('get_end_user', strategy.get_end_user)
+
+				logE.run(co(function *() {
+					const [errors] = yield signupHandler({
+						...payload,
+						scope:'offline_access'
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'create_end_user\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('06 - Should fail when the username is missing.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -76,7 +136,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('04 - Should fail when the password is missing.', done => {
+			it('07 - Should fail when the password is missing.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -93,7 +153,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('05 - Should fail when the username already exists.', done => {
+			it('08 - Should fail when the username already exists.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -109,7 +169,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('07 - Should return an access_token when the username and password are provided and the username does not exist yet.', done => {
+			it('09 - Should return an access_token when the username and password are provided and the username does not exist yet.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -132,7 +192,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('08 - Should return both an access_token and a refresh_token when the username and password are correct and the scope includes \'offline_access\'.', done => {
+			it('10 - Should return both an access_token and a refresh_token when the username and password are correct and the scope includes \'offline_access\'.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)

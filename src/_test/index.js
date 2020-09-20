@@ -1,4 +1,4 @@
-const authorizeTest = require('./authorize')
+const fipLoginSignupTest = require('./fiploginsignup')
 const introspectTest = require('./introspect')
 const tokenTest = require('./token')
 const userinfoTest = require('./userinfo')
@@ -9,8 +9,8 @@ const { logTestErrors } = require('./_core')
 
 const skipTest = (name, skip, only) => {
 	if (skip)
-		return skip === name || (Array.isArray(skip) && skip.some(s => s == name))
-	else if (only)
+		return skip == 'all' || skip === name || (Array.isArray(skip) && skip.some(s => s == name || s == 'all'))
+	else if (only && only.length)
 		return Array.isArray(only) ? !only.some(s => s == name) : only != name
 	else
 		return false
@@ -35,8 +35,8 @@ const voidFn = () => null
  * @param  {String}		stub.altClient.secret
  * @param  {String}		stub.claimStubs[].scope			e.g., 'profile'
  * @param  {Object}		stub.claimStubs[].claims		e.g., { given_name: 'Nic', family_name: 'Dao' }
- * @param  {[String]}	options.skip					Valid values: 'strategy', 'authorize', 'introspect', 'token', 'userinfo'
- * @param  {[String]}	options.only					Valid values: 'strategy', 'authorize', 'introspect', 'token', 'userinfo'
+ * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
+ * @param  {[String]}	options.only					Valid values: 'strategy', 'introspect', 'token', 'userinfo'
  * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
  * 
  * @return {Void}
@@ -44,7 +44,7 @@ const voidFn = () => null
 const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	const openIdConfig = { ...config, modes:['openid'] }
 
-	const logTest = logTestErrors(options.verbose)
+	const logTest = logTestErrors()
 
 	// 1. Tests that the strategy is instantiable
 	describe('Concrete openid strategy', () => {
@@ -84,12 +84,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 				username, 
 				password,
 				claimStubs
-			}, 
-			fipUser: { 
-				id: userIdCreatedFromFip,
-				fipUserId, 
-				fip 
-			} 
+			}
 		},
 		altClient: { 
 			id:altClientId, 
@@ -101,15 +96,6 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 
 	// 3. Runs all the tests
 	strategyTest({ openIdStrategy:strategy }, skipTest('strategy', skip, only), verbose)
-
-	authorizeTest({
-		clientId, 
-		identityProvider: fip, 
-		identityProviderUserId: fipUserId, 
-		userId: userIdCreatedFromFip,
-		altClientId, 
-		strategy
-	}, skipTest('authorize', skip, only), verbose)
 
 	introspectTest({ 
 		clientId, 
@@ -156,14 +142,14 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
  * @param  {Object}		config							Strategy's config. Use it in the Strategy's constructor.			
  * @param  {String}		stub.user.username				
  * @param  {String}		stub.user.password				
- * @param  {[String]}	options.skip					Valid values: 'strategy', 'login', 'signup'
+ * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup'
  * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup'
  * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
  */
 const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	const loginSignupConfig = { ...config, modes:['loginsignup'] }
 
-	const logTest = logTestErrors(options.verbose)
+	const logTest = logTestErrors()
 
 	// 1. Tests that the strategy is instantiable
 	describe('Concrete loginsignup strategy', () => {
@@ -207,15 +193,18 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
  * @param  {Class}		Strategy
  * @param  {Object}		config							Strategy's config. Use it in the Strategy's constructor.			
  * @param  {String}		stub.user.username				
- * @param  {String}		stub.user.password				
- * @param  {[String]}	options.skip					Valid values: 'strategy', 'login', 'signup'
- * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup'
+ * @param  {String}		stub.user.password	
+ * @param  {String}		stub.fipUser.id					ID of the user in the FIP (not the user ID on your system)
+ * @param  {String}		stub.fipUser.fipName			e.g., 'facebook', 'google'
+ * @param  {String}		stub.fipUser.userId				ID if the user on your system.
+ * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
+ * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup', 'fiploginsignup'
  * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
  */
 const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	const loginSignupConfig = { ...config, modes:['loginsignupfip'] }
 
-	const logTest = logTestErrors(options.verbose)
+	const logTest = logTestErrors()
 
 	// 1. Tests that the strategy is instantiable
 	describe('Concrete loginsignup strategy', () => {
@@ -245,12 +234,18 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	if (!strategy)
 		return
 
-	const { user } = stub
+	const { user, fipUser } = stub
 	const { skip, only, verbose } = options
 
 	strategyTest({ loginSignupFipStrategy:strategy }, skipTest('strategy', skip, only), verbose)
 	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
 	signupTest({ strategy, user }, skipTest('signup', skip, only), verbose)
+	fipLoginSignupTest({
+		strategy,
+		identityProvider: fipUser.fipName, 
+		identityProviderUserId: fipUser.id, 
+		userId: fipUser.userId,
+	}, skipTest('fiploginsignup', skip, only), verbose)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

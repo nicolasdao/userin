@@ -12,6 +12,9 @@ const { testSuite } = require('../src')
 const { LoginSignupStrategy } = require('./mock/strategy')
 const { END_USER } = require('./mock/stub')
 
+// skip values: 'all', 'strategy', 'login', 'signup'
+const options = { skip:'' }
+
 const config = {
 	tokenExpiry: {
 		access_token: 3600
@@ -24,8 +27,6 @@ const stub = {
 		password: END_USER.password
 	},
 }
-
-const options = { verbose: true }
 
 testSuite.testLoginSignup(LoginSignupStrategy, config, stub, options)
 

@@ -29,8 +29,8 @@ const handler = (payload, eventHandlerStore, { authorization }) => catchErrors(c
 		console.log('INFO - Request to get user info')
 
 	// A. Validates input
-	if (!eventHandlerStore.get_token_claims)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+	if (!eventHandlerStore.get_access_token_claims)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_access_token_claims' handler.`)
 	if (!eventHandlerStore.get_identity_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
 
@@ -45,7 +45,7 @@ const handler = (payload, eventHandlerStore, { authorization }) => catchErrors(c
 		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must contain a bearer access_token.`)
 	
 	// B. Extract claims from access_token
-	const [claimsErrors, claims] = yield eventHandlerStore.get_token_claims.exec({ type:'access_token', token })
+	const [claimsErrors, claims] = yield eventHandlerStore.get_access_token_claims.exec({ token })
 	if (claimsErrors)
 		throw wrapErrors(errorMsg, claimsErrors)
 

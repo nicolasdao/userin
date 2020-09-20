@@ -10,7 +10,10 @@
 
 const { testSuite } = require('../src')
 const { LoginSignupFIPStrategy } = require('./mock/strategy')
-const { END_USER } = require('./mock/stub')
+const { END_USER, FIP_USER_TO_STRATEGY } = require('./mock/stub')
+
+// skip values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
+const options = { skip:'' }
 
 const config = {
 	tokenExpiry: {
@@ -24,9 +27,12 @@ const stub = {
 		username: END_USER.email,
 		password: END_USER.password
 	},
+	fipUser: {
+		id: FIP_USER_TO_STRATEGY.strategy_user_id,
+		fipName: FIP_USER_TO_STRATEGY.strategy,
+		userId: FIP_USER_TO_STRATEGY.user_id
+	}
 }
-
-const options = { verbose: true }
 
 testSuite.testLoginSignupFIP(LoginSignupFIPStrategy, config, stub, options)
 

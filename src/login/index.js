@@ -35,14 +35,17 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	if (user.scope)
 		delete user.scope
 	const scopes = oauth2Params.convert.thingToThings(payload.scope||'')
+	const requestRefreshToken = scopes && scopes.indexOf('offline_access') >= 0
 
 	if (TRACE_ON)
 		console.log(`INFO - Request to login user ${payload.username||'unknown username'}`)
 	// A. Validates input
 	if (!eventHandlerStore.get_end_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
-	if (!eventHandlerStore.generate_token)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.generate_access_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
+	if (requestRefreshToken && !eventHandlerStore.generate_refresh_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_refresh_token' handler. This event handler is required when 'scope' contains 'offline_access'.`)
 
 	if (!user.username)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.username'`)
@@ -60,14 +63,12 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. Corrupted data. User ${user.username} is missing the required 'id' property.`)
 
 	// C. Generates tokens
-	const requestRefreshToken = scopes && scopes.indexOf('offline_access') >= 0
-
 	const config = { user_id:existingUser.id, scopes }
 
 	const emptyPromise = Promise.resolve([null, null])
 	const [[accessTokenErrors, accessTokenResult], [refreshTokenErrors, refresfTokenResult]] = yield [
-		eventHandlerStore.generate_access_token.exec(config),
-		requestRefreshToken ? eventHandlerStore.generate_refresh_token.exec(config) : emptyPromise
+		eventHandlerStore.generate_openid_access_token.exec(config),
+		requestRefreshToken ? eventHandlerStore.generate_openid_refresh_token.exec(config) : emptyPromise
 	]
 
 	if (accessTokenErrors || refreshTokenErrors)

@@ -56,16 +56,61 @@ ExhaustiveMockStrategy.prototype.get_fip_user = LoginSignupFIPMockStrategy.proto
 ExhaustiveMockStrategy.prototype.create_end_user = LoginSignupFIPMockStrategy.prototype.create_end_user
 
 /**
- * Generates a new token or code. 
+ * Inserts new FIP user.
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		type				Values are restricted to: `code`, `access_token`, `id_token`, `refresh_token`
+ * @param  {String}		strategy			e.g., 'facebook', 'google'		
+ * @param  {String}		user.id			
+ * @param  {String}		user...				More properties
+ * 
+ * @return {Object}		user				This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id				String ot number
+ */
+ExhaustiveMockStrategy.prototype.create_fip_user = LoginSignupFIPMockStrategy.prototype.create_fip_user
+
+/**
+ * Generates a new access_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
  * @param  {Object}		claims
  * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
  * 
  * @return {String}		token
  */
-ExhaustiveMockStrategy.prototype.generate_token = LoginSignupFIPMockStrategy.prototype.generate_token
+ExhaustiveMockStrategy.prototype.generate_access_token = LoginSignupFIPMockStrategy.prototype.generate_access_token
+
+/**
+ * Generates a new refresh_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		claims
+ * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * 
+ * @return {String}		token
+ */
+ExhaustiveMockStrategy.prototype.generate_refresh_token = LoginSignupFIPMockStrategy.prototype.generate_refresh_token
+
+/**
+ * Generates a new authorization code. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		claims
+ * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * 
+ * @return {String}		token
+ */
+ExhaustiveMockStrategy.prototype.generate_authorization_code = LoginSignupFIPMockStrategy.prototype.generate_authorization_code
+
+/**
+ * Generates a new id_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		claims
+ * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * 
+ * @return {String}		token
+ */
+ExhaustiveMockStrategy.prototype.generate_id_token = OpenIdMockStrategy.prototype.generate_id_token
 
 /**
  * Gets the client's audiences and scopes. 
@@ -80,10 +125,9 @@ ExhaustiveMockStrategy.prototype.generate_token = LoginSignupFIPMockStrategy.pro
 ExhaustiveMockStrategy.prototype.get_client = OpenIdMockStrategy.prototype.get_client
 
 /**
- * Gets a code or a token claims
+ * Gets the authorization code's claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		type				Values are restricted to: `code`, `access_token`, `id_token`, `refresh_token`
  * @param  {Object}		token
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
@@ -95,7 +139,58 @@ ExhaustiveMockStrategy.prototype.get_client = OpenIdMockStrategy.prototype.get_c
  * @return {Object}		claims.client_id	String or number
  * @return {String}		claims.scope
  */
-ExhaustiveMockStrategy.prototype.get_token_claims = OpenIdMockStrategy.prototype.get_token_claims
+ExhaustiveMockStrategy.prototype.get_authorization_code_claims = LoginSignupFIPMockStrategy.prototype.get_authorization_code_claims
+
+/**
+ * Gets the refresh_token claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		token
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+ExhaustiveMockStrategy.prototype.get_refresh_token_claims = LoginSignupFIPMockStrategy.prototype.get_refresh_token_claims
+
+/**
+ * Gets an id_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		token
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+ExhaustiveMockStrategy.prototype.get_id_token_claims = OpenIdMockStrategy.prototype.get_id_token_claims
+
+/**
+ * Gets an access_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		token
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+ExhaustiveMockStrategy.prototype.get_access_token_claims = OpenIdMockStrategy.prototype.get_access_token_claims
 
 /**
  * Gets the user's identity claims and its associated client_ids based on the 'scopes'.

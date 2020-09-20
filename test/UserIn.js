@@ -14,7 +14,7 @@ const { UserIn } = require('../src')
 const { logTestErrors } = require('../src/_test/_core')
 const { ExhaustiveStrategy, LoginSignupStrategy } = require('./mock/strategy')
 
-const logTest = logTestErrors(true)
+const logTest = logTestErrors()
 // Used to consume params that are not used and avoid linting warnings
 const voidFn = () => null
 
@@ -196,7 +196,7 @@ describe('UserIn', () => {
 
 				logE.push(error)
 				assert.isOk(error, '01')
-				assert.equal(error.message, 'When \'modes\' contains openid the strategy must implement the \'get_client\' event handler. This event handler is currently not implemented.', '02')
+				assert.equal(error.message, 'When \'modes\' contains loginsignupfip, openid the strategy must implement the \'generate_authorization_code\' event handler. This event handler is currently not implemented.', '02')
 				done()
 			}))
 		})

@@ -14,17 +14,49 @@ class LoginSignUpMockStrategy extends Strategy {
 }
 
 /**
- * Generates a new token or code. 
+ * Generates a new access_token. 
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		type				Values are restricted to: `code`, `access_token`, `id_token`, `refresh_token`
  * @param  {Object}		claims
  * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
  * 
  * @return {String}		token
  */
-LoginSignUpMockStrategy.prototype.generate_token = (root, { type, claims }) => {
-	return tokenHelper.createValid(claims,type)
+LoginSignUpMockStrategy.prototype.generate_access_token = (root, { claims }) => {
+	return tokenHelper.createValid(claims,'access_token')
+}
+
+/**
+ * Generates a new refresh_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		claims
+ * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * 
+ * @return {String}		token
+ */
+LoginSignUpMockStrategy.prototype.generate_refresh_token = (root, { claims }) => {
+	return tokenHelper.createValid(claims,'refresh_token')
+}
+
+/**
+ * Gets the refresh_token claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		token
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+LoginSignUpMockStrategy.prototype.get_refresh_token_claims = (root, { token }) => {
+	const claims = tokenHelper.decrypt(token,'refresh_token')
+	return claims
 }
 
 /**

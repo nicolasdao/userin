@@ -21,13 +21,17 @@ const { oauth2Params } = require('../_utils')
  */
 const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'password\''
+	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
+
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.get_end_user)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_end_user' handler.`)
-	if (!eventHandlerStore.generate_token)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.generate_access_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
+	if (requestIdToken && !eventHandlerStore.generate_id_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler. This event handler is required when 'scope' contains 'openid'.`)
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -63,11 +67,10 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw wrapErrors(errorMsg, clientIdErrors)
 
 	// E. Generates tokens
-	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
 	const config = { client_id, user_id:validUser.id, audiences:serviceAccount.audiences, scopes, state }
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult]] = yield [
-		eventHandlerStore.generate_access_token.exec(config),
-		requestIdToken ? eventHandlerStore.generate_id_token.exec(config) : Promise.resolve([null, null])
+		eventHandlerStore.generate_openid_access_token.exec(config),
+		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : Promise.resolve([null, null])
 	]
 
 	if (accessTokenErrors || idTokenErrors)

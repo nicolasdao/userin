@@ -29,7 +29,10 @@ const log = (eventName, root, args) => {
 	console.log(args)
 }
 
-// userIn.on('generate_token', (root, args) => log('generate_token', root, args))
+// userIn.on('generate_id_token', (root, args) => log('generate_id_token', root, args))
+// userIn.on('generate_access_token', (root, args) => log('generate_access_token', root, args))
+// userIn.on('generate_refresh_token', (root, args) => log('generate_refresh_token', root, args))
+// userIn.on('generate_authorization_code', (root, args) => log('generate_aauthorization_code, root, args))
 // userIn.on('get_identity_claims', (root, args) => log('get_identity_claims', root, args))
 // userIn.on('get_end_user', (root, args) => log('get_end_user', root, args))
 // userIn.on('get_fip_user', (root, args) => log('get_fip_user', root, args))

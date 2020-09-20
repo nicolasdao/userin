@@ -17,7 +17,7 @@ const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors } = require('./_core')
 setUpScopeAssertion(assert)
 
-module.exports = function runTest (data, skip, verboseLog) {
+module.exports = function runTest (data, skip) {
 	const { 
 		clientId:client_id, 
 		clientSecret:client_secret, 
@@ -34,7 +34,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 	}
 
 	const fn = skip ? describe.skip : describe
-	const logTest = logTestErrors(verboseLog)
+	const logTest = logTestErrors()
 
 	fn('introspect', () => {
 		describe('handler', () => {
@@ -56,7 +56,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 			const getValidIdAndRefreshToken = (eventHandlerStore) => co(function *() {
 				const stubbedServiceAccount = { client_id, client_secret }
-				const [codeErrors, { token:code }] = yield eventHandlerStore.generate_authorization_code.exec({
+				const [codeErrors, { token:code }] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 					...stubbedServiceAccount, 
 					user_id, 
 					scopes:['openid', 'offline_access']
@@ -72,25 +72,103 @@ module.exports = function runTest (data, skip, verboseLog) {
 				return [null, result]
 			})
 
-			it('01 - Should fail when the \'get_token_claims\' event handler is not defined.', done => {
+			it('01 - Should fail when the token_type_hint is missing.', done => {
 				const logE = logTest(done)
+
 				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(payload, eventHandlerStore)
+					const [errors] = yield introspectHandler(
+						{ 
+							...payload, 
+							token:'123', 
+							token_type_hint:null,
+						}, eventHandlerStore)
 					logE.push(errors)
-					assert.isOk(errors, '01')
-					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_claims\' handler') >= 0), '03')
+
+					assert.isOk(errors, '05')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token_type_hint\'') >= 0), '06')
+
 					done()
 				}))
 			})
-			it('02 - Should fail when the \'get_client\' event handler is not defined.', done => {
+			it('02 - Should fail when the token_type_hint is not supported.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors] = yield introspectHandler(
+						{ 
+							...payload, 
+							token:'123', 
+							token_type_hint:'hello',
+						}, eventHandlerStore)
+					logE.push(errors)
+
+					assert.isOk(errors, '05')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('token_type_hint \'hello\' is not supported.') >= 0), '06')
+
+					done()
+				}))
+			})
+			it('03 - Should fail when the \'token_type_hint\' is \'id_token\' and the \'get_id_token_claims\' event handler is not defined.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				logE.run(co(function *() {
+					const [errors] = yield introspectHandler({
+						...payload,
+						token_type_hint: 'id_token'
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_id_token_claims\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('04 - Should fail when the \'token_type_hint\' is \'access_token\' and the \'get_access_token_claims\' event handler is not defined.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				logE.run(co(function *() {
+					const [errors] = yield introspectHandler({
+						...payload,
+						token_type_hint: 'access_token'
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_access_token_claims\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('05 - Should fail when the \'token_type_hint\' is \'refresh_token\' and the \'get_refresh_token_claims\' event handler is not defined.', done => {
+				const logE = logTest(done)
+				const eventHandlerStore = {}
+				logE.run(co(function *() {
+					const [errors] = yield introspectHandler({
+						...payload,
+						token_type_hint: 'refresh_token'
+					}, eventHandlerStore)
+					logE.push(errors)
+					assert.isOk(errors, '01')
+					assert.isOk(errors.length, '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_refresh_token_claims\' handler') >= 0), '03')
+					done()
+				}))
+			})
+			it('06 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_token_claims', strategy.get_token_claims)
+				registerEventHandler('get_access_token_claims', strategy.get_access_token_claims)
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(payload, eventHandlerStore)
+					const [errors] = yield introspectHandler({
+						...payload,
+						token_type_hint: 'access_token'
+					}, eventHandlerStore)
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
@@ -98,118 +176,17 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('03 - Should return the token info when the access_token is valid.', done => {
+			it('07 - Should fail when the client_id is missing.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, access_token] = yield getValidAccessToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(access_token, '02')
-					
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:access_token, token_type_hint:'access_token' }, eventHandlerStore)
-					logE.push(errors)
-					
-					assert.isNotOk(errors, '03')
-					assert.isOk(tokenInfo, '04')
-					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
-					assert.equal(tokenInfo.token_type, 'Bearer', '10')
-
-					done()
-				}))
-			})
-			it('04 - Should return the token info when the id_token is valid.', done => {
-				const logE = logTest(done)
-
-				const eventHandlerStore = {}
-				registerAllHandlers(eventHandlerStore)
-
-				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:result.id_token, token_type_hint:'id_token' }, eventHandlerStore)
-					logE.push(errors)
-
-					assert.isNotOk(errors, '03')
-					assert.isOk(tokenInfo, '04')
-					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
-					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
-					assert.equal(tokenInfo.token_type, 'Bearer', '13')
-
-					done()
-				}))
-			})
-			it('05 - Should return the token info when the refresh_token is valid.', done => {
-				const logE = logTest(done)
-
-				const eventHandlerStore = {}
-				registerAllHandlers(eventHandlerStore)
-
-				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:result.refresh_token, token_type_hint:'refresh_token' }, eventHandlerStore)
-					logE.push(errors)
-
-					assert.isNotOk(errors, '03')
-					assert.isOk(tokenInfo, '04')
-					assert.isOk(tokenInfo.active, '05')
-					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
-					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
-					assert.equal(tokenInfo.token_type, 'Bearer', '13')
-
-					done()
-				}))
-			})
-			it('06 - Should fail when the client_id is missing.', done => {
-				const logE = logTest(done)
-
-				const eventHandlerStore = {}
-				registerAllHandlers(eventHandlerStore)
-
-				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
 					const [errors] = yield introspectHandler(
 						{ 
 							...payload, 
-							token:result.refresh_token, 
+							token:'123', 
 							token_type_hint:'refresh_token',
 							client_id:null
 						}, eventHandlerStore)
@@ -221,25 +198,17 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('07 - Should fail when the client_secret is missing.', done => {
+			it('08 - Should fail when the client_secret is missing.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
 					const [errors] = yield introspectHandler(
 						{ 
 							...payload, 
-							token:result.refresh_token, 
+							token:'123', 
 							token_type_hint:'refresh_token',
 							client_secret:null
 						}, eventHandlerStore)
@@ -251,21 +220,13 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('08 - Should fail when the token is missing.', done => {
+			it('09 - Should fail when the token is missing.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
 					const [errors] = yield introspectHandler(
 						{ 
 							...payload, 
@@ -280,60 +241,25 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('09 - Should fail when the token_type_hint is missing.', done => {
+			it('10 - Should fail when the client_id and client_secret are not valid.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
 					const [errors] = yield introspectHandler(
 						{ 
 							...payload, 
-							token:result.refresh_token, 
-							token_type_hint:null,
-						}, eventHandlerStore)
-					logE.push(errors)
-
-					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token_type_hint\'') >= 0), '06')
-
-					done()
-				}))
-			})
-			it('10 - Should fail when the token is incorrect.', done => {
-				const logE = logTest(done)
-
-				const eventHandlerStore = {}
-				registerAllHandlers(eventHandlerStore)
-
-				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:12344, 
+							token:'123', 
 							token_type_hint:'refresh_token',
+							client_id: 'GYUE&((#VYVV(V',
+							client_secret:altClientSecret
 						}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '06')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Service account GYUE&((#VYVV(V not found') >= 0), '06')
 
 					done()
 				}))
@@ -369,7 +295,150 @@ module.exports = function runTest (data, skip, verboseLog) {
 					done()
 				}))
 			})
-			it('12 - Should show active false when an expired access_token is passed in the authorization header.', done => {
+			it('12 - Should fail when the token is incorrect.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [errors] = yield introspectHandler(
+						{ 
+							...payload, 
+							token:12344, 
+							token_type_hint:'refresh_token',
+						}, eventHandlerStore)
+					logE.push(errors)
+
+					assert.isOk(errors, '05')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '06')
+
+					done()
+				}))
+			})
+			it('13 - Should return the token info when the access_token is valid.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, access_token] = yield getValidAccessToken(eventHandlerStore)
+					logE.push(codeErrors)
+					
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(access_token, '02')
+					
+					const [errors, tokenInfo] = yield introspectHandler(
+						{ ...payload, token:access_token, token_type_hint:'access_token' }, eventHandlerStore)
+					logE.push(errors)
+					
+					assert.isNotOk(errors, '03')
+					assert.isOk(tokenInfo, '04')
+					assert.isOk(tokenInfo.active, '05')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
+					assert.equal(tokenInfo.aud, aud, '08')
+					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.equal(tokenInfo.token_type, 'Bearer', '10')
+
+					done()
+				}))
+			})
+			it('14 - Should return the token info when the id_token is valid.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
+					logE.push(codeErrors)
+					
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(result, '02')
+					assert.isOk(result.id_token, '03')
+					assert.isOk(result.refresh_token, '04')
+
+					const [errors, tokenInfo] = yield introspectHandler(
+						{ ...payload, token:result.id_token, token_type_hint:'id_token' }, eventHandlerStore)
+					logE.push(errors)
+
+					assert.isNotOk(errors, '03')
+					assert.isOk(tokenInfo, '04')
+					assert.isOk(tokenInfo.active, '05')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
+					assert.equal(tokenInfo.aud, aud, '08')
+					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
+					assert.equal(tokenInfo.token_type, 'Bearer', '13')
+
+					done()
+				}))
+			})
+			it('15 - Should return the token info when the refresh_token is valid.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
+					logE.push(codeErrors)
+					
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(result, '02')
+					assert.isOk(result.id_token, '03')
+					assert.isOk(result.refresh_token, '04')
+
+					const [errors, tokenInfo] = yield introspectHandler(
+						{ ...payload, token:result.refresh_token, token_type_hint:'refresh_token' }, eventHandlerStore)
+					logE.push(errors)
+
+					assert.isNotOk(errors, '03')
+					assert.isOk(tokenInfo, '04')
+					assert.isOk(tokenInfo.active, '05')
+					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
+					assert.equal(tokenInfo.sub, user_id, '07')
+					assert.equal(tokenInfo.aud, aud, '08')
+					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
+					assert.equal(tokenInfo.token_type, 'Bearer', '13')
+
+					done()
+				}))
+			})
+			it('16 - Should fail when the token is incorrect.', done => {
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
+					logE.push(codeErrors)
+					
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(result, '02')
+					assert.isOk(result.id_token, '03')
+					assert.isOk(result.refresh_token, '04')
+
+					const [errors] = yield introspectHandler(
+						{ 
+							...payload, 
+							token:12344, 
+							token_type_hint:'refresh_token',
+						}, eventHandlerStore)
+					logE.push(errors)
+
+					assert.isOk(errors, '05')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '06')
+
+					done()
+				}))
+			})
+			it('17 - Should show active false when an expired access_token is passed in the authorization header.', done => {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}

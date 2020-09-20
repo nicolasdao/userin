@@ -17,13 +17,12 @@ const { verifyStrategy } = require('userin-core')
  * @param  {UserInStrategy} data.openIdStrategy				
  * @param  {UserInStrategy} data.loginSignupStrategy				
  * @param  {UserInStrategy} data.loginSignupFipStrategy				
- * @param  {Boolean} 		skip									
- * @param  {Boolean} 		verboseLog							
+ * @param  {Boolean} 		skip													
  */
-module.exports = function runTest (data={}, skip, verboseLog) {
+module.exports = function runTest (data={}, skip) {
 
 	const fn = skip ? describe.skip : describe
-	const logTest = logTestErrors(verboseLog)
+	const logTest = logTestErrors()
 
 	fn('Strategy instances', () => {
 		for (let strategyName in data) {

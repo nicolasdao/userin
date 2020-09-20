@@ -24,13 +24,14 @@ function EventHandler(handler) {
 }
 
 const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
-	const eventName = `generate_${type}`
+	const eventName = `generate_openid_${type}`
+	const underlyingEvent = `generate_${type}`
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, audiences, scopes, state }) => co(function *() {
 		const errorMsg = `Failed to generate ${type}`
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore[underlyingEvent])
+			throw new userInError.InternalServerError(`${errorMsg}. Missing '${underlyingEvent}' handler.`)
 		
 		const getBasicOIDCclaims = oauth2Params.getBasicOIDCclaims(type)
 		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield getBasicOIDCclaims(eventHandlerStore)
@@ -47,7 +48,7 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type, claims, state })
+		const [errors, token] = yield eventHandlerStore[underlyingEvent].exec({ type, claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
@@ -63,15 +64,15 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 const addGenerateAccessTokenHandler = addGenerateAccessOrRefreshTokenHandler('access_token')
 const addGenerateRefreshTokenHandler = addGenerateAccessOrRefreshTokenHandler('refresh_token')
 const addGenerateIdTokenHandler = eventHandlerStore => {
-	const eventName = 'generate_id_token'
+	const eventName = 'generate_openid_id_token'
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, audiences, scopes, state }) => co(function *() {
 		const errorMsg = 'Failed to generate id_token'
 		if (!eventHandlerStore.get_identity_claims)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore.generate_id_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler.`)
 		if (!eventHandlerStore.get_config)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -103,7 +104,7 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'id_token', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_id_token.exec({ claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
@@ -116,13 +117,13 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 	eventHandlerStore[eventName] = new EventHandler(handler)
 }
 const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
-	const eventName = 'generate_authorization_code'
+	const eventName = 'generate_openid_authorization_code'
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, scopes, state }) => co(function *() {
 		const errorMsg = 'Failed to generate authorization code'
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore.generate_authorization_code)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
 		if (!eventHandlerStore.get_config)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 		
@@ -139,7 +140,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'code', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_authorization_code.exec({ claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 

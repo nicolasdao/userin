@@ -48,6 +48,15 @@ If you need to support authentication using Facebook, install the Facebook passp
 npm i passport-facebook
 ```
 
+	'create_end_user',
+	// Gets a user's details
+	'get_end_user',
+	// Generates tokens
+	'generate_access_token',
+	'generate_refresh_token',
+	// Gets tokens' details
+	'get_refresh_token_claims',
+
 ```js
 const express = require('express')
 const { UserIn, Strategy } = require('userin')
@@ -58,21 +67,26 @@ class YourStrategy extends Strategy {
 		super(config)
 		this.name = 'yourstrategyname',
 
-		// Implement those three methods if you need to support the 'loginsignup' 
+		// Implement those five methods if you need to support the 'loginsignup' 
 		// mode (i.e., allowing login and signup with their username and password only)
-		this.create_end_user = (root, { user }) => { /* Implement your logic here */ }
+		this.create_end_user = (root, { strategy, user }) => { /* Implement your logic here */ }
 		this.get_end_user = (root, { user }) => { /* Implement your logic here */ }
-		this.generate_token = (root, { type, claims }) => { /* Implement your logic here */ }
-		
-		// Implement this next method if also need to support login and signup with Identity 
+		this.generate_access_token = (root, { claims }) => { /* Implement your logic here */ }
+		this.generate_refresh_token = (root, { claims }) => { /* Implement your logic here */ }
+		this.get_refresh_token_claims = (root, { token }) => { /* Implement your logic here */ }
+
+		// Implement those three methods if also need to support login and signup with Identity 
 		// Providers such as Facebook, Google, ...
 		this.get_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
-		
-		// Implement those next three methods if you also need to support all the OpenID Connect
+		this.generate_authorization_code = (root, { claims }) => { /* Implement your logic here */ }
+		this.get_authorization_code_claims = (root, { token }) => { /* Implement your logic here */ }
+
+		// Implement those four methods if you also need to support all the OpenID Connect
 		// APIs which would allow third-parties to use your APIs.
 		this.get_identity_claims = (root, { user_id, scopes }) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }) => { /* Implement your logic here */ }
-		this.get_token_claims = (root, { type, token }) => { /* Implement your logic here */ }
+		this.get_access_token_claims = (root, { token }) => { /* Implement your logic here */ }
+		this.get_id_token_claims = (root, { token }) => { /* Implement your logic here */ }
 	}
 }
 
@@ -403,7 +417,7 @@ Almost all unit tests use the custom `logTestErrors` API. This API's purpose is 
 const { logTestErrors } = require('./_core')
 
 const verbose = true
-const logTest = logTestErrors(verbose)
+const logTest = logTestErrors()
 
 it('Should fail when something bad happens.', done => {
 	const logE = logTest(done)

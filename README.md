@@ -1,5 +1,5 @@
 # userin-core &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an Express middleware to build Authorization Server that support OAuth 2.0 workflows an integrate with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. UserIn's goal is to let developers implement basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice while UserIn takes care of all the OAuth 2.0/OpenID Connect flows.
+UserIn is an Express middleware to build Authorization Servers that support OAuth 2.0 workflows an integrate with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. UserIn's goal is to let developers implement basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice while UserIn takes care of all the OAuth 2.0/OpenID Connect flows.
 
 # Table of contents
 

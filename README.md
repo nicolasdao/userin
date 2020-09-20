@@ -33,8 +33,14 @@ UserIn is an Express middleware to build Authorization Server that support OAuth
 >	- [`access_token` requirements](#access_token-requirements)
 >	- [`refresh_token` requirements](#refresh_token-requirements)
 >	- [Authorization `code` requirements](#authorization-code-requirements)
-> * [Creating your own UserIn strategy](#creating-your-own-userin-strategy)
+> * [Creating your own UserIn Strategy class](#creating-your-own-userin-strategy-class)
 >	- [Unit testing](#unit-testing)
+>		- [Testing your own UserIn Strategy class](#testing-your-own-userin-strategy-class)
+>		- [`testSuite` API](#testsuite-api)
+>			- [`testLoginSignup` function](#testloginsignup-function)
+>			- [`testLoginSignupFIP` function](#testloginsignupfip-function)
+>			- [`testOpenId` function](#testopenid-function)
+>			- [`testAll` function](#testall-function)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
 >	- [Documentation](#documentation)
@@ -359,9 +365,9 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 ## Authorization `code` requirements
 
-# Creating your own UserIn strategy
+# Creating your own UserIn Strategy class
 ## Unit testing
-
+### Testing your own UserIn Strategy class
 UserIn ships with a suite of Mocha unit tests. To test your own strategy:
 
 1. Install mocha and chai:
@@ -369,59 +375,29 @@ UserIn ships with a suite of Mocha unit tests. To test your own strategy:
 npm i -D mocha chai
 ```
 2. Create a new `test` folder in your project root directory.
-3. Under that folder, create a new `strategy.js` (or whatever name you see fit), and paste the following code:
+3. Under that `test` folder, create a new `strategy.js` (or whatever name you see fit), and paste code similar to the following:
 ```js
-const { runTestSuite } = require('userin')
-const { YourStrategy } = require('../src/yourStrategy.js')
+const { testSuite } = require('../src')
+const { YourStrategyClass } = require('../src/yourStrategy.js')
 
-const strategy = new YourStrategy()
+const options = { skip:'' } // Does not skip any test.
 
-runTestSuite({
-	verbose: true,
-	strategy,
-	client: { 
-		id: 'default', 
-		secret: 123, 
-		user: { 
-			id: 1,
-			username: 'nic@cloudlessconsulting.com', 
-			password: 123456
-		},
-		fipUser: { 
-			id: 23, 
-			fip: 'facebook'
-		}
+// To test a stragegy in 'loginsignup' mode, the following minimum config is required.
+const config = {
+	tokenExpiry: {
+		access_token: 3600
+	}
+}
+
+// The required stub's value are:
+const stub = {
+	user: {
+		username: 'valid@example.com', // Valid username in your own stub data.
+		password: '123456' // Valid password in your own stub data.
 	},
-	altClient: { 
-		id: 'fraudster', 
-		secret: 456 
-	},
-	claimStubs: [{
-		scope:'profile',
-		claims: {
-			given_name: 'Nic',
-			family_name: 'Dao',
-			zoneinfo: 'Australia/Sydney'
-		}
-	}, {
-		scope:'email',
-		claims: {
-			email: 'nic@cloudlessconsulting.com',
-			email_verified: true
-		}
-	}, {
-		scope:'phone',
-		claims: {
-			phone: '+6112345678',
-			phone_number_verified: false
-		}
-	}, {
-		scope:'address',
-		claims: {
-			address: 'Some street in Sydney'
-		}
-	}]
-})
+}
+
+testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 ```
 4. Add a new `test` script in your `package.json`:
 ```js
@@ -433,6 +409,159 @@ runTestSuite({
 ```
 npm test
 ```
+
+### `testSuite` API
+#### `testLoginSignup` function
+
+```js
+const { testSuite } = require('../src')
+const { YourStrategyClass } = require('../src/yourStrategy.js')
+
+// Use the 'option' value to control which test is run. By default, all tests are run.
+// Valid test names are: 'all', 'strategy', 'login', 'signup'
+// 
+// const options = { skip:'all' } // Skips all tests in this suite.
+// const options = { skip:'login' } // Skips the 'login' test in this suite.
+// const options = { skip:['login', 'signup'] } // Skips the 'login' and 'signup' tests in this suite.
+// const options = { only:'login' } // Only run the 'login' test in this suite.
+// const options = { only:['login', 'signup'] } // Only run the 'login' and 'signup' tests in this suite.
+const options = { skip:'' } // Does not skip any test.
+
+// To test a stragegy in 'loginsignup' mode, the following minimum config is required.
+const config = {
+	tokenExpiry: {
+		access_token: 3600
+	}
+}
+
+// The required stub's value are:
+const stub = {
+	user: {
+		username: 'valid@example.com', // Valid username in your own stub data.
+		password: '123456' // Valid password in your own stub data.
+	},
+}
+
+testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
+```
+
+#### `testLoginSignupFIP` function
+
+```js
+const { testSuite } = require('../src')
+const { YourStrategyClass } = require('../src/yourStrategy.js')
+
+// Use the 'option' value to control which test is run. By default, all tests are run. 
+// Valid test names are: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
+// 
+// const options = { skip:'all' } // Skips all tests in this suite.
+// const options = { skip:'login' } // Skips the 'login' test in this suite.
+// const options = { skip:['login', 'signup'] } // Skips the 'login' and 'signup' tests in this suite.
+// const options = { only:'login' } // Only run the 'login' test in this suite.
+// const options = { only:['login', 'signup'] } // Only run the 'login' and 'signup' tests in this suite.
+const options = { skip:'' } // Does not skip any test.
+
+// To test a stragegy in 'loginsignupfip' mode, the following minimum config is required.
+const config = {
+	tokenExpiry: {
+		access_token: 3600,
+		code: 30
+	}
+}
+
+// The required stub's value are:
+const stub = {
+	user: {
+		username: 'valid@example.com', // Valid username in your own stub data.
+		password: '123456' // Valid password in your own stub data.
+	},
+	fipUser: { // this user should be different from the one above.
+		id: '1N7fr2yt', // ID of the user in the identity provider plaftform
+		fipName: 'facebook', // Identity provider's name
+		userId: 2 // ID of the user on your platform
+	}
+}
+
+testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
+```
+
+#### `testOpenId` function
+
+```js
+const { testSuite } = require('../src')
+const { YourStrategyClass } = require('../src/yourStrategy.js')
+
+// Use the 'option' value to control which test is run. By default, all tests are run. 
+// Valid test names are: 'all', 'strategy', 'introspect', 'token', 'userinfo'
+// 
+// const options = { skip:'all' } // Skips all tests in this suite.
+// const options = { skip:'introspect' } // Skips the 'introspect' test in this suite.
+// const options = { skip:['introspect', 'token'] } // Skips the 'introspect' and 'token' tests in this suite.
+// const options = { only:'introspect' } // Only run the 'introspect' test in this suite.
+// const options = { only:['introspect', 'token'] } // Only run the 'introspect' and 'token' tests in this suite.
+const options = { skip:'' } // Does not skip any test.
+
+// To test a stragegy in 'openid' mode, the following minimum config is required.
+const config = {
+	openid: {
+		iss: 'https://www.userin.com',
+		tokenExpiry: {
+			id_token: 3600,
+			access_token: 3600,
+			code: 30
+		}
+	}
+}
+
+// The required stub's value are:
+const stub = {
+	client: { 
+		id: 'good_client', 
+		secret: '98765', 
+		aud: 'https://private-api@mycompany.com',
+		user: { 
+			id: 1,
+			username: 'valid@example.com', // Valid username in your own stub data.
+			password: '123456' // Valid password in your own stub data.
+			claimStubs: [{ // Define the identity claims you want to support here and fill the value for the 'valid@example.com' user.
+				scope:'profile',
+				claims: {
+					given_name: 'Nic',
+					family_name: 'Dao',
+					zoneinfo: 'Australia/Sydney'
+				}
+			}, {
+				scope:'email',
+				claims: {
+					email: 'nic@cloudlessconsulting.com',
+					email_verified: true
+				}
+			}, {
+				scope:'phone',
+				claims: {
+					phone: '+61432567890',
+					phone_number_verified: false
+				}
+			}, {
+				scope:'address',
+				claims: {
+					address: 'Castle in the shed'
+				}
+			}]
+		}
+	},
+	altClient: { 
+		id: 'existing_client_with_no_access_to_my_user', 
+		secret: '3751245'
+	}
+}
+
+testSuite.testOpenId(YourStrategyClass, config, stub, options)
+```
+
+#### `testAll` function
+
+This test function tests all the previous three tests at once. Use it if you have created a UserIn Strategy class that imlements all the [event handlers](#events-and-event-handlers). The signature is the same as for the other tests. Merge all the stubs from the previous tests into a single stub object.
 
 # Contributing - Developer notes
 ## Contribution guidelines

@@ -10,7 +10,7 @@
 
 const { testSuite } = require('../src')
 const { OpenIdStrategy } = require('./mock/strategy')
-const { GOOD_CLIENT, BAD_CLIENT, END_USER, FIP_USER_TO_STRATEGY } = require('./mock/stub')
+const { GOOD_CLIENT, BAD_CLIENT, END_USER } = require('./mock/stub')
 
 // skip values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
 const options = { skip:'' }
@@ -60,11 +60,6 @@ const stub = {
 					address: END_USER.address
 				}
 			}]
-		},
-		fipUser: { 
-			id: FIP_USER_TO_STRATEGY.user_id,
-			fipUserId: FIP_USER_TO_STRATEGY.strategy_user_id, 
-			fip: FIP_USER_TO_STRATEGY.strategy
 		}
 	},
 	altClient: { 

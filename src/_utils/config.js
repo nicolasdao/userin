@@ -1,7 +1,6 @@
 const { url } = require('puffy')
 
-const prefixPathname = (config={}, pathname='/') => {
-	const { prefix, version } = config
+const prefixPathname = prefix => (version, pathname='/') => {
 	return url.getInfo(url.buildUrl({ origin:'https://example.com', pathname:`${prefix||''}/${version||''}/${pathname}` })).pathname
 }
 

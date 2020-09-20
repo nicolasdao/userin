@@ -7,13 +7,20 @@ const setUpScopeAssertion = assert => {
 	}
 }
 
-const logTestErrors = toggle => done => {	
+class WrapperError extends Error {
+	constructor(message, stack) {
+		super(message)
+		this.stack = stack
+	}
+}
+
+const logTestErrors = () => done => {	
 	const _errors = []
 	return {
 		run: p => p.catch(error => {
-			if (toggle && _errors.length)
-				_errors.forEach(e => console.log(e.stack || e.message))
-			done(error)
+			const totalErrors = [error, ..._errors]
+			const stack = totalErrors.map(e => e.stack).join('\n')
+			done(new WrapperError(error.message, stack))
 		}),
 		push: errors => {
 			if (!errors)

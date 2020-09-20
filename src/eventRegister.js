@@ -1,8 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error:userInError } = require('userin-core')
 const { oauth2Params } = require('./_utils')
-const { Strategy, SUPPORTED_EVENTS } = require('userin-core')
+const { error:userInError, Strategy, verifyStrategy, getEvents } = require('userin-core')
 
 function EventHandler(handler) {
 	let _this = this
@@ -25,13 +24,14 @@ function EventHandler(handler) {
 }
 
 const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
-	const eventName = `generate_${type}`
+	const eventName = `generate_openid_${type}`
+	const underlyingEvent = `generate_${type}`
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, audiences, scopes, state }) => co(function *() {
 		const errorMsg = `Failed to generate ${type}`
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore[underlyingEvent])
+			throw new userInError.InternalServerError(`${errorMsg}. Missing '${underlyingEvent}' handler.`)
 		
 		const getBasicOIDCclaims = oauth2Params.getBasicOIDCclaims(type)
 		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield getBasicOIDCclaims(eventHandlerStore)
@@ -48,7 +48,7 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type, claims, state })
+		const [errors, token] = yield eventHandlerStore[underlyingEvent].exec({ type, claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
@@ -64,15 +64,15 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 const addGenerateAccessTokenHandler = addGenerateAccessOrRefreshTokenHandler('access_token')
 const addGenerateRefreshTokenHandler = addGenerateAccessOrRefreshTokenHandler('refresh_token')
 const addGenerateIdTokenHandler = eventHandlerStore => {
-	const eventName = 'generate_id_token'
+	const eventName = 'generate_openid_id_token'
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, audiences, scopes, state }) => co(function *() {
 		const errorMsg = 'Failed to generate id_token'
 		if (!eventHandlerStore.get_identity_claims)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore.generate_id_token)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler.`)
 		if (!eventHandlerStore.get_config)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -104,7 +104,7 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'id_token', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_id_token.exec({ claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
@@ -117,13 +117,13 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 	eventHandlerStore[eventName] = new EventHandler(handler)
 }
 const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
-	const eventName = 'generate_authorization_code'
+	const eventName = 'generate_openid_authorization_code'
 	if (eventHandlerStore[eventName])
 		return
 	const handler = (root, { client_id, user_id, scopes, state }) => co(function *() {
 		const errorMsg = 'Failed to generate authorization code'
-		if (!eventHandlerStore.generate_token)
-			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+		if (!eventHandlerStore.generate_authorization_code)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
 		if (!eventHandlerStore.get_config)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 		
@@ -140,7 +140,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			...basicOIDCclaims.claims
 		}
 
-		const [errors, token] = yield eventHandlerStore.generate_token.exec({ type:'code', claims, state })
+		const [errors, token] = yield eventHandlerStore.generate_authorization_code.exec({ claims, state })
 		if (errors)
 			throw wrapErrors(errorMsg, errors)
 		else 
@@ -180,11 +180,6 @@ const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
 		throw new Error(`Missing required ${eventName} 'handler'`)
 	if (typeof(handler) != 'function')
 		throw new Error(`Invalid ${eventName} handler. Expect 'handler' to be a function, but found ${typeof(handler)} instead.`)
-
-	const supportedEvents = [...SUPPORTED_EVENTS, 'process_fip_auth_response']
-
-	if (supportedEvents.indexOf(eventName) < 0)
-		throw new Error(`Invalid 'eventName'. ${eventName} is not supported. Expect 'eventName' to be equal to one of the following values: ${SUPPORTED_EVENTS.join(', ')}.`)
 
 	if (eventHandlerStore[eventName])
 		eventHandlerStore[eventName].addHandler(handler)
@@ -226,9 +221,18 @@ module.exports = eventHandlerStore => {
 	 */
 	const registerEventHandler = (...args) => {
 		const strategyHandler = args[0]
-		if (strategyHandler && strategyHandler instanceof Strategy)
-			SUPPORTED_EVENTS.forEach(eventName => registerEvent(eventName, strategyHandler[eventName]))
-		else {
+		if (strategyHandler && strategyHandler instanceof Strategy) {
+			// 1. Verify the UserIn strategy
+			verifyStrategy(strategyHandler)
+			// 2. Register the default 'get_config' event handler
+			registerEventHandler('get_config', () => strategyHandler.config)
+			// 3. Regsiter all the strategy's events handler
+			const events = getEvents()
+			events.forEach(eventName => {
+				if (strategyHandler[eventName])
+					registerEvent(eventName, strategyHandler[eventName])
+			})
+		} else {
 			const [eventName, handler] = args
 			registerEvent(eventName, handler)
 		}

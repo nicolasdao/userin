@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.1](https://github.com/nicolasdao/userin/compare/v1.3.0...v1.3.1) (2020-09-20)
+
+
+### Features
+
+* Add better separation of concerns between the three different modes: loginsignup, loginsignupfip and openid ([320effa](https://github.com/nicolasdao/userin/commit/320effa6043d86bc27ccaf2f078744b8958afe5b))
+* Break down the generate_token and get_token_claims into seperate method for each token type + add unit tests + add support for new create_fip_user event ([5a8b040](https://github.com/nicolasdao/userin/commit/5a8b04016b4951c603513f3235bc9e4234833b95))
+
 ## [1.3.0](https://github.com/nicolasdao/userin/compare/v1.2.0...v1.3.0) (2020-09-16)
 
 

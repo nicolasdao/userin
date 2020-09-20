@@ -22,12 +22,12 @@ const { oauth2Params } = require('../_utils')
 const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'refresh_token\''
 	// A. Validates input
-	if (!eventHandlerStore.get_token_claims)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_token_claims' handler.`)
+	if (!eventHandlerStore.get_refresh_token_claims)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_refresh_token_claims' handler.`)
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
-	if (!eventHandlerStore.generate_token)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.generate_access_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -38,7 +38,7 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 
 	// B. Gets the client's scopes and audiences as well as the claims originally associated with the refresh_token
 	const [[claimsErrors, claims], [serviceAccountErrors, serviceAccount]] = yield [
-		eventHandlerStore.get_token_claims.exec({ type:'refresh_token', token:refresh_token }),
+		eventHandlerStore.get_refresh_token_claims.exec({ token:refresh_token }),
 		eventHandlerStore.get_client.exec({ client_id })
 	]
 	if (claimsErrors || serviceAccountErrors)
@@ -59,6 +59,10 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 		throw new userInError.InvalidClientError(`${errorMsg}. Unauthorized access.`)
 
 	const refreshTokenScopes = claims.scope ? oauth2Params.convert.thingToThings(claims.scope) : serviceAccount.scopes
+	const requestIdToken = refreshTokenScopes && refreshTokenScopes.indexOf('openid') >= 0
+
+	if (requestIdToken && !eventHandlerStore.generate_id_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler. This event handler is required when 'scope' contains 'openid'.`)
 	
 	if (claims.scope) {
 		const [scopeErrors] = oauth2Params.verify.scopes({ scopes:refreshTokenScopes, serviceAccountScopes:serviceAccount.scopes })
@@ -69,10 +73,9 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	// D. Get the access_token (and potentially the id_token to) for that user_id
 	const config = { client_id, user_id:claims.sub, audiences:serviceAccount.audiences, scopes:refreshTokenScopes, state }
 
-	const requestIdToken = refreshTokenScopes && refreshTokenScopes.indexOf('openid') >= 0
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult]] = yield [
-		eventHandlerStore.generate_access_token.exec(config),
-		requestIdToken ? eventHandlerStore.generate_id_token.exec(config) : Promise.resolve([null,null])
+		eventHandlerStore.generate_openid_access_token.exec(config),
+		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : Promise.resolve([null,null])
 	]
 
 	if (accessTokenErrors || idTokenErrors)

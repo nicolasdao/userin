@@ -23,8 +23,8 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, scopes, state })
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
-	if (!eventHandlerStore.generate_token)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_token' handler.`)
+	if (!eventHandlerStore.generate_access_token)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
@@ -45,7 +45,7 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, scopes, state })
 		throw wrapErrors(errorMsg, scopeErrors)
 
 	// D. Get the access_token for that user_id
-	const [tokenErrors, tokenResult] = yield eventHandlerStore.generate_access_token.exec({ client_id, audiences, scopes, state })
+	const [tokenErrors, tokenResult] = yield eventHandlerStore.generate_openid_access_token.exec({ client_id, audiences, scopes, state })
 	if (tokenErrors)
 		throw wrapErrors(errorMsg, tokenErrors)
 

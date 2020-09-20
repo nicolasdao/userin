@@ -16,7 +16,7 @@ const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors } = require('./_core')
 setUpScopeAssertion(assert)
 
-module.exports = function runTest (data, skip, verboseLog) {
+module.exports = function runTest (data, skip) {
 	
 	const { 
 		clientId:client_id, 
@@ -26,7 +26,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 	} = data
 	
 	const fn = skip ? describe.skip : describe
-	const logTest = logTestErrors(verboseLog)
+	const logTest = logTestErrors()
 	
 	fn('userinfo', () => {
 
@@ -47,7 +47,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 					return [null, `Bearer ${result.access_token}`]
 			})
 
-			it('01 - Should fail when the \'get_token_claims\' event handler is not defined.', done => {
+			it('01 - Should fail when the \'get_access_token_claims\' event handler is not defined.', done => {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -56,7 +56,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_token_claims\' handler') >= 0), '03')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_access_token_claims\' handler') >= 0), '03')
 					done()
 				}))
 			})
@@ -64,7 +64,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_token_claims', strategy.get_token_claims)
+				registerEventHandler('get_access_token_claims', strategy.get_access_token_claims)
 				logE.run(co(function *() {
 					const [errors] = yield userInfoHandler(null, eventHandlerStore, { authorization:'' })
 					logE.push(errors)
@@ -153,7 +153,7 @@ module.exports = function runTest (data, skip, verboseLog) {
 				const registerEventHandler = eventRegister(eventHandlerStore)
 				registerEventHandler('get_config', (root) => {
 					const clone = JSON.parse(JSON.stringify(root))
-					clone.expiry.access_token = -1000
+					clone.tokenExpiry.access_token = -1000
 					return clone
 				})
 
@@ -174,7 +174,11 @@ module.exports = function runTest (data, skip, verboseLog) {
 				}))
 			})
 
-			let i = 8
+			it('08 - Should have at least one set of claims to be tested', () => {
+				assert.isOk(claimStubs.length, '01 - Your test is missing some claim stubs to assert whether the userinfo works as expected.')
+			})
+
+			let i = 9
 			for(let claimStub of claimStubs) {
 				const { scope, claims } = claimStub || {}
 				if (!scope)

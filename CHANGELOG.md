@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://github.com/nicolasdao/userin/compare/v1.5.0...v1.5.1) (2020-09-21)
+
+
+### Bug Fixes
+
+* The incorrect username password message is not being caught in a deterministic way ([ed0bb6b](https://github.com/nicolasdao/userin/commit/ed0bb6b70dd788daba68962844081e499268f6a1))
+
 ## [1.5.0](https://github.com/nicolasdao/userin/compare/v1.4.0...v1.5.0) (2020-09-21)
 
 

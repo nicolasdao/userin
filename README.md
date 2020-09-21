@@ -1,4 +1,4 @@
-# userin-core &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+# userin &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 UserIn is an Express middleware to build Authorization Servers that support OAuth 2.0 workflows an integrate with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. UserIn's goal is to let developers implement basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice while UserIn takes care of all the OAuth 2.0/OpenID Connect flows.
 
 # Table of contents
@@ -33,19 +33,19 @@ UserIn is an Express middleware to build Authorization Servers that support OAut
 >	- [`access_token` requirements](#access_token-requirements)
 >	- [`refresh_token` requirements](#refresh_token-requirements)
 >	- [Authorization `code` requirements](#authorization-code-requirements)
-> * [Creating your own UserIn Strategy class](#creating-your-own-userin-strategy-class)
+> * [Creating a UserIn Strategy class](#creating-a-userin-strategy-class)
 >	- [Unit testing](#unit-testing)
->		- [Testing your own UserIn Strategy class](#testing-your-own-userin-strategy-class)
+>		- [Testing a UserIn Strategy class](#testing-a-userin-strategy-class)
 >		- [`testSuite` API](#testsuite-api)
 >			- [`testLoginSignup` function](#testloginsignup-function)
 >			- [`testLoginSignupFIP` function](#testloginsignupfip-function)
 >			- [`testOpenId` function](#testopenid-function)
 >			- [`testAll` function](#testall-function)
+>		- [Dependency injection](#dependency-injection)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
->	- [Documentation](#documentation)
->		- [Unit tests](#unit-tests)
->			- [The `logTestErrors` API](#the-logtesterrors-api)
+>	- [Unit tests](#unit-tests)
+>		- [The `logTestErrors` API](#the-logtesterrors-api)
 
 # Getting started
 
@@ -73,26 +73,26 @@ class YourStrategy extends Strategy {
 
 		// Implement those five methods if you need to support the 'loginsignup' 
 		// mode (i.e., allowing users to login/signup with their username and password only)
-		this.create_end_user = (root, { strategy, user }) => { /* Implement your logic here */ }
-		this.get_end_user = (root, { user }) => { /* Implement your logic here */ }
-		this.generate_access_token = (root, { claims }) => { /* Implement your logic here */ }
-		this.generate_refresh_token = (root, { claims }) => { /* Implement your logic here */ }
-		this.get_refresh_token_claims = (root, { token }) => { /* Implement your logic here */ }
+		this.create_end_user = (root, { user }, context) => { /* Implement your logic here */ }
+		this.get_end_user = (root, { user }, context) => { /* Implement your logic here */ }
+		this.generate_access_token = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.generate_refresh_token = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.get_refresh_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
 		// Implement those four methods if you also need to support login and signup with Identity 
 		// Providers such as Facebook, Google, ...
-		this.create_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
-		this.get_fip_user = (root, { strategy, user }) => { /* Implement your logic here */ }
-		this.generate_authorization_code = (root, { claims }) => { /* Implement your logic here */ }
-		this.get_authorization_code_claims = (root, { token }) => { /* Implement your logic here */ }
+		this.create_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
+		this.get_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
+		this.generate_authorization_code = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.get_authorization_code_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
 		// Implement those four methods if you also need to support all the OpenID Connect
 		// APIs which would allow third-parties to use your APIs.
-		this.get_identity_claims = (root, { user_id, scopes }) => { /* Implement your logic here */ }
-		this.get_client = (root, { client_id, client_secret }) => { /* Implement your logic here */ }
-		this.get_access_token_claims = (root, { token }) => { /* Implement your logic here */ }
-		this.get_id_token_claims = (root, { token }) => { /* Implement your logic here */ }
-		this.generate_id_token = (root, { claims }) => { /* Implement your logic here */ }
+		this.get_identity_claims = (root, { user_id, scopes }, context) => { /* Implement your logic here */ }
+		this.get_client = (root, { client_id, client_secret }, context) => { /* Implement your logic here */ }
+		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.get_id_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
 	}
 }
 
@@ -150,22 +150,27 @@ UserIn behaviors are managed via events and event handlers. Out-of-the-box, User
 Each of those events, triggers a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
 
 ```js
-userIn.on('generate_access_token', (root, payload) => {
+userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(`'generate_access_token' event fired. Payload:`)
 	console.log(payload)
 	console.log('Previous handler response:')
 	console.log(root)
+	console.log('Current context:')
+	console.log(context)
 })
 ```
 
 `root` is the response returned by the previous event handler. If your handler does not return anything, `root` is passed to the next handler. The code above is similar to this:
 
 ```js
-userIn.on('generate_access_token', (root, payload) => {
+userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(`'generate_access_token' event fired. Payload:`)
 	console.log(payload)
 	console.log('Previous handler response:')
 	console.log(root)
+	console.log('Current context:')
+	console.log(context)
+
 	return root
 })
 ```
@@ -365,9 +370,9 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 ## Authorization `code` requirements
 
-# Creating your own UserIn Strategy class
+# Creating a UserIn Strategy class
 ## Unit testing
-### Testing your own UserIn Strategy class
+### Testing a UserIn Strategy class
 UserIn ships with a suite of Mocha unit tests. To test your own strategy:
 
 1. Install mocha and chai:
@@ -377,7 +382,7 @@ npm i -D mocha chai
 2. Create a new `test` folder in your project root directory.
 3. Under that `test` folder, create a new `strategy.js` (or whatever name you see fit), and paste code similar to the following:
 ```js
-const { testSuite } = require('../src')
+const { testSuite } = require('userin')
 const { YourStrategyClass } = require('../src/yourStrategy.js')
 
 const options = { skip:'' } // Does not skip any test.
@@ -414,7 +419,7 @@ npm test
 #### `testLoginSignup` function
 
 ```js
-const { testSuite } = require('../src')
+const { testSuite } = require('userin')
 const { YourStrategyClass } = require('../src/yourStrategy.js')
 
 // Use the 'option' value to control which test is run. By default, all tests are run.
@@ -448,7 +453,7 @@ testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 #### `testLoginSignupFIP` function
 
 ```js
-const { testSuite } = require('../src')
+const { testSuite } = require('userin')
 const { YourStrategyClass } = require('../src/yourStrategy.js')
 
 // Use the 'option' value to control which test is run. By default, all tests are run. 
@@ -488,7 +493,7 @@ testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
 #### `testOpenId` function
 
 ```js
-const { testSuite } = require('../src')
+const { testSuite } = require('userin')
 const { YourStrategyClass } = require('../src/yourStrategy.js')
 
 // Use the 'option' value to control which test is run. By default, all tests are run. 
@@ -563,14 +568,104 @@ testSuite.testOpenId(YourStrategyClass, config, stub, options)
 
 This test function tests all the previous three tests at once. Use it if you have created a UserIn Strategy class that imlements all the [event handlers](#events-and-event-handlers). The signature is the same as for the other tests. Merge all the stubs from the previous tests into a single stub object.
 
+### Dependency injection
+
+The test suite supports inverson of control via dependency injection. All the event handlers supports the same signature: 
+
+`(root: Object, payload: Object, context: Object)`.
+
+For example:
+
+```js
+YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
+	const existingUser = USER_STORE.find(x => x.email == user.username)
+	if (!existingUser)
+		return null
+	if (user.password && existingUser.password != user.password)
+		throw new Error('Incorrect username or password')
+
+	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
+
+	return {
+		id: existingUser.id,
+		client_ids
+	}
+}
+```
+
+This example shows that `get_end_user` depends on the `USER_STORE` and `USER_TO_CLIENT_STORE` to function. Those would typically be connectors that can perform IO queries to your backend storage. This code is not properly designed to support unit tests, especially if you are tryng to test inserts. To solve this problem, the best practice is to inject those dependencies from the outside.
+
+This is one the purpose of the `context` object. The `context` object is the `config` object passed to the `YourStrategyClass` instance:
+
+```js
+const { testSuite } = require('userin')
+const { YourStrategyClass } = require('../src/yourStrategy.js')
+
+// To test a stragegy in 'loginsignup' mode, the following minimum config is required.
+const config = {
+	tokenExpiry: {
+		access_token: 3600
+	},
+	repos: {
+		user: {
+			find: (userId)
+		}
+	}
+}
+
+// The required stub's value are:
+const stub = {
+	user: {
+		username: 'valid@example.com', // Valid username in your own stub data.
+		password: '123456' // Valid password in your own stub data.
+	},
+}
+
+testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
+```
+
+In this example, let's modified the `config` as follow:
+
+```js
+const config = {
+	tokenExpiry: {
+		access_token: 3600
+	},
+	repos: {
+		user: USER_STORE,
+		userToClient: USER_TO_CLIENT_STORE
+	}
+}
+```
+
+With this change, the `get_end_user` can be rewritten as follow:
+
+```js
+YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
+	const existingUser = context.repos.user.find(x => x.email == user.username)
+	if (!existingUser)
+		return null
+	if (user.password && existingUser.password != user.password)
+		throw new Error('Incorrect username or password')
+
+	const client_ids = context.repos.userToClient.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
+
+	return {
+		id: existingUser.id,
+		client_ids
+	}
+}
+```
+
+This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
+
 # Contributing - Developer notes
 ## Contribution guidelines
 
 Coming soon...
 
-## Documentation
-### Unit tests
-#### The `logTestErrors` API
+## Unit tests
+### The `logTestErrors` API
 
 Almost all unit tests use the custom `logTestErrors` API. This API's purpose is to capture explicit error logs to display them when the developer uses the `verbose` mode. This API leverages UserIn's functional error handling style. 
 

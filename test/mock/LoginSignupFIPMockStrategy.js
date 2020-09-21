@@ -1,11 +1,5 @@
 const crypto = require('crypto')
 const { Strategy } = require('userin-core')
-const tokenHelper = require('./token')
-const {
-	USER_STORE,
-	USER_TO_FIP_STORE,
-	USER_TO_CLIENT_STORE
-} = require('./stub')
 const LoginSignupMockStrategy = require('./LoginSignupMockStrategy')
 
 class LoginSignupFIPMockStrategy extends Strategy {
@@ -19,8 +13,9 @@ class LoginSignupFIPMockStrategy extends Strategy {
  * Generates a new access_token. 
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		claims
- * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {String}		token
  */
@@ -30,8 +25,9 @@ LoginSignupFIPMockStrategy.prototype.generate_access_token = LoginSignupMockStra
  * Generates a new refresh_token. 
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		claims
- * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {String}		token
  */
@@ -41,7 +37,8 @@ LoginSignupFIPMockStrategy.prototype.generate_refresh_token = LoginSignupMockStr
  * Gets the refresh_token claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		token
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
  * @return {String}		claims.iss			
@@ -57,15 +54,16 @@ LoginSignupFIPMockStrategy.prototype.get_refresh_token_claims = LoginSignupMockS
 /**
  * Gets the user's ID and its associated client_ids if this user exists (based on username and password).
  * 
- * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		user.username
- * @param  {String}		user.password
- * @param  {String}		user...				More properties
- * @param  {String}		client_id			Optional. Might be useful for logging or other custom business logic.
- * @param  {String}		state				Optional. Might be useful for logging or other custom business logic.
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.user.username
+ * @param  {String}		payload.user.password
+ * @param  {String}		payload.user...			More properties
+ * @param  {String}		payload.client_id		Optional. Might be useful for logging or other custom business logic.
+ * @param  {String}		payload.state			Optional. Might be useful for logging or other custom business logic.
+ * @param  {Object}		context					Strategy's configuration
  * 
- * @return {Object}		user				This object should always defined the following properties at a minimum.
- * @return {Object}		user.id				String ot number
+ * @return {Object}		user					This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id					String ot number
  * @return {[Object]}	user.client_ids		
  */
 LoginSignupFIPMockStrategy.prototype.get_end_user = LoginSignupMockStrategy.prototype.get_end_user 
@@ -73,13 +71,14 @@ LoginSignupFIPMockStrategy.prototype.get_end_user = LoginSignupMockStrategy.prot
 /**
  * Inserts new user.
  * 
- * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		user.username		
- * @param  {String}		user.password		
- * @param  {String}		user...				More properties
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.user.username		
+ * @param  {String}		payload.user.password		
+ * @param  {String}		payload.user...			More properties
+ * @param  {Object}		context					Strategy's configuration
  * 
- * @return {Object}		user				This object should always defined the following properties at a minimum.
- * @return {Object}		user.id				String ot number
+ * @return {Object}		user					This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id					String ot number
  */
 LoginSignupFIPMockStrategy.prototype.create_end_user = LoginSignupMockStrategy.prototype.create_end_user 
 
@@ -87,18 +86,19 @@ LoginSignupFIPMockStrategy.prototype.create_end_user = LoginSignupMockStrategy.p
  * Inserts new FIP user.
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		strategy			e.g., 'facebook', 'google'		
- * @param  {String}		user.id			
- * @param  {String}		user...				More properties
+ * @param  {String}		payload.strategy	e.g., 'facebook', 'google'		
+ * @param  {String}		payload.user.id			
+ * @param  {String}		payload.user...		More properties
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		user				This object should always defined the following properties at a minimum.
  * @return {Object}		user.id				String ot number
  */
-LoginSignupFIPMockStrategy.prototype.create_fip_user = (root, { strategy, user }) => {
+LoginSignupFIPMockStrategy.prototype.create_fip_user = (root, { strategy, user }, context) => {
 	const id = crypto.randomBytes(7).toString('base64')
-	USER_STORE.push({ ...user, id })
+	context.repos.user.push({ ...user, id })
 
-	USER_TO_FIP_STORE.push({
+	context.repos.userToFip.push({
 		user_id:id,
 		strategy,
 		strategy_user_id:user.id
@@ -113,23 +113,24 @@ LoginSignupFIPMockStrategy.prototype.create_fip_user = (root, { strategy, user }
  * Gets the user ID and its associated client_ids if this user exists (based on strategy and FIP's user ID).
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {String}		strategy			FIP name (e.g., 'facebook', 'google')
- * @param  {Object}		user.id				FIP's user ID. String or number. 
- * @param  {String}		user...				More properties
- * @param  {String}		client_id			Optional. Might be useful for logging or other custom business logic.
- * @param  {String}		state				Optional. Might be useful for logging or other custom business logic.
+ * @param  {String}		payload.strategy	FIP name (e.g., 'facebook', 'google')
+ * @param  {Object}		payload.user.id		FIP's user ID. String or number. 
+ * @param  {String}		payload.user...		More properties
+ * @param  {String}		payload.client_id	Optional. Might be useful for logging or other custom business logic.
+ * @param  {String}		payload.state		Optional. Might be useful for logging or other custom business logic.
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		user				This object should always defined the following properties at a minimum.
  * @return {Object}		user.id				String ot number
  * @return {[Object]}	user.client_ids		
  */
-LoginSignupFIPMockStrategy.prototype.get_fip_user = (root, { strategy, user }) => {
+LoginSignupFIPMockStrategy.prototype.get_fip_user = (root, { strategy, user }, context) => {
 
-	const existingUser = USER_TO_FIP_STORE.find(x => x.strategy == strategy && x.strategy_user_id == user.id)
+	const existingUser = context.repos.userToFip.find(x => x.strategy == strategy && x.strategy_user_id == user.id)
 	if (!existingUser)
 		return null
 
-	const client_ids = USER_TO_CLIENT_STORE.filter(x => x.user_id == existingUser.user_id).map(x => x.client_id)
+	const client_ids = context.repos.userToClient.filter(x => x.user_id == existingUser.user_id).map(x => x.client_id)
 
 	return {
 		id: existingUser.user_id,
@@ -141,20 +142,22 @@ LoginSignupFIPMockStrategy.prototype.get_fip_user = (root, { strategy, user }) =
  * Generates a new authorization code. 
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		claims
- * @param  {String}		state				This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {String}		token
  */
-LoginSignupFIPMockStrategy.prototype.generate_authorization_code = (root, { claims }) => {
-	return tokenHelper.createValid(claims,'code')
+LoginSignupFIPMockStrategy.prototype.generate_authorization_code = (root, { claims }, context) => {
+	return context.tokenHelper.createValid(claims,'code')
 }
 
 /**
  * Gets the authorization code's claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		token
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
  * @return {String}		claims.iss			
@@ -165,8 +168,8 @@ LoginSignupFIPMockStrategy.prototype.generate_authorization_code = (root, { clai
  * @return {Object}		claims.client_id	String or number
  * @return {String}		claims.scope
  */
-LoginSignupFIPMockStrategy.prototype.get_authorization_code_claims = (root, { token }) => {
-	const claims = tokenHelper.decrypt(token,'code')
+LoginSignupFIPMockStrategy.prototype.get_authorization_code_claims = (root, { token }, context) => {
+	const claims = context.tokenHelper.decrypt(token,'code')
 	return claims
 }
 

@@ -264,12 +264,8 @@ module.exports = function runTest (data, skip) {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
-				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_client', strategy.get_client)
-				registerEventHandler('get_authorization_code_claims', strategy.get_authorization_code_claims)
-				registerEventHandler('generate_access_token', strategy.generate_access_token)
-				registerEventHandler('generate_authorization_code', strategy.generate_authorization_code)
-				registerEventHandler('get_config', () => strategy.config)
+				registerAllHandlers(eventHandlerStore)
+				eventHandlerStore.generate_id_token = null
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
@@ -295,12 +291,8 @@ module.exports = function runTest (data, skip) {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
-				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_client', strategy.get_client)
-				registerEventHandler('get_authorization_code_claims', strategy.get_authorization_code_claims)
-				registerEventHandler('generate_access_token', strategy.generate_access_token)
-				registerEventHandler('generate_authorization_code', strategy.generate_authorization_code)
-				registerEventHandler('get_config', () => strategy.config)
+				registerAllHandlers(eventHandlerStore)
+				eventHandlerStore.generate_refresh_token = null
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
@@ -1179,11 +1171,8 @@ module.exports = function runTest (data, skip) {
 				const codeEventHandlerStore = {}
 				registerAllHandlers(codeEventHandlerStore)
 				const eventHandlerStore = {}
-				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_refresh_token_claims', strategy.get_refresh_token_claims)
-				registerEventHandler('get_client', strategy.get_client)
-				registerEventHandler('generate_access_token', strategy.generate_access_token)
-				registerEventHandler('get_config', () => strategy.config)
+				registerAllHandlers(eventHandlerStore)
+				eventHandlerStore.generate_id_token = null
 
 				logE.run(co(function *() {
 					const refresh_token = yield getValidRefreshToken(codeEventHandlerStore, ['offline_access', 'openid'])

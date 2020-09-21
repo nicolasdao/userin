@@ -541,15 +541,8 @@ module.exports = function runTest (data, skip) {
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
-				const registerEventHandler = eventRegister(eventHandlerStore)
-				registerEventHandler('get_config', () => strategy.config)
-				if (strategy.get_end_user) registerEventHandler('get_end_user', strategy.get_end_user)
-				if (strategy.generate_access_token) registerEventHandler('generate_access_token', strategy.generate_access_token)
-				if (strategy.generate_refresh_token) registerEventHandler('generate_refresh_token', strategy.generate_refresh_token)
-				if (strategy.create_end_user) registerEventHandler('create_end_user', strategy.create_end_user)
-				if (strategy.get_fip_user) registerEventHandler('get_fip_user', strategy.get_fip_user)
-				if (strategy.generate_authorization_code) registerEventHandler('generate_authorization_code', strategy.generate_authorization_code)
-				if (strategy.get_authorization_code_claims) registerEventHandler('get_authorization_code_claims', strategy.get_authorization_code_claims)
+				registerAllHandlers(eventHandlerStore)
+				eventHandlerStore.create_fip_user = null
 
 				logE.run(co(function *() {
 					const [errors, result] = yield processTheFIPuser({

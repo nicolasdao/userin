@@ -11,6 +11,8 @@
 const { testSuite } = require('../src')
 const { LoginSignupStrategy } = require('./mock/strategy')
 const { END_USER } = require('./mock/stub')
+const repos = require('./mock/repos')
+const tokenHelper = require('./mock/token')
 
 // skip values: 'all', 'strategy', 'login', 'signup'
 const options = { skip:'' }
@@ -18,7 +20,9 @@ const options = { skip:'' }
 const config = {
 	tokenExpiry: {
 		access_token: 3600
-	}
+	},
+	repos,
+	tokenHelper
 }
 
 const stub = {

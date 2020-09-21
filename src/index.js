@@ -7,7 +7,6 @@ const tokenApi = require('./token')
 const userinfoApi = require('./userinfo')
 const loginApi = require('./login')
 const signupApi = require('./signup')
-const defaultConfig = require('./config')
 const eventRegister = require('./eventRegister')
 const pluginManager = require('./pluginManager')
 const { request: { getParams }, config:{ prefixPathname }, response: { formatResponseError } } = require('./_utils')
@@ -103,12 +102,12 @@ class UserIn extends express.Router {
 	 *
 	 * @param  {UserInStrategy}		config.Strategy
 	 * @param  {[String]}			config.modes						Vaid values: 'loginsignup', 'loginsignupfip', 'openid'
-	 * @param  {String}				options.version						Default is 'v1'.
-	 * @param  {String}				options.authorizeCallbackName		Pathname used in the IdP redirect URL. Default is 'authorizecallback'.
+	 * @param  {StrategyConfig}		config.config
+	 * @param  {String}				config.version						Default is 'v1'.
 	 * 
 	 * @return {UserIn} userIn
 	 */
-	constructor(config, options={}) {
+	constructor(config) {
 		super()
 
 		// 1. Validates the input
@@ -142,7 +141,11 @@ class UserIn extends express.Router {
 		verifyStrategy(strategy)
 
 		// 2. Merges all the configs
-		const appConfig = { ...defaultConfig, ...options, endpoints: {} }
+		const appConfig = { 
+			version: config.version || 'v1', 
+			authorizeCallbackName: 'authorizecallback',
+			endpoints: {} 
+		}
 		
 		// 3. Determines the modes
 		const loginSignupModeOn = isLoginSignupModeOn(modes)

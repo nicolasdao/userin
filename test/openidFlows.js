@@ -11,6 +11,8 @@
 const { testSuite } = require('../src')
 const { OpenIdStrategy } = require('./mock/strategy')
 const { GOOD_CLIENT, BAD_CLIENT, END_USER } = require('./mock/stub')
+const repos = require('./mock/repos')
+const tokenHelper = require('./mock/token')
 
 // skip values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
 const options = { skip:'' }
@@ -23,7 +25,9 @@ const config = {
 			access_token: 3600,
 			code: 30
 		}
-	}
+	},
+	repos,
+	tokenHelper
 }
 
 const stub = {

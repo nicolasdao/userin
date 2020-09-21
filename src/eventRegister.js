@@ -3,16 +3,17 @@ const { error: { catchErrors, wrapErrors } } = require('puffy')
 const { oauth2Params } = require('./_utils')
 const { error:userInError, Strategy, verifyStrategy, getEvents } = require('userin-core')
 
-function EventHandler(handler) {
+function EventHandler(handler, getContext) {
 	let _this = this
 	this.handlers = handler ? [handler] : []
 	
 	this.addHandler = handler => _this.handlers.push(handler)
 
-	this.exec = (...args) => catchErrors(co(function *() {
+	this.exec = (payload) => catchErrors(co(function *() {
 		let result = null
+		const context = getContext ? getContext() : {}
 		for (let h of _this.handlers) {
-			const intermediateResult = yield Promise.resolve(null).then(() => h(result, ...args))
+			const intermediateResult = yield Promise.resolve(null).then(() => h(result, payload, context))
 			if (intermediateResult)
 				result = intermediateResult
 		}
@@ -21,6 +22,12 @@ function EventHandler(handler) {
 	}))
 
 	return this
+}
+
+const setEventHandler = (eventHandlerStore, eventName, handler) => {
+	const getContext = () => eventHandlerStore.context || {}
+	eventHandlerStore[eventName] = new EventHandler(handler, getContext)
+	// eventHandlerStore[eventName] = new EventHandler(handler)
 }
 
 const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
@@ -58,7 +65,8 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 			}
 	})
 
-	eventHandlerStore[eventName] = new EventHandler(handler)
+	// eventHandlerStore[eventName] = new EventHandler(handler)
+	setEventHandler(eventHandlerStore, eventName, handler)
 }
 
 const addGenerateAccessTokenHandler = addGenerateAccessOrRefreshTokenHandler('access_token')
@@ -114,7 +122,8 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 			}
 	})
 
-	eventHandlerStore[eventName] = new EventHandler(handler)
+	// eventHandlerStore[eventName] = new EventHandler(handler)
+	setEventHandler(eventHandlerStore, eventName, handler)
 }
 const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 	const eventName = 'generate_openid_authorization_code'
@@ -150,7 +159,8 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			}
 	})
 
-	eventHandlerStore[eventName] = new EventHandler(handler)
+	// eventHandlerStore[eventName] = new EventHandler(handler)
+	setEventHandler(eventHandlerStore, eventName, handler)
 }
 
 const addProcessFIPauthResponseHandler = eventHandlerStore => {
@@ -170,7 +180,8 @@ const addProcessFIPauthResponseHandler = eventHandlerStore => {
 		return user
 	})
 
-	eventHandlerStore[eventName] = new EventHandler(handler)
+	// eventHandlerStore[eventName] = new EventHandler(handler)
+	setEventHandler(eventHandlerStore, eventName, handler)
 }
 
 const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
@@ -184,7 +195,8 @@ const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
 	if (eventHandlerStore[eventName])
 		eventHandlerStore[eventName].addHandler(handler)
 	else
-		eventHandlerStore[eventName] = new EventHandler(handler)
+		// eventHandlerStore[eventName] = new EventHandler(handler)
+		setEventHandler(eventHandlerStore, eventName, handler)
 }
 
 module.exports = eventHandlerStore => {
@@ -224,9 +236,13 @@ module.exports = eventHandlerStore => {
 		if (strategyHandler && strategyHandler instanceof Strategy) {
 			// 1. Verify the UserIn strategy
 			verifyStrategy(strategyHandler)
-			// 2. Register the default 'get_config' event handler
-			registerEventHandler('get_config', () => strategyHandler.config)
-			// 3. Regsiter all the strategy's events handler
+			// 2. Set the context on the 'eventHandlerStore'. This helps to bring context to each 
+			// handler (e.g., usefull for dependency injection)
+			eventHandlerStore.context = strategyHandler.config
+
+			// 3. Register the default 'get_config' event handler
+			registerEvent('get_config', () => strategyHandler.config)
+			// 4. Regsiter all the strategy's events handler
 			const events = getEvents()
 			events.forEach(eventName => {
 				if (strategyHandler[eventName])

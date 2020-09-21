@@ -11,6 +11,8 @@
 const { testSuite } = require('../src')
 const { LoginSignupFIPStrategy } = require('./mock/strategy')
 const { END_USER, FIP_USER_TO_STRATEGY } = require('./mock/stub')
+const repos = require('./mock/repos')
+const tokenHelper = require('./mock/token')
 
 // skip values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
 const options = { skip:'' }
@@ -19,7 +21,9 @@ const config = {
 	tokenExpiry: {
 		access_token: 3600,
 		code: 30
-	}
+	},
+	repos,
+	tokenHelper
 }
 
 const stub = {

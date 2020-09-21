@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/nicolasdao/userin/compare/v1.4.0...v1.5.0) (2020-09-21)
+
+
+### Features
+
+* Add support for dependency injestion for all event handlers so they are more easily testable ([298bbb3](https://github.com/nicolasdao/userin/commit/298bbb3fac8d78db0a7854de7a64f43a0e9e0a3e))
+
 ## [1.4.0](https://github.com/nicolasdao/userin/compare/v1.3.1...v1.4.0) (2020-09-20)
 
 ### [1.3.1](https://github.com/nicolasdao/userin/compare/v1.3.0...v1.3.1) (2020-09-20)

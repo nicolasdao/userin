@@ -14,6 +14,7 @@ const { logTestErrors } = require('./_core')
 module.exports = function runTest (data, skip) {
 	const {
 		user,
+		newUserPassword,
 		strategy
 	} = data
 
@@ -177,7 +178,8 @@ module.exports = function runTest (data, skip) {
 				logE.run(co(function *() {
 					const [errors, result] = yield signupHandler({
 						...payload,
-						username: `${Date.now()}@unittest.com`
+						username: `${Date.now()}@unittest.com`,
+						password: newUserPassword
 					}, eventHandlerStore)
 					logE.push(errors)
 
@@ -200,7 +202,8 @@ module.exports = function runTest (data, skip) {
 				logE.run(co(function *() {
 					const [errors, result] = yield signupHandler({
 						...payload,
-						username: `${Date.now()+10}@unittest.com`,
+						username: `${Date.now()+10000}@unittest.com`,
+						password: newUserPassword,
 						scope:'offline_access'
 					}, eventHandlerStore)
 					logE.push(errors)

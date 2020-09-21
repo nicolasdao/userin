@@ -141,7 +141,8 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
  * @param  {Class}		Strategy
  * @param  {Object}		config							Strategy's config. Use it in the Strategy's constructor.			
  * @param  {String}		stub.user.username				
- * @param  {String}		stub.user.password				
+ * @param  {String}		stub.user.password		
+ * @param  {String}		stub.newUserPassword		
  * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup'
  * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup'
  * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
@@ -179,12 +180,12 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	if (!strategy)
 		return
 
-	const { user } = stub
+	const { user, newUserPassword } = stub
 	const { skip, only, verbose } = options
 
 	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), verbose)
 	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
-	signupTest({ strategy, user }, skipTest('signup', skip, only), verbose)
+	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), verbose)
 }
 
 /**
@@ -194,6 +195,7 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
  * @param  {Object}		config							Strategy's config. Use it in the Strategy's constructor.			
  * @param  {String}		stub.user.username				
  * @param  {String}		stub.user.password	
+ * @param  {String}		stub.newUserPassword
  * @param  {String}		stub.fipUser.id					ID of the user in the FIP (not the user ID on your system)
  * @param  {String}		stub.fipUser.fipName			e.g., 'facebook', 'google'
  * @param  {String}		stub.fipUser.userId				ID if the user on your system.
@@ -234,12 +236,12 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	if (!strategy)
 		return
 
-	const { user, fipUser } = stub
+	const { user, newUserPassword, fipUser } = stub
 	const { skip, only, verbose } = options
 
 	strategyTest({ loginSignupFipStrategy:strategy }, skipTest('strategy', skip, only), verbose)
 	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
-	signupTest({ strategy, user }, skipTest('signup', skip, only), verbose)
+	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), verbose)
 	fipLoginSignupTest({
 		strategy,
 		identityProvider: fipUser.fipName, 

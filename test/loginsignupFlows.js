@@ -30,6 +30,7 @@ const stub = {
 		username: END_USER.email,
 		password: END_USER.password
 	},
+	newUserPassword: 'd32def32feq'
 }
 
 testSuite.testLoginSignup(LoginSignupStrategy, config, stub, options)

@@ -17,7 +17,6 @@ const grantTypePassword = require('../token/grantTypePassword')
 const grantTypeRefreshToken = require('../token/grantTypeRefreshToken')
 const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors } = require('./_core')
-const { error: { InvalidCredentialsError } } = require('userin-core')
 setUpScopeAssertion(assert)
 
 module.exports = function runTest (data, skip) {
@@ -960,7 +959,6 @@ module.exports = function runTest (data, skip) {
 					logE.push(errors)
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
-					console.log(errors.map(e => e instanceof InvalidCredentialsError))
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Incorrect username or password') >= 0), '03')
 
 					done()

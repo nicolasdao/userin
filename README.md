@@ -400,6 +400,7 @@ const stub = {
 		username: 'valid@example.com', // Valid username in your own stub data.
 		password: '123456' // Valid password in your own stub data.
 	},
+	newUserPassword: 'd32def32feq' // Add the password that will be used to test new users
 }
 
 testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
@@ -445,6 +446,7 @@ const stub = {
 		username: 'valid@example.com', // Valid username in your own stub data.
 		password: '123456' // Valid password in your own stub data.
 	},
+	newUserPassword: 'd32def32feq' // Add the password that will be used to test new users
 }
 
 testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
@@ -484,7 +486,8 @@ const stub = {
 		id: '1N7fr2yt', // ID of the user in the identity provider plaftform
 		fipName: 'facebook', // Identity provider's name
 		userId: 2 // ID of the user on your platform
-	}
+	},
+	newUserPassword: 'd32def32feq' // Add the password that will be used to test new users
 }
 
 testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)

@@ -35,7 +35,8 @@ const stub = {
 		id: FIP_USER_TO_STRATEGY.strategy_user_id,
 		fipName: FIP_USER_TO_STRATEGY.strategy,
 		userId: FIP_USER_TO_STRATEGY.user_id
-	}
+	},
+	newUserPassword: 'd32def32feq'
 }
 
 testSuite.testLoginSignupFIP(LoginSignupFIPStrategy, config, stub, options)

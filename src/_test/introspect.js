@@ -14,10 +14,10 @@ const { handler:introspectHandler } = require('../introspect')
 const grantTypePassword = require('../token/grantTypePassword')
 const grantTypeAuthorizationCode = require('../token/grantTypeAuthorizationCode')
 const eventRegister = require('../eventRegister')
-const { setUpScopeAssertion, logTestErrors } = require('./_core')
+const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
 setUpScopeAssertion(assert)
 
-module.exports = function runTest (data, skip) {
+module.exports = function runTest (data, skip, showResults=[]) {
 	const { 
 		clientId:client_id, 
 		clientSecret:client_secret, 
@@ -35,6 +35,8 @@ module.exports = function runTest (data, skip) {
 
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
+
+	const showIds = createShowTestResultFn(showResults, 'introspect.handler')
 
 	fn('introspect', () => {
 		describe('handler', () => {
@@ -73,6 +75,7 @@ module.exports = function runTest (data, skip) {
 			})
 
 			it('01 - Should fail when the token_type_hint is missing.', done => {
+				const showResult = showIds('01')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -90,10 +93,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token_type_hint\'') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('02 - Should fail when the token_type_hint is not supported.', done => {
+				const showResult = showIds('02')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -111,10 +116,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('token_type_hint \'hello\' is not supported.') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('03 - Should fail when the \'token_type_hint\' is \'id_token\' and the \'get_id_token_claims\' event handler is not defined.', done => {
+				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -126,10 +133,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_id_token_claims\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('04 - Should fail when the \'token_type_hint\' is \'access_token\' and the \'get_access_token_claims\' event handler is not defined.', done => {
+				const showResult = showIds('04')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -141,10 +151,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_access_token_claims\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('05 - Should fail when the \'token_type_hint\' is \'refresh_token\' and the \'get_refresh_token_claims\' event handler is not defined.', done => {
+				const showResult = showIds('05')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -156,10 +169,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_refresh_token_claims\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('06 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				const showResult = showIds('06')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -173,10 +189,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('07 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -195,10 +214,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('08 - Should fail when the client_secret is missing.', done => {
+				const showResult = showIds('08')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -217,10 +238,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_secret\'') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('09 - Should fail when the token is missing.', done => {
+				const showResult = showIds('09')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -238,10 +261,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token\'') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('10 - Should fail when the client_id and client_secret are not valid.', done => {
+				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -261,10 +286,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Service account GYUE&((#VYVV(V not found') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('11 - Should fail when the client_id and client_secret are not the identifying the client associated with the token.', done => {
+				const showResult = showIds('11')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -292,10 +319,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('client_id not found') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('12 - Should fail when the token is incorrect.', done => {
+				const showResult = showIds('12')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -313,10 +342,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('13 - Should return the token info when the access_token is valid.', done => {
+				const showResult = showIds('13')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -342,10 +373,12 @@ module.exports = function runTest (data, skip) {
 					assert.equal(tokenInfo.client_id, client_id, '09')
 					assert.equal(tokenInfo.token_type, 'Bearer', '10')
 
+					if (showResult) console.log(tokenInfo)
 					done()
 				}))
 			})
 			it('14 - Should return the token info when the id_token is valid.', done => {
+				const showResult = showIds('14')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -374,10 +407,12 @@ module.exports = function runTest (data, skip) {
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
 					assert.equal(tokenInfo.token_type, 'Bearer', '13')
 
+					if (showResult) console.log(tokenInfo)
 					done()
 				}))
 			})
 			it('15 - Should return the token info when the refresh_token is valid.', done => {
+				const showResult = showIds('15')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -406,10 +441,12 @@ module.exports = function runTest (data, skip) {
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
 					assert.equal(tokenInfo.token_type, 'Bearer', '13')
 
+					if (showResult) console.log(tokenInfo)
 					done()
 				}))
 			})
 			it('16 - Should fail when the token is incorrect.', done => {
+				const showResult = showIds('16')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -435,10 +472,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '05')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '06')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('17 - Should show active false when an expired access_token is passed in the authorization header.', done => {
+				const showResult = showIds('17')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -465,6 +504,7 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(tokenInfo, '02')
 					assert.isOk(tokenInfo.active === false, '03')
 
+					if (showResult) console.log(tokenInfo)
 					done()
 				}))
 			})

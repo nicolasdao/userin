@@ -16,10 +16,10 @@ const grantTypeClientCredentials = require('../token/grantTypeClientCredentials'
 const grantTypePassword = require('../token/grantTypePassword')
 const grantTypeRefreshToken = require('../token/grantTypeRefreshToken')
 const eventRegister = require('../eventRegister')
-const { setUpScopeAssertion, logTestErrors } = require('./_core')
+const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
 setUpScopeAssertion(assert)
 
-module.exports = function runTest (data, skip) {
+module.exports = function runTest (data, skip, showResults) {
 	const { 
 		clientId:client_id, 
 		clientSecret:client_secret, 
@@ -43,12 +43,14 @@ module.exports = function runTest (data, skip) {
 
 	fn('token', () => {
 		describe('grantTypeAuthorizationCode', () => {
+			const showIds = createShowTestResultFn(showResults, 'token.grantTypeAuthorizationCode')
 			
 			const stubbedServiceAccount = { client_id, client_secret:client_secret }
 			const stubbedUser = { user_id }
 			const stubbedPayload = { ...stubbedServiceAccount, ...stubbedUser, code:invalidCode }
 
 			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				const showResult = showIds('01')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -58,10 +60,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('02 - Should fail when the \'get_authorization_code_claims\' event handler is not defined.', done => {
+				const showResult = showIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -73,10 +78,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_authorization_code_claims\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('03 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -89,10 +96,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('04 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				const showResult = showIds('04')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -106,10 +115,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_config\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('05 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('05')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -135,10 +146,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('06 - Should fail when the client_secret is missing.', done => {
+				const showResult = showIds('06')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -164,10 +177,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_secret\'') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('07 - Should fail when the code is missing.', done => {
+				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -192,10 +207,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'code\'') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('08 - Should fail when the client_id is incorrect.', done => {
+				const showResult = showIds('08')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -212,10 +229,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Service account sbaug67437e93279ce27 not found') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('09 - Should fail when the code is incorrect.', done => {
+				const showResult = showIds('09')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -228,10 +247,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid authorization code') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('10 - Should fail when the client_id exists and the code is correct but the client_id not the one associated with the code.', done => {
+				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -257,10 +278,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('11 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'openid\' and the \'generate_id_token\' event handler is missing.', done => {
+				const showResult = showIds('11')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -284,10 +307,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '04')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_id_token\' handler') >= 0), '05')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('12 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'offline_access\' and the \'generate_refresh_token\' event handler is missing.', done => {
+				const showResult = showIds('12')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -311,10 +336,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '04')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_refresh_token\' handler') >= 0), '05')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('13 - Should fail when the code has expired.', done => {
+				const showResult = showIds('13')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -342,10 +369,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '04')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Token or code has expired') >= 0), '05')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('14 - Should return an access_token when the code is valid.', done => {
+				const showResult = showIds('14')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -370,10 +399,12 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '09')
 					assert.isNotOk(result.refresh_token, '10')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it('15 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
+				const showResult = showIds('15')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -411,10 +442,15 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(claims.iat != undefined, '19')
 					assert.scopes(result.scope, ['openid'], 20)
 
+					if (showResult) {
+						console.log(result)
+						console.log(claims)
+					}
 					done()
 				}))
 			})
 			it('16 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
+				const showResult = showIds('16')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -444,15 +480,18 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(result.scope.indexOf('openid') >= 0, '12 - result.scope should contain \'openid\'')
 					assert.isOk(result.scope.indexOf('offline_access') >= 0, '13 - result.scope should contain \'offline_access\'')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 		})
 		describe('grantTypeClientCredentials', () => {
+			const showIds = createShowTestResultFn(showResults, 'token.grantTypeClientCredentials')
 			
 			const stubbedServiceAccount = { client_id:client_id, client_secret:client_secret, scopes:['profile'] }
 
 			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				const showResult = showIds('01')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -461,10 +500,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('02 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				const showResult = showIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -475,10 +516,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('03 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -490,10 +533,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_config\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('04 - Should return an access_token when the credentials are valid.', done => {
+				const showResult = showIds('04')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -511,10 +556,12 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it('05 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('05')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -530,10 +577,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('06 - Should fail when the client_secret is missing.', done => {
+				const showResult = showIds('06')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -549,10 +598,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_secret\'') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('07 - Should fail when the scopes are not allowed.', done => {
+				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -568,10 +619,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf(`Access to scope ${notAllowedScope} is not allowed`) >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('08 - Should fail when the client_id is incorrect.', done => {
+				const showResult = showIds('08')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -587,10 +640,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf(`Service account ${invalidClientId} not found`) >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('09 - Should fail when the client_secret is incorrect.', done => {
+				const showResult = showIds('09')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -606,10 +661,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '02')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('10 - Should not return an id_token when the credentials are valid even when the \'openid\' scope is provided.', done => {
+				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -630,10 +687,12 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it('11 - Should not return a refresh_token when the credentials are valid even when the \'offline_access\' scope is provided.', done => {
+				const showResult = showIds('11')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -654,11 +713,13 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 		})
 		describe('grantTypePassword', () => {
+			const showIds = createShowTestResultFn(showResults, 'token.grantTypePassword')
 			
 			const stubbedUser = { 
 				client_id:client_id, 
@@ -670,6 +731,7 @@ module.exports = function runTest (data, skip) {
 			}
 
 			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				const showResult = showIds('01')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -678,10 +740,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('02 - Should fail when the \'get_end_user\' event handler is not defined.', done => {
+				const showResult = showIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -692,10 +756,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_end_user\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('03 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -707,10 +773,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('04 - Should fail when the scopes include \'openid\' and the \'generate_id_token\' event handler is not defined.', done => {
+				const showResult = showIds('04')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -726,10 +794,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_id_token\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('05 - Should not fail because of the missing \'generate_id_token\' event handler when the scopes DOES NOT include \'openid\'.', done => {
+				const showResult = showIds('05')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -744,10 +814,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_config\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('06 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				const showResult = showIds('06')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -760,10 +832,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_config\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('07 - Should return an access_token when the username and password are valid.', done => {
+				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -781,10 +855,12 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it('08 - Should return an access_token and a valid id_token when the username and password are valid and the scopes contain \'openid\'.', done => {
+				const showResult = showIds('08')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -815,10 +891,15 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(claims.iat != undefined, '18')
 					assert.scopes(result.scope, ['openid'], 19)
 					
+					if (showResult) {
+						console.log(result)
+						console.log(claims)
+					}
 					done()
 				}))
 			})
 			it('09 - Should not return a refresh_token when the username and password are valid and the scopes contain \'offline_access\'.', done => {
+				const showResult = showIds('09')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -847,10 +928,15 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(claims.exp != undefined, '16')
 					assert.isOk(claims.iat != undefined, '17')
 
+					if (showResult) {
+						console.log(result)
+						console.log(claims)
+					}
 					done()
 				}))
 			})
 			it('10 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -868,10 +954,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('11 - Should fail when the user is missing.', done => {
+				const showResult = showIds('11')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -889,10 +977,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'user\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('12 - Should fail when the user.username is missing.', done => {
+				const showResult = showIds('12')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -913,10 +1003,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'user.username\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('13 - Should fail when the user.password is missing.', done => {
+				const showResult = showIds('13')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -937,10 +1029,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'user.password\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('14 - Should fail when the username and password are incorrect.', done => {
+				const showResult = showIds('14')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -961,10 +1055,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Incorrect username or password') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('15 - Should fail when scopes are not allowed.', done => {
+				const showResult = showIds('15')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -981,10 +1077,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf(`Access to scope ${invalidClientId} is not allowed`) >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('16 - Should fail when the client_id and client_secret are from an unauthorized account.', done => {
+				const showResult = showIds('16')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1001,11 +1099,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid client_id') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 		})
 		describe('grantTypeRefreshToken', () => {
+			const showIds = createShowTestResultFn(showResults, 'token.grantTypeRefreshToken')
 			
 			const stubbedPayload = { 
 				client_id:client_id
@@ -1026,6 +1126,7 @@ module.exports = function runTest (data, skip) {
 			})
 
 			it('01 - Should fail when the \'get_refresh_token_claims\' event handler is not defined.', done => {
+				const showResult = showIds('01')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
@@ -1034,10 +1135,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_refresh_token_claims\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('02 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				const showResult = showIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -1048,10 +1151,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('03 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -1063,10 +1168,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('04 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				const showResult = showIds('04')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -1079,10 +1186,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_config\' handler') >= 0), '03')
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('07 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1101,10 +1210,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('08 - Should fail when the refresh_token is missing.', done => {
+				const showResult = showIds('08')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1120,10 +1231,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'refresh_token\'') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('09 - Should fail when the client_id is valid, the refresh_token is also valid, but the client_id is not the one associated with the refresh_token.', done => {
+				const showResult = showIds('09')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1142,10 +1255,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('10 - Should fail when the refresh_token is incorrect.', done => {
+				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1162,10 +1277,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid refresh_token') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('11 - Should fail when the refresh_token is associated with a \'openid\' scope, but the  \'generate_id_token\' event handler is missing.', done => {
+				const showResult = showIds('11')
 				const logE = logTest(done)
 
 				const codeEventHandlerStore = {}
@@ -1186,10 +1303,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_id_token\' handler') >= 0), '03')
 
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it('12 - Should return an access_token when a valid refresh_token is provided.', done => {
+				const showResult = showIds('12')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1213,10 +1332,12 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(result.scope, '08')
 					assert.isOk(result.scope.indexOf('offline_access') >= 0, '09 - result.scope should contain \'offline_access\'')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it('13 - Should return an access_token and a valid id_token when a valid refresh_token is provided and the scopes contain \'openid\'.', done => {
+				const showResult = showIds('13')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -1248,6 +1369,10 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(claims.iat != undefined, '17')
 					assert.scopes(result.scope, ['openid', 'offline_access'], 18)
 
+					if (showResult) {
+						console.log(result)
+						console.log(claims)
+					}
 					done()
 				}))
 			})

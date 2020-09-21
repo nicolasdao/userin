@@ -14,10 +14,10 @@ const jwt = require('jsonwebtoken')
 const { assert } = require('chai')
 const getFIPuserProcessor = require('../fipauthorize/processTheFIPuser')
 const eventRegister = require('../eventRegister')
-const { setUpScopeAssertion, logTestErrors } = require('./_core')
+const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
 setUpScopeAssertion(assert)
 
-module.exports = function runTest (data, skip) {
+module.exports = function runTest (data, skip, showResults) {
 	const { 
 		clientId:client_id, 
 		identityProvider, 
@@ -39,12 +39,15 @@ module.exports = function runTest (data, skip) {
 
 	const payload = { client_id, strategy:identityProvider, user:{ id:identityProviderUserId }, response_type:'code' }
 	
+	const showLoginIds = createShowTestResultFn(showResults, 'fiplogin.processLoginWithFIPuser')
+
 	fn('fiplogin', () => {
 		const processTheFIPuser = getFIPuserProcessor('login')(openIdMode)
 		describe('processLoginWithFIPuser', () => {		
 
 			if (openIdMode)
 				it(`01 [${usecase} mode] - Should fail when the 'get_client' event handler is not defined.`, done => {
+					const showResult = showLoginIds('01')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					logE.run(co(function *() {
@@ -53,11 +56,14 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_client\' handler') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 
 			it(`02 [${usecase} mode] - Should fail when the 'get_fip_user' event handler is not defined.`, done => {
+				const showResult = showLoginIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -68,12 +74,15 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'get_fip_user\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 
 			if (openIdMode)
 				it(`03 [${usecase} mode] - Should fail when the client_id is missing.`, done => {
+					const showResult = showLoginIds('03')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					registerAllHandlers(eventHandlerStore)
@@ -86,11 +95,14 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_id\'') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 
 			it(`04 [${usecase} mode] - Should fail when the user is missing.`, done => {
+				const showResult = showLoginIds('04')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -103,10 +115,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'user\'') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`05 [${usecase} mode] - Should fail when the user.id is not defined.`, done => {
+				const showResult = showLoginIds('05')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -119,10 +134,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'id\' property in the \'user\' object') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`06 [${usecase} mode] - Should fail when the strategy is missing.`, done => {
+				const showResult = showLoginIds('06')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -135,10 +153,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'strategy\'') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`07 [${usecase} mode] - Should fail when the response_type is missing.`, done => {
+				const showResult = showLoginIds('07')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -151,10 +172,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'response_type\' argument') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`08 [${usecase} mode] - Should fail when the response_type is not supported.`, done => {
+				const showResult = showLoginIds('08')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
@@ -167,10 +191,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('The value \'cola\' is not a supported OIDC \'response_type\'') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`09 [${usecase} mode] - Should fail when response_type contains 'code' but the 'generate_authorization_code' event handler is not defined.`, done => {
+				const showResult = showLoginIds('09')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -185,10 +212,13 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_authorization_code\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 			it(`10 [${usecase} mode] - Should fail when response_type contains 'token' but the 'generate_access_token' event handler is not defined.`, done => {
+				const showResult = showLoginIds('10')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
 				const registerEventHandler = eventRegister(eventHandlerStore)
@@ -203,12 +233,15 @@ module.exports = function runTest (data, skip) {
 					assert.isOk(errors, '01')
 					assert.isOk(errors.length, '02')
 					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_access_token\' handler') >= 0), '03')
+					
+					if (showResult) console.log(errors)
 					done()
 				}))
 			})
 
 			if (openIdMode) {
 				it(`11 [${usecase} mode] - Should fail when response_type contains 'id_token' and the scope contains 'openid' but the 'generate_id_token' event handler is not defined.`, done => {
+					const showResult = showLoginIds('11')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					const registerEventHandler = eventRegister(eventHandlerStore)
@@ -224,11 +257,14 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'generate_id_token\' handler') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 
 				it(`12 [${usecase} mode] - Should fail when the scopes is not allowed.`, done => {
+					const showResult = showLoginIds('12')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					registerAllHandlers(eventHandlerStore)
@@ -241,6 +277,8 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Access to scopes hello, world is not allowed') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
@@ -248,6 +286,7 @@ module.exports = function runTest (data, skip) {
 
 			if (openIdMode) {
 				it(`10 [${usecase} mode] - Should fail when the client_id and client_secret are from an unauthorized account.`, done => {
+					const showResult = showLoginIds('10')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -263,10 +302,12 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid client_id') >= 0), '03')
 
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 				it(`11 [${usecase} mode] - Should NOT fail when response_type contains 'id_token' and the scope DOES NOT contain 'openid' but the 'generate_id_token' event handler is not defined.`, done => {
+					const showResult = showLoginIds('11')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -284,12 +325,14 @@ module.exports = function runTest (data, skip) {
 						assert.isNotOk(errors, '01')
 						assert.isOk(result, '02')
 
+						if (showResult) console.log(result)
 						done()
 					}))
 				})
 			}
 
 			it(`12 [${usecase} mode] - Should return a code only when the FIP user ID exists and the response_type contains 'code'.`, done => {
+				const showResult = showLoginIds('12')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -310,10 +353,12 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 			it(`13 [${usecase} mode] - Should return an access_token only when the FIP user ID exists and the response_type contains 'token'.`, done => {
+				const showResult = showLoginIds('13')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -335,12 +380,14 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) console.log(result)
 					done()
 				}))
 			})
 
 			if (openIdMode) {
 				it(`14 [${usecase} mode] - Should not return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope does not include 'openid'.`, done => {
+					const showResult = showLoginIds('14')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -356,10 +403,13 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('response_type \'id_token\' is invalid without the \'openid\' scope') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 				it(`15 [${usecase} mode] - Should return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope contains 'openid'.`, done => {
+					const showResult = showLoginIds('15')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -390,10 +440,16 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(claims.exp != undefined, '17')
 						assert.isOk(claims.iat != undefined, '18')
 						assert.scopes(result.scope, ['openid'], 19)
+						
+						if (showResult) {
+							console.log(result) 
+							console.log(claims) 
+						}
 						done()
 					}))
 				})
 				it(`16 [${usecase} mode] - Should return an id_token, access_token and code when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
+					const showResult = showLoginIds('16')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -424,10 +480,16 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(claims.exp != undefined, '17')
 						assert.isOk(claims.iat != undefined, '18')
 						assert.scopes(result.scope, ['openid'], 19)
+						
+						if (showResult) {
+							console.log(result) 
+							console.log(claims) 
+						}
 						done()
 					}))
 				})
 				it(`17 [${usecase} mode] - Should return an access_token and a valid id_token when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
+					const showResult = showLoginIds('17')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -457,11 +519,17 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(claims.exp != undefined, '17')
 						assert.isOk(claims.iat != undefined, '18')
 						assert.scopes(result.scope, ['openid'], 19)
+						
+						if (showResult) {
+							console.log(result) 
+							console.log(claims) 
+						}
 						done()
 					}))
 				})
 			} else {
 				it(`16 [${usecase} mode] - Should return an access_token and a code (no id_token) when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
+					const showResult = showLoginIds('16')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -483,10 +551,14 @@ module.exports = function runTest (data, skip) {
 						assert.isNotOk(result.id_token, '06')
 						assert.isNotOk(result.refresh_token, '07')
 
+						if (showResult) {
+							console.log(result) 
+						}
 						done()
 					}))
 				})
 				it(`17 [${usecase} mode] - Should return an access_token (no id_token) when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
+					const showResult = showLoginIds('17')
 					const logE = logTest(done)
 
 					const eventHandlerStore = {}
@@ -507,12 +579,16 @@ module.exports = function runTest (data, skip) {
 						assert.isNotOk(result.id_token, '06')
 						assert.isNotOk(result.refresh_token, '07')
 
+						if (showResult) {
+							console.log(result) 
+						}
 						done()
 					}))
 				})
 			}
 
-			it(`17 [${usecase} mode] - Should not return a refresh_token when FIP user ID exists and the response_type contains 'token' and the scopes contain 'offline_access'.`, done => {
+			it(`18 [${usecase} mode] - Should not return a refresh_token when FIP user ID exists and the response_type contains 'token' and the scopes contain 'offline_access'.`, done => {
+				const showResult = showLoginIds('18')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -532,12 +608,16 @@ module.exports = function runTest (data, skip) {
 					assert.equal(result.expires_in, 3600, '05')
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
-
+		
+					if (showResult) {
+						console.log(result) 
+					}
 					done()
 				}))
 			})
 
-			it('18 - Should not fail when the \'create_fip_user\' event handler is not defined.', done => {
+			it('19 - Should not fail when the \'create_fip_user\' event handler is not defined.', done => {
+				const showResult = showLoginIds('19')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
@@ -560,17 +640,22 @@ module.exports = function runTest (data, skip) {
 					assert.isNotOk(result.id_token, '06')
 					assert.isNotOk(result.refresh_token, '07')
 
+					if (showResult) {
+						console.log(result)  
+					}
 					done()
 				}))
 			})
 		})
 	})
 
-	if (!openIdMode)
+	if (!openIdMode) {
+		const showSignupIds = createShowTestResultFn(showResults, 'fipsignup.processSignupWithFIPuser')
 		fn('fipsignup', () => {
 			const processTheFIPuser = getFIPuserProcessor('signup')(false)
 			describe('processSignupWithFIPuser', () => {
 				it('01 - Should fail when the \'create_fip_user\' event handler is not defined.', done => {
+					const showResult = showSignupIds('01')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					const registerEventHandler = eventRegister(eventHandlerStore)
@@ -582,10 +667,13 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(errors, '01')
 						assert.isOk(errors.length, '02')
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing \'create_fip_user\' handler') >= 0), '03')
+						
+						if (showResult) console.log(errors)
 						done()
 					}))
 				})
 				it('02 - Should create a new FIP user when that user does exist yet', done => {
+					const showResult = showSignupIds('02')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					registerAllHandlers(eventHandlerStore)
@@ -629,10 +717,12 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(existingUser2, '07')
 						assert.isOk(existingUser2.id, '08')
 
+						if (showResult) console.log(results)
 						done()
 					}))
 				})
 				it('03 - Should not create a new FIP user when that user already exist yet', done => {
+					const showResult = showSignupIds('03')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
 					registerAllHandlers(eventHandlerStore)
@@ -666,11 +756,13 @@ module.exports = function runTest (data, skip) {
 						assert.isOk(results.user_already_exists === true, '04')
 						assert.isOk(results.code, '05')
 
+						if (showResult) console.log(results)
 						done()
 					}))
 				})
 			})
 		})
+	}
 }
 
 

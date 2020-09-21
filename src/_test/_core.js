@@ -33,7 +33,21 @@ const logTestErrors = () => done => {
 	}
 }
 
+const createShowTestResultFn = (showResults, ...args) =>  {
+	const prefix = args.join('.')
+	const idsToBeShown = showResults && Array.isArray(showResults) && showResults.length
+		? showResults.filter(v => v && v.indexOf(prefix) >= 0).reduce((acc,v) => {
+			const ids = v.replace(`${prefix}.`,'').split(',').filter(x => x && !isNaN(x*1)).map(x => x*1)
+			acc.push(...ids)
+			return acc
+		}, [])
+		: []
+
+	return idx => idsToBeShown.indexOf(idx*1) >= 0
+}
+
 module.exports = {
 	setUpScopeAssertion,
-	logTestErrors
+	logTestErrors,
+	createShowTestResultFn
 }

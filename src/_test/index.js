@@ -37,7 +37,7 @@ const voidFn = () => null
  * @param  {Object}		stub.claimStubs[].claims		e.g., { given_name: 'Nic', family_name: 'Dao' }
  * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
  * @param  {[String]}	options.only					Valid values: 'strategy', 'introspect', 'token', 'userinfo'
- * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
+ * @param  {[String]}	options.showResults				e.g. ['introspect.handler.15,16', 'userinfo.handler.04']
  * 
  * @return {Void}
  */
@@ -92,10 +92,10 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 		}
 	} = stub
 
-	const { skip, only, verbose } = options
+	const { skip, only, showResults } = options
 
 	// 3. Runs all the tests
-	strategyTest({ openIdStrategy:strategy }, skipTest('strategy', skip, only), verbose)
+	strategyTest({ openIdStrategy:strategy }, skipTest('strategy', skip, only), showResults)
 
 	introspectTest({ 
 		clientId, 
@@ -109,7 +109,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 			password
 		},
 		aud
-	}, skipTest('introspect', skip, only), verbose)
+	}, skipTest('introspect', skip, only), showResults)
 
 	tokenTest({
 		clientId, 
@@ -122,7 +122,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 			username, 
 			password
 		}
-	}, skipTest('token', skip, only), verbose)
+	}, skipTest('token', skip, only), showResults)
 
 	userinfoTest({
 		clientId, 
@@ -132,7 +132,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 			password
 		},
 		claimStubs
-	}, skipTest('userinfo', skip, only), verbose)
+	}, skipTest('userinfo', skip, only), showResults)
 }
 
 /**
@@ -145,7 +145,6 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
  * @param  {String}		stub.newUserPassword		
  * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup'
  * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup'
- * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
  */
 const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	const loginSignupConfig = { ...config, modes:['loginsignup'] }
@@ -181,11 +180,11 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 		return
 
 	const { user, newUserPassword } = stub
-	const { skip, only, verbose } = options
+	const { skip, only, showResults } = options
 
-	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), verbose)
-	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
-	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), verbose)
+	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), showResults)
+	loginTest({ strategy, user }, skipTest('login', skip, only), showResults)
+	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), showResults)
 }
 
 /**
@@ -201,7 +200,6 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
  * @param  {String}		stub.fipUser.userId				ID if the user on your system.
  * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
  * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup', 'fiploginsignup'
- * @param  {Boolean}	options.verbose					Default false. When true, this logs the detailed errors if there are any.
  */
 const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	const loginSignupConfig = { ...config, modes:['loginsignupfip'] }
@@ -237,17 +235,17 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 		return
 
 	const { user, newUserPassword, fipUser } = stub
-	const { skip, only, verbose } = options
+	const { skip, only, showResults } = options
 
-	strategyTest({ loginSignupFipStrategy:strategy }, skipTest('strategy', skip, only), verbose)
-	loginTest({ strategy, user }, skipTest('login', skip, only), verbose)
-	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), verbose)
+	strategyTest({ loginSignupFipStrategy:strategy }, skipTest('strategy', skip, only), showResults)
+	loginTest({ strategy, user }, skipTest('login', skip, only), showResults)
+	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), showResults)
 	fipLoginSignupTest({
 		strategy,
 		identityProvider: fipUser.fipName, 
 		identityProviderUserId: fipUser.id, 
 		userId: fipUser.userId,
-	}, skipTest('fiploginsignup', skip, only), verbose)
+	}, skipTest('fiploginsignup', skip, only), showResults)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.3](https://github.com/nicolasdao/userin/compare/v1.5.2...v1.5.3) (2020-09-21)
+
+
+### Features
+
+* Add support for outputing the raw result of a test ([0634fc9](https://github.com/nicolasdao/userin/commit/0634fc98651a9e5030ca65eaa394a5021b870c18))
+
 ### [1.5.2](https://github.com/nicolasdao/userin/compare/v1.5.1...v1.5.2) (2020-09-21)
 
 

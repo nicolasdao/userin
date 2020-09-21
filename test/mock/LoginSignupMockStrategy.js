@@ -1,4 +1,4 @@
-const { Strategy } = require('userin-core')
+const { Strategy, error: { InvalidCredentialsError } } = require('userin-core')
 const crypto = require('crypto')
 
 class LoginSignUpMockStrategy extends Strategy {
@@ -78,7 +78,7 @@ LoginSignUpMockStrategy.prototype.get_end_user = (root, { user }, context) => {
 	if (!existingUser)
 		return null
 	if (user.password && existingUser.password != user.password)
-		throw new Error('Incorrect username or password')
+		throw new InvalidCredentialsError('Invalid username or password')
 
 	const client_ids = context.repos.userToClient.filter(x => x.user_id == existingUser.id).map(x => x.client_id)
 

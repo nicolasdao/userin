@@ -53,9 +53,14 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Login user
+	const incorrectUsernamePasswordError = new userInError.InvalidCredentialsError('Incorrect username or password')
 	const [existingUserErrors, existingUser] = yield eventHandlerStore.get_end_user.exec({ user })
-	if (existingUserErrors)
-		throw wrapErrors(errorMsg, existingUserErrors)
+	if (existingUserErrors) {
+		if (existingUserErrors.some(e => e instanceof userInError.InvalidCredentialsError))
+			throw incorrectUsernamePasswordError
+		else
+			throw wrapErrors(errorMsg, existingUserErrors)
+	}
 
 	if (!existingUser)
 		throw new userInError.InvalidUserError(`${errorMsg}. Invalid username or password.`)

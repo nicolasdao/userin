@@ -54,13 +54,18 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw wrapErrors(errorMsg, scopeErrors)
 
 	// C. Processes user
+	const incorrectUsernamePasswordError = new userInError.InvalidCredentialsError('Incorrect username or password')
 	const [userErrors, validUser] = yield eventHandlerStore.get_end_user.exec({ client_id, user, state })
-	if (userErrors)
-		throw wrapErrors(errorMsg, userErrors)
+	if (userErrors) {
+		if (userErrors.some(e => e instanceof userInError.InvalidCredentialsError))
+			throw incorrectUsernamePasswordError
+		else
+			throw wrapErrors(errorMsg, userErrors)
+	}
 	
 	// D. Validate that the client_id is allowed to process this user. 
 	if (!validUser)
-		throw new userInError.InternalServerError(`${errorMsg}. Invalid username or password.`)
+		throw incorrectUsernamePasswordError
 
 	const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id:validUser.id, user_client_ids:validUser.client_ids })
 	if (clientIdErrors)

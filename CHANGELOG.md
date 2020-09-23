@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/nicolasdao/userin/compare/v1.5.3...v1.6.0) (2020-09-23)
+
+
+### Features
+
+* Add support for PKCE and nonce ([5f6223b](https://github.com/nicolasdao/userin/commit/5f6223bbadf31e94df2e994fc99f1275620bb416))
+
 ### [1.5.3](https://github.com/nicolasdao/userin/compare/v1.5.2...v1.5.3) (2020-09-21)
 
 

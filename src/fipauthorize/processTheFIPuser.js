@@ -33,6 +33,8 @@ const getFIPuserProcessor = loginSignupMode => openIdMode => {
 	 * @param {String}		response_type					e.g., 'code+id_token'
 	 * @param {String}		scopes
 	 * @param {String}		state
+	 * @param {String}		code_challenge					Used for PKCE
+	 * @param {String}		nonce					
 	 * @param {Object}		eventHandlerStore
 	 * 
 	 * @yield {[Error]}		output[0]
@@ -43,7 +45,7 @@ const getFIPuserProcessor = loginSignupMode => openIdMode => {
 	 * @yield {String}		output[1].scope
 	 * @yield {Boolean}		output[1].user_already_exists	This property is only returned when 'loginSignupMode' equals 'signup'
 	 */
-	return ({ user, strategy, client_id, response_type, scopes, state }, eventHandlerStore={}) => catchErrors(co(function *() {
+	return ({ user, strategy, client_id, response_type, scopes, state, code_challenge, nonce }, eventHandlerStore={}) => catchErrors(co(function *() {
 		const errorMsg = `Failed to process ${strategy} user`
 		// A. Validates input
 		if (openIdMode && !eventHandlerStore.get_client)
@@ -134,11 +136,13 @@ const getFIPuserProcessor = loginSignupMode => openIdMode => {
 		// F. Generates tokens
 		const emptyPromise = Promise.resolve([null, null])
 		const config = { client_id:client_id||null, user_id:canonicalUser.id, audiences, scopes, state }
+		const authCodeConfig = { ...config, code_challenge }
+		const idTokenConfig = { ...config, nonce }
 		
 		const [[accessTokenErrors, accessTokenResult], [codeErrors, codeResult], [idTokenErrors, idTokenResult]] = yield [
 			requestAccessToken ? eventHandlerStore.generate_openid_access_token.exec(config) : emptyPromise,
-			requestCode ? eventHandlerStore.generate_openid_authorization_code.exec(config) : emptyPromise,
-			requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : emptyPromise
+			requestCode ? eventHandlerStore.generate_openid_authorization_code.exec(authCodeConfig) : emptyPromise,
+			requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(idTokenConfig) : emptyPromise
 		]
 
 		if (accessTokenErrors || idTokenErrors || codeErrors)

@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
 const { error:userInError } = require('userin-core')
+const crypto = require('crypto')
 
 const RESPONSE_TYPES = ['code', 'id_token', 'token']
 
@@ -150,6 +151,28 @@ const getBasicOIDCclaims = type =>
 		}
 	}))
 
+const escapeCodeChars = (codeChallenge='') => codeChallenge
+	.replace(/[^a-zA-Z0-9\-_]/g,m => m === '/' ? '_' : m === '+' ? '-' : '')
+
+/**
+ * This implementation is based on the OAuth 2.0 specification
+ * https://tools.ietf.org/html/rfc7636#section-4.2. This code was tested 
+ * 
+ * @param  {String} codeVerifier		e.g., 'M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag'
+ * @param  {String} method				Valid values: 'plain', 'S256'
+ * 
+ * @return {String} codeChallenge		e.g., 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+ */
+const createCodeChallenge = (codeVerifier, method) => {
+	if (method == 'plain')
+		return codeVerifier
+	else if (method == 'S256') {
+		const hash = crypto.createHash('sha256')
+		return escapeCodeChars(hash.update(codeVerifier).digest('base64'))
+	} else 
+		throw new Error(`Code challenge method '${method}' is not supported. Supported methods: 'plain', 'S256'.`)
+}
+
 module.exports = {
 	convert: {
 		thingToThings,
@@ -157,7 +180,8 @@ module.exports = {
 		toOIDCClaims: parseToOIDCClaims,
 		responseTypeToTypes,
 		objectToBase64,
-		base64ToObject
+		base64ToObject,
+		codeVerifierToChallenge: codeVerifier => createCodeChallenge(codeVerifier, 'S256')
 	},
 	verify: {
 		scopes: verifyScopes,

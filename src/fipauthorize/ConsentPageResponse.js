@@ -93,7 +93,7 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 		if (decodedStateErrors)
 			throw wrapErrors(errorMsg, decodedStateErrors)
 
-		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state } = decodedState || {}
+		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state, code_challenge, nonce } = decodedState || {}
 
 		// if (!client_id)
 		// 	throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
@@ -119,6 +119,8 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 			response_type,
 			scopes: oauth2Params.convert.thingToThings(scope),
 			state,
+			code_challenge,
+			nonce
 		}, eventHandlerStore)
 
 		if (tokenResultErrors)

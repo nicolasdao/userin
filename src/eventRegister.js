@@ -75,7 +75,7 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 	const eventName = 'generate_openid_id_token'
 	if (eventHandlerStore[eventName])
 		return
-	const handler = (root, { client_id, user_id, audiences, scopes, state }) => co(function *() {
+	const handler = (root, { client_id, user_id, audiences, scopes, state, nonce }) => co(function *() {
 		const errorMsg = 'Failed to generate id_token'
 		if (!eventHandlerStore.get_identity_claims)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
@@ -109,7 +109,8 @@ const addGenerateIdTokenHandler = eventHandlerStore => {
 				scopes,
 				extra: identityClaims.claims||{}
 			}),
-			...basicOIDCclaims.claims
+			...basicOIDCclaims.claims,
+			nonce
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_id_token.exec({ claims, state })
@@ -129,7 +130,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 	const eventName = 'generate_openid_authorization_code'
 	if (eventHandlerStore[eventName])
 		return
-	const handler = (root, { client_id, user_id, scopes, state }) => co(function *() {
+	const handler = (root, { client_id, user_id, scopes, state, code_challenge, nonce }) => co(function *() {
 		const errorMsg = 'Failed to generate authorization code'
 		if (!eventHandlerStore.generate_authorization_code)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
@@ -146,7 +147,9 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 				user_id, 
 				scopes
 			}),
-			...basicOIDCclaims.claims
+			...basicOIDCclaims.claims,
+			code_challenge,
+			nonce
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_authorization_code.exec({ claims, state })

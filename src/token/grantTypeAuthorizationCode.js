@@ -13,6 +13,7 @@ const { oauth2Params } = require('../_utils')
  * @param {String}		client_secret	
  * @param {String}		code	
  * @param {String}		state
+ * @param {String}		code_verifier				Used for PKCE
  * 
  * @yield {[Error]}		output[0]
  * @yield {String}		output[1].access_token
@@ -22,7 +23,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, code_verifier }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
@@ -58,7 +59,10 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	if (oidcClaims.client_id != client_id)
 		throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
 
-	const { scope, sub } = oidcClaims 
+	// D. Verifies the authorization code
+	const { scope, sub, code_challenge, nonce } = oidcClaims
+
+	// D.1. Basic verification
 	const scopes = oauth2Params.convert.thingToThings(scope) || []
 	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
 	const requestRefreshToken = scopes && scopes.indexOf('offline_access') >= 0
@@ -73,13 +77,24 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state }) =
 	if (claimsError || scopeErrors)
 		throw wrapErrors(errorMsg, claimsError || scopeErrors)
 
-	// D. Get the access_token, id_token, and potentially the refresh_token for that user_id
+	// D.2. If a code_challenge was associated with the authorization code, then validate the PKCE
+	if (code_challenge) {
+		if (!code_verifier)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code_verifier'.`)
+		const codeChallenge = oauth2Params.convert.codeVerifierToChallenge(code_verifier)
+
+		if (codeChallenge != code_challenge)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'code_verifier'.`)
+	}
+
+	// E. Get the access_token, id_token, and potentially the refresh_token for that user_id
 	const config = { client_id, user_id:sub, audiences:serviceAccount.audiences, scopes, state }
+	const idTokenConfig = { ...config, nonce }
 
 	const emptyPromise = Promise.resolve([null, null])
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult], [refreshTokenErrors, refresfTokenResult]] = yield [
 		eventHandlerStore.generate_openid_access_token.exec(config),
-		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : emptyPromise,
+		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(idTokenConfig) : emptyPromise,
 		requestRefreshToken ? eventHandlerStore.generate_openid_refresh_token.exec(config) : emptyPromise
 	]
 

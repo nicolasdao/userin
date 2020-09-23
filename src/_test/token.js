@@ -37,6 +37,7 @@ module.exports = function runTest (data, skip, showResults) {
 	const invalidCode = 'K83jeqF/YnKXPvyz'
 	const notAllowedScope = 'K83jeqFYnKXPvyz'
 	const invalidClientId = 'K83jeqFYnKXPvyz'
+	const nonce = 'FqF2DNdNpqJh0iBMyxC7rOGRf6ell.t4'
 	
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
@@ -481,6 +482,156 @@ module.exports = function runTest (data, skip, showResults) {
 					assert.isOk(result.scope.indexOf('offline_access') >= 0, '13 - result.scope should contain \'offline_access\'')
 
 					if (showResult) console.log(result)
+					done()
+				}))
+			})
+			it('17 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+					})
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token 
+					})
+					
+					logE.push(errors)	
+					assert.isOk(errors, '04')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'code_verifier\'') >= 0), '05')
+
+					if (showResult) console.log(errors)
+					done()
+				}))
+			})
+			it('18 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+					})
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						code_verifier: '12345'
+					})
+					
+					logE.push(errors)	
+					assert.isOk(errors, '04')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid \'code_verifier\'') >= 0), '05')
+
+					if (showResult) console.log(errors)
+					done()
+				}))
+			})
+			it('19 - Should return an access_token when both the code and the code_verifier are valid.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+					})
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						code_verifier: 'M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag'
+					})
+					
+					logE.push(errors)	
+					assert.isNotOk(errors, '04')
+					assert.isOk(result, '05')
+					assert.isOk(result.access_token, '06')
+					assert.equal(result.token_type, 'bearer', '07')
+					assert.equal(result.expires_in, accessTokenExpiresIn, '08')
+					assert.isNotOk(result.id_token, '09')
+					assert.isNotOk(result.refresh_token, '10')
+
+					if (showResult) console.log(result)
+					done()
+				}))
+			})
+			it('20 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
+				const showResult = showIds('15')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				const codePayload = { ...stubbedPayload, scopes:['openid'], nonce }
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(codePayload)
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token
+					})
+					
+					logE.push(errors)	
+					assert.isNotOk(errors, '04')
+					assert.isOk(result, '05')
+					assert.isOk(result.access_token, '06')
+					assert.equal(result.token_type, 'bearer', '07')
+					assert.equal(result.expires_in, accessTokenExpiresIn, '08')
+					assert.isOk(result.id_token, '09')
+					assert.isNotOk(result.refresh_token, '10')
+
+					const claims = jwt.decode(result.id_token)
+					assert.isOk(claims, '11')
+					assert.equal(claims.iss, strategy.config.iss, '12')
+					assert.equal(claims.sub, user_id, '13')
+					assert.isOk(claims.aud != undefined, '14')
+					assert.equal(claims.client_id, client_id, '15')
+					assert.scopes(claims.scope, ['openid'], 15)
+					assert.isOk(claims.exp != undefined, '18')
+					assert.isOk(claims.iat != undefined, '19')
+					assert.scopes(result.scope, ['openid'], 20)
+					assert.equal(claims.nonce, nonce, '21')
+
+					if (showResult) {
+						console.log(result)
+						console.log(claims)
+					}
 					done()
 				}))
 			})

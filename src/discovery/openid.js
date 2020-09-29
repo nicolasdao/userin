@@ -1,6 +1,4 @@
-const { co } = require('core-async')
-const { error: { catchErrors } } = require('puffy')
-const { getFullyQualifiedEndpoints } = require('./_core')
+const { getOpenIdDiscoveryData } = require('./_core')
 
 const endpoint = '.well-known/openid-configuration' 
 
@@ -17,9 +15,7 @@ const endpoint = '.well-known/openid-configuration'
  *  
  * @return {Object}		fullyQualifiedEndpoints	
  */
-const handler = (payload, eventHandlerStore, context={}) => catchErrors(co(function *() {
-	return yield Promise.resolve(null).then(() => getFullyQualifiedEndpoints(context.req, context.endpoints))
-}))
+const handler = (payload, eventHandlerStore, context={}) => getOpenIdDiscoveryData(context.req, context.endpoints, eventHandlerStore)
 
 module.exports = {
 	endpoint,

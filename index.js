@@ -2,18 +2,24 @@ const express = require('express')
 const Facebook = require('passport-facebook')
 const app = express()
 const { UserIn } = require('./src')
-const { MockStrategy } = require('./test/mock/strategy')
+const MockStrategy = require('./test/mock/ExhaustiveMockStrategy')
 const { FIP_USER_TO_STRATEGY } = require('./test/mock/stub')
 
-const strategy = new MockStrategy({
-	tokenExpiry: {
-		id_token: 3600,
-		access_token: 3600,
-		code: 30
+const userIn = new UserIn({
+	Strategy: MockStrategy,
+	modes:['loginsignup', 'loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		openid: {
+			iss: 'http://localhost:3330',
+			tokenExpiry: {
+				access_token: 3600,
+				id_token: 3600,
+				code: 30
+			}
+		}
 	}
 })
 
-const userIn = new UserIn(strategy)
 userIn.use(Facebook, {
 	scopes: ['public_profile'],
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
@@ -47,3 +53,4 @@ app.use(userIn)
 
 // curl -d '{"username":"nic@cloudlessconsulting.com", "password":"123456"}' -H "Content-Type: application/json" -X POST http://localhost:3330/v1/login
 app.listen(3330, () => console.log('UserIn listening on https://localhost:3330'))
+

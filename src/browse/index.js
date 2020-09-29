@@ -26,10 +26,10 @@ const handler = (payload, eventHandlerStore, context={}) => catchErrors(co(funct
 		dicovery.nonOAuth.handler(payload, eventHandlerStore, context)
 	]
 
-	console.log('detailedEndpoints')
-	console.log(detailedEndpoints)
-	console.log('openIdEndpoints')
-	console.log(openIdEndpoints)
+	// console.log('detailedEndpoints')
+	// console.log(detailedEndpoints)
+	// console.log('openIdEndpoints')
+	// console.log(openIdEndpoints)
 
 	const html = yield getBrowseHtml(detailedEndpoints, openIdEndpoints, payload)
 

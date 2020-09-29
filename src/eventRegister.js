@@ -130,7 +130,8 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 	const eventName = 'generate_openid_authorization_code'
 	if (eventHandlerStore[eventName])
 		return
-	const handler = (root, { client_id, user_id, scopes, state, code_challenge, nonce }) => co(function *() {
+
+	const handler = (root, { client_id, user_id, scopes, state, code_challenge, code_challenge_method, nonce }) => co(function *() {
 		const errorMsg = 'Failed to generate authorization code'
 		if (!eventHandlerStore.generate_authorization_code)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
@@ -141,6 +142,13 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 		if (basicOIDCclaimsErrors)
 			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
 		
+		if (code_challenge && !code_challenge_method)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge' is specified, 'code_challenge_method' is required.`)
+		if (!code_challenge && code_challenge_method)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge_method' is specified, 'code_challenge' is required.`)
+		if (code_challenge_method && code_challenge_method != 'S256' && code_challenge_method != 'plain')
+			throw new userInError.InvalidRequestError(`${errorMsg}. code_challenge_method '${code_challenge_method}' is not a supported OpenID standard. Valid values: 'plain' or 'S256'.`)
+
 		const claims = {
 			...oauth2Params.convert.toOIDCClaims({  
 				client_id, 
@@ -149,6 +157,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			}),
 			...basicOIDCclaims.claims,
 			code_challenge,
+			code_challenge_method,
 			nonce
 		}
 

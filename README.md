@@ -86,13 +86,17 @@ class YourStrategy extends Strategy {
 		this.generate_authorization_code = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_authorization_code_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
-		// Implement those four methods if you also need to support all the OpenID Connect
+		// Implement those nine methods if you also need to support all the OpenID Connect
 		// APIs which would allow third-parties to use your APIs.
 		this.get_identity_claims = (root, { user_id, scopes }, context) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }, context) => { /* Implement your logic here */ }
 		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.get_id_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.get_jwks = (root) => { /* Implement your logic here */ }
+		this.get_claims_supported = (root) => { /* Implement your logic here */ }
+		this.get_scopes_supported = (root) => { /* Implement your logic here */ }
+		this.get_id_token_signing_alg_values_supported = (root) => { /* Implement your logic here */ }
 	}
 }
 
@@ -116,6 +120,16 @@ userIn.use(Facebook, {
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 })
 
+// Example of how to listen to events and even modify their response. 
+userIn.on('generate_access_token', (root, payload, context) => {
+	console.log(`'generate_access_token' event fired. Payload:`)
+	console.log(payload)
+	console.log('Previous handler response:')
+	console.log(root)
+	console.log('Current context:')
+	console.log(context)
+})
+
 const app = express()
 
 app.use(userIn)
@@ -123,12 +137,16 @@ app.use(userIn)
 app.listen(3330)
 ```
 
+All the endpoints that the UserIn middleware exposes are discoverable at the following two endpoints:
+- __`GET`__ http://localhost:3330/v1/.well-known/configuration: This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID OAuth2 endpoints.
+- __`GET`__ http://localhost:3330/oauth2/v1/.well-known/openid-configuration: This is the OpenID discovery endpoint. That endpoint is the one that your third-parties are supposed to use.
+
 # UserIn Strategy
 
 # Events and event handlers
 ## Events overview
 
-UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineers, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
+UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineer, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
 
 1. `create_end_user`
 2. `create_fip_user`
@@ -144,10 +162,15 @@ UserIn behaviors are managed via events and event handlers. Out-of-the-box, User
 12. `get_refresh_token_claims`
 13. `get_client`
 14. `get_identity_claims`
-15. `get_config`: Automatically implemented.
-16. `process_fip_auth_response`: Automatically implemented.
+15. `get_jwks`
+16. `get_claims_supported`
+17. `get_scopes_supported`
+18. `get_id_token_signing_alg_values_supported`
+19. `get_config`: Automatically implemented.
+20. `process_fip_auth_response`: Automatically implemented.
 
-Each of those events, triggers a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
+
+Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
 
 ```js
 userIn.on('generate_access_token', (root, payload, context) => {
@@ -276,19 +299,135 @@ This mode is a superset of _loginsignup_.
 	9. `get_id_token_claims`
 	10. `get_identity_claims`
 	11. `get_client`
+	12. `get_jwks`
+	13. `get_claims_supported`
+	14. `get_scopes_supported`
+	15. `get_id_token_signing_alg_values_supported`
 
 ## Event APIs
 ### `create_end_user`
 
+Example of that logic encapsulated in a `create_end_user.js`:
+
+```js
+const { error: { wrapErrors } } = require('puffy')
+const services = require('../services')
+
+/**
+ * Creates new user.
+ * 
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.user.username		
+ * @param  {String}		payload.user.password		
+ * @param  {String}		payload.user...			More properties
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {Object}		user					This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id					String ot number
+ */
+const handler = async (root, { user }, { repos }) => {
+	// Note: The following assertions have already been checked by UserIn so this function 
+	// does not need to check these again:
+	// 	- 'user' is truthy. 
+	// 	- 'username' is truthy
+	// 	- 'password' is truthy
+	// 	- 'username' does not exist already
+
+	const errorMsg = 'Failed to create end user'
+
+	// 1. Verify password minimal requirements
+	const { valid, reason } = services.password.strongEnough(user.password)
+
+	if (!valid)
+		throw new Error(`${errorMsg}. The password is not strong enought. ${reason}`)
+
+	const [newUserErrors, newUser] = await repos.user.insert(user)
+	if (newUserErrors)
+		throw wrapErrors(errorMsg, newUserErrors)
+
+	return newUser
+}
+
+module.exports = handler
+```
+
 ### `create_fip_user`
 
 ### `generate_access_token`
+
+Example of that logic encapsulated in a `generate_access_token.js`:
+
+```js
+const { error: { wrapErrors } } = require('puffy')
+const tokenManager = require('../tokenManager')
+
+/**
+ * Generates a new access_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+const handler = async (root, { claims, state }, { repos }) => {
+	// Note: The following assertions have already been checked by UserIn so this function 
+	// does not need to check these again:
+	// 	- 'claims' is truthy and is an object
+	// 
+	// This function is expected to behave following the specification described at 
+	// https://github.com/nicolasdao/userin#access_token-requirements
+	
+	const [errors, token] = await tokenManager(repos)('access_token').create(claims)
+	if (errors)
+		throw wrapErrors('Failed to create access_token', errors)
+
+	return token
+}
+
+module.exports = handler
+```
 
 ### `generate_authorization_code`
 
 ### `generate_id_token`
 
 ### `generate_refresh_token`
+
+Example of that logic encapsulated in a `generate_refresh_token.js`:
+
+```js
+const { error: { wrapErrors } } = require('puffy')
+const tokenManager = require('../tokenManager')
+
+/**
+ * Generates a new refresh_token. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+const handler = async (root, { claims, state }, { repos }) => {
+	// Note: The following assertions have already been checked by UserIn so this function 
+	// does not need to check these again:
+	// 	- 'claims' is truthy and is an object
+	// 
+	// This function is expected to behave following the specification described at 
+	// https://github.com/nicolasdao/userin#refresh_token-requirements
+	
+	const [errors, token] = await tokenManager(repos)('refresh_token').create(claims)
+	if (errors)
+		throw wrapErrors('Failed to create refresh_token', errors)
+
+	return token
+}
+
+module.exports = handler
+```
 
 ### `get_access_token_claims`
 
@@ -328,8 +467,76 @@ const get_config = (root) => {
 
 ### `get_end_user`
 
-Must return null when the `username` does not exists. 
-Must fail when the `username` and `password` are incorrect.
+Example of that logic encapsulated in a `get_end_user.js`:
+
+```js
+const { error:{ InvalidCredentialsError } } = require('userin')
+const { error: { wrapErrors } } = require('puffy')
+const services = require('../services')
+
+/**
+ * Gets the user ID and optionnaly its associated client_ids if the 'openid' mode must be supported.
+ * If the username does not exist, a null value must be returned. However, the 'password' is optional. 
+ * If the 'password' is provided, it must be verified. If the verification fails, an error of type 
+ * InvalidCredentialsError must be thrown (const { error:{ InvalidCredentialsError } } = require('userin'))
+ * 
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.user.username
+ * @param  {String}		payload.user.password
+ * @param  {String}		payload.user...			More properties
+ * @param  {String}		payload.client_id		Optional. Might be useful for logging or other custom business logic.
+ * @param  {String}		payload.state			Optional. Might be useful for logging or other custom business logic.
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {Object}		user					This object should always defined the following properties at a minimum.
+ * @return {Object}		user.id					String ot number
+ * @return {[Object]}	user.client_ids		
+ */
+const handler = async (root, { user, client_id, state }, { repos }) => {
+	// Note: The following assertions have already been checked by UserIn so this function 
+	// does not need to check these again:
+	// 	- 'user' is truthy. 
+	// 	- 'username' is truthy
+	// 
+	// This function is expected to behave as follow:
+	// 	- If the 'username' does not exist, a null value must be returned. 
+	// 	- The 'password' is optional. 
+	// 	- If the 'password' is provided, it must be verified. If the verification fails, an error of type 
+	// 	InvalidCredentialsError must be thrown (const { error:{ InvalidCredentialsError } } = require('userin'))
+
+	const errorMsg = 'Failed to get end user'
+
+	const [confirmedUserErrors, confirmedUser] = await repos.user.find({ where:{ email:user.username } })
+	if (confirmedUserErrors)
+		throw wrapErrors(errorMsg, confirmedUserErrors)
+
+	if (!confirmedUser)
+		return null
+
+	if (user.password) {
+		const eMsg = `${errorMsg}. Invalid username or password.`
+		const saltedPassword = confirmedUser.password
+		if (!saltedPassword || !confirmedUser.salt)
+			throw new InvalidCredentialsError(eMsg)
+
+		const valid = services.password.verify({ 
+			password:user.password, 
+			salt:confirmedUser.salt, 
+			hashedSaltedPassword:confirmedUser.password 
+		})
+
+		if (!valid)
+			throw new InvalidCredentialsError(eMsg) 
+	}
+
+	return {
+		id: confirmedUser.id,
+		client_ids:[]
+	}
+}
+
+module.exports = handler
+```
 
 ### `get_fip_user`
 
@@ -338,6 +545,46 @@ Must fail when the `username` and `password` are incorrect.
 ### `get_identity_claims`
 
 ### `get_refresh_token_claims`
+
+Example of that logic encapsulated in a `get_refresh_token_claims.js`:
+
+```js
+const { error: { wrapErrors } } = require('puffy')
+const tokenManager = require('../tokenManager')
+
+/**
+ * Gets the refresh_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+const handler = async (root, { token }, { repos }) => {
+	// Note: The following assertions have already been checked by UserIn so this function 
+	// does not need to check these again:
+	// 	- 'token' is truthy and is a string
+	// 
+	// This function is expected to behave following the specification described at 
+	// https://github.com/nicolasdao/userin#refresh_token-requirements
+	
+	const [errors, refresh_token] = await tokenManager(repos)('refresh_token').getClaims(token)
+	if (errors)
+		throw wrapErrors('Failed to create refresh_token', errors)
+
+	return refresh_token
+}
+
+module.exports = handler
+```
 
 ### `process_fip_auth_response`
 
@@ -357,6 +604,15 @@ const handler = (root, { accessToken, refreshToken, profile }) => {
 	return user
 }
 ```
+
+### `get_jwks`
+
+### `get_claims_supported`
+
+### `get_scopes_supported`
+
+### `get_id_token_signing_alg_values_supported`
+
 
 # OpenID Connect tokens & authorization code requirements
 

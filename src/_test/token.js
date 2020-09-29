@@ -38,6 +38,8 @@ module.exports = function runTest (data, skip, showResults) {
 	const notAllowedScope = 'K83jeqFYnKXPvyz'
 	const invalidClientId = 'K83jeqFYnKXPvyz'
 	const nonce = 'FqF2DNdNpqJh0iBMyxC7rOGRf6ell.t4'
+	const codeChallengeS256 = 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+	const codeVerifier = 'M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag'
 	
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
@@ -485,7 +487,50 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('17 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
+			it('17 - Should fail when a code_challenge is passed without the code_challenge_method.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: codeChallengeS256
+					})
+					logE.push(codeErrors)
+
+					assert.isOk(codeErrors, '01')
+					assert.isOk(codeErrors.some(e => e.message && e.message.indexOf('\'code_challenge_method\' is required') >= 0), '02')
+
+					if (showResult) console.log(codeErrors)
+					done()
+				}))
+			})
+			it('18 - Should fail when a code_challenge is passed with a non-supported code_challenge_method.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: codeChallengeS256,
+						code_challenge_method: 'dcewdew'
+					})
+					logE.push(codeErrors)
+
+					assert.isOk(codeErrors, '01')
+					assert.isOk(codeErrors.some(e => e.message && e.message.indexOf('code_challenge_method \'dcewdew\' is not a supported OpenID standard') >= 0), '02')
+
+					if (showResult) console.log(codeErrors)
+					done()
+				}))
+			})
+			it('19 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -495,7 +540,8 @@ module.exports = function runTest (data, skip, showResults) {
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 						...stubbedPayload,
-						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+						code_challenge: codeChallengeS256,
+						code_challenge_method: 'S256'
 					})
 					logE.push(codeErrors)
 
@@ -516,7 +562,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('18 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
+			it('20 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -526,7 +572,8 @@ module.exports = function runTest (data, skip, showResults) {
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 						...stubbedPayload,
-						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+						code_challenge: codeChallengeS256,
+						code_challenge_method: 'S256'
 					})
 					logE.push(codeErrors)
 
@@ -548,7 +595,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('19 - Should return an access_token when both the code and the code_verifier are valid.', done => {
+			it('21 - Should fail even though the code is valid when a code_challenge is required and the code_challenge is not using the correct method (plain vs S256).', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -558,7 +605,41 @@ module.exports = function runTest (data, skip, showResults) {
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 						...stubbedPayload,
-						code_challenge: 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
+						code_challenge: codeChallengeS256,
+						code_challenge_method: 'plain'
+					})
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						code_verifier: codeVerifier
+					})
+					
+					logE.push(errors)	
+					assert.isOk(errors, '04')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid \'code_verifier\'') >= 0), '05')
+
+					if (showResult) console.log(errors)
+					done()
+				}))
+			})
+			it('22 - Should return an access_token when both the code and the S256 code_verifier are valid.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: codeChallengeS256,
+						code_challenge_method: 'S256'
 					})
 					logE.push(codeErrors)
 
@@ -569,7 +650,7 @@ module.exports = function runTest (data, skip, showResults) {
 					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
 						...stubbedPayload, 
 						code:codeResults.token,
-						code_verifier: 'M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag'
+						code_verifier: codeVerifier
 					})
 					
 					logE.push(errors)	
@@ -585,7 +666,46 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('20 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
+
+			it('23 - Should return an access_token when both the code and the plain code_verifier are valid.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+						...stubbedPayload,
+						code_challenge: codeVerifier,
+						code_challenge_method: 'plain'
+					})
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						code_verifier: codeVerifier
+					})
+					
+					logE.push(errors)	
+					assert.isNotOk(errors, '04')
+					assert.isOk(result, '05')
+					assert.isOk(result.access_token, '06')
+					assert.equal(result.token_type, 'bearer', '07')
+					assert.equal(result.expires_in, accessTokenExpiresIn, '08')
+					assert.isNotOk(result.id_token, '09')
+					assert.isNotOk(result.refresh_token, '10')
+
+					if (showResult) console.log(result)
+					done()
+				}))
+			})
+			it('24 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
 				const showResult = showIds('15')
 				const logE = logTest(done)
 

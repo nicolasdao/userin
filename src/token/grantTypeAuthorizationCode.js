@@ -60,7 +60,7 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 		throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
 
 	// D. Verifies the authorization code
-	const { scope, sub, code_challenge, nonce } = oidcClaims
+	const { scope, sub, code_challenge, code_challenge_method, nonce } = oidcClaims
 
 	// D.1. Basic verification
 	const scopes = oauth2Params.convert.thingToThings(scope) || []
@@ -78,13 +78,25 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 		throw wrapErrors(errorMsg, claimsError || scopeErrors)
 
 	// D.2. If a code_challenge was associated with the authorization code, then validate the PKCE
-	if (code_challenge) {
+	if (code_challenge || code_challenge_method) {
+		if (code_challenge && !code_challenge_method)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge' is specified, 'code_challenge_method' is required.`)
+		if (!code_challenge && code_challenge_method)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge_method' is specified, 'code_challenge' is required.`)
+		if (code_challenge_method && code_challenge_method != 'S256' && code_challenge_method != 'plain')
+			throw new userInError.InvalidRequestError(`${errorMsg}. code_challenge_method '${code_challenge_method}' is not a supported OpenID standard. Valid values: 'plain' or 'S256'.`)
+		
 		if (!code_verifier)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code_verifier'.`)
-		const codeChallenge = oauth2Params.convert.codeVerifierToChallenge(code_verifier)
-
-		if (codeChallenge != code_challenge)
+		
+		if (code_challenge_method == 'plain' && code_verifier !== code_challenge)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'code_verifier'.`)
+		else if (code_challenge_method == 'S256') {
+			const codeChallenge = oauth2Params.convert.codeVerifierToChallenge(code_verifier)
+
+			if (codeChallenge != code_challenge)
+				throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'code_verifier'.`)
+		}
 	}
 
 	// E. Get the access_token, id_token, and potentially the refresh_token for that user_id

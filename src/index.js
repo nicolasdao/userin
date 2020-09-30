@@ -5,6 +5,7 @@ const introspectApi = require('./introspect')
 const discoveryApi = require('./discovery')
 const tokenApi = require('./token')
 const userinfoApi = require('./userinfo')
+const jwksUriApi = require('./jwks_uri')
 const loginApi = require('./login')
 const signupApi = require('./signup')
 const eventRegister = require('./eventRegister')
@@ -167,6 +168,9 @@ class UserIn extends express.Router {
 		createOauth2HttpHandler('openidconfiguration_endpoint', 'get', discoveryApi.openid, { formatJSON:true })
 		createHttpHandler('browse_endpoint', 'get', browseApi)
 		createHttpHandler('browse_redirect_endpoint', 'get', browseApi.redirect)
+
+		if (eventHandlerStore.get_jwks)
+			createOauth2HttpHandler('jwks_uri', 'get', jwksUriApi, { formatJSON:true })
 
 		// 6. Create the HTTP endpoint based on the modes. 
 		if (openIdModeOn) {

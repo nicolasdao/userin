@@ -256,6 +256,7 @@ module.exports = eventHandlerStore => {
 			registerEvent('get_config', () => strategyHandler.config)
 			// 4. Regsiter all the strategy's events handler
 			const events = getEvents()
+			
 			events.forEach(eventName => {
 				if (strategyHandler[eventName])
 					registerEvent(eventName, strategyHandler[eventName])

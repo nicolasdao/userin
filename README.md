@@ -4,13 +4,12 @@ UserIn is an Express middleware to build Authorization Servers that support OAut
 # Table of contents
 
 > * [Getting started](#getting-started)
-> * [UserIn Strategy](#userin-strategy)
+> * [Auth modes](#auth-modes)
+>	- [`loginsignup`](#loginsignup-mode)
+>	- [`loginsignupfip`](#loginsignupfip-mode)
+>	- [`openid`](#openid-mode)
 > * [Events and event handlers](#events-and-event-handlers)
 >	- [Events overview](#events-overview)
->	- [Auth modes](#auth-modes)
->		- [`loginsignup`](#loginsignup-mode)
->		- [`loginsignupfip`](#loginsignupfip-mode)
->		- [`openid`](#openid-mode)
 >	- [Event APIs](#event-apis)
 >		- [`create_end_user`](#create_end_user)
 >		- [`create_fip_user`](#create_fip_user)
@@ -27,6 +26,10 @@ UserIn is an Express middleware to build Authorization Servers that support OAut
 >		- [`get_id_token_claims`](#get_id_token_claims)
 >		- [`get_identity_claims`](#get_identity_claims)
 >		- [`get_refresh_token_claims`](#get_refresh_token_claims)
+>		- [`get_jwks`](#get_jwks)
+>		- [`get_claims_supported`](#get_claims_supported)
+>		- [`get_scopes_supported`](#get_scopes_supported)
+>		- [`get_grant_types_supported`](#get_grant_types_supported)
 >		- [`process_fip_auth_response`](#process_fip_auth_response)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
@@ -46,8 +49,14 @@ UserIn is an Express middleware to build Authorization Servers that support OAut
 >	- [Contribution guidelines](#contribution-guidelines)
 >	- [Unit tests](#unit-tests)
 >		- [The `logTestErrors` API](#the-logtesterrors-api)
+> * [Annex](#annex)
+>	- [Jargon and concepts](#jargon-and-concepts)
+>		- [Grant types](#grant-types)
+> * [References](#references)
 
 # Getting started
+
+Creating a UserIn Authorization Server consists in creating your own `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. Your `UserInStrategy` class must implement specific methods (based on how many UserIn features you wish to support) that do very basic CRUD operations to your backend storage. UserIn tried as much as possible to remove the burden of implementing business logic in those methods so you can only focus on simple CRUD implementation.
 
 Install UserIn:
 
@@ -71,32 +80,54 @@ class YourStrategy extends Strategy {
 		super(config)
 		this.name = 'yourstrategyname',
 
-		// Implement those five methods if you need to support the 'loginsignup' 
-		// mode (i.e., allowing users to login/signup with their username and password only)
+		// loginsignup mode
+		// ================
+		// 		Implement those five methods if you need to support the 'loginsignup' 
+		// 		mode (i.e., allowing users to login/signup with their username and password only)
 		this.create_end_user = (root, { user }, context) => { /* Implement your logic here */ }
 		this.get_end_user = (root, { user }, context) => { /* Implement your logic here */ }
 		this.generate_access_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.generate_refresh_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_refresh_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
-		// Implement those four methods if you also need to support login and signup with Identity 
-		// Providers such as Facebook, Google, ...
+		// loginsignupfip mode
+		// ===================
+		// 		Add those four methods to the above five if you also need to support login and signup with Identity 
+		// 		Providers such as Facebook, Google, ...
 		this.create_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
 		this.get_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
 		this.generate_authorization_code = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_authorization_code_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
-		// Implement those nine methods if you also need to support all the OpenID Connect
-		// APIs which would allow third-parties to use your APIs.
+		// openid mode
+		// ===================
+		// 		Add those nine methods to the following six if you need to support all the OpenID Connect
+		// 		APIs which would allow third-parties to use your APIs:
+		// 			1. 'generate_access_token',
+		// 			2. 'generate_authorization_code',
+		// 			3. 'generate_refresh_token',
+		// 			4. 'get_end_user', 
+		// 			5. 'get_authorization_code_claims',
+		// 			6. 'get_refresh_token_claims'
 		this.get_identity_claims = (root, { user_id, scopes }, context) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }, context) => { /* Implement your logic here */ }
 		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.get_id_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
-		this.get_jwks = (root) => { /* Implement your logic here */ }
 		this.get_claims_supported = (root) => { /* Implement your logic here */ }
 		this.get_scopes_supported = (root) => { /* Implement your logic here */ }
-		this.get_id_token_signing_alg_values_supported = (root) => { /* Implement your logic here */ }
+		// Those three OpenID event handlers are optional. If they are not implemented, the UserIn middleware uses default
+		// values instead:
+		// 	For 'get_jwks' UserIn uses an empty array.
+		// 	For 'get_grant_types_supported' UserIn uses this array: ['password', 'client_credentials', 'authorization_code', 'refresh_token']
+		this.get_jwks = (root) => { /* Implement your logic here */ }
+		this.get_grant_types_supported = (root) => { /* Implement your logic here */ }
+
+		// IMPORTANT NOTE: The above event handlers support both synchronous and Promises implementations. Both the 
+		// following are correct:
+		// 		this.generate_access_token = (root, { claims }, context) => { /* Implement your logic here */ }
+		// 		or 
+		// 		this.generate_access_token = async (root, { claims }, context) => { /* Implement your await logic here */ }
 	}
 }
 
@@ -141,79 +172,22 @@ All the endpoints that the UserIn middleware exposes are discoverable at the fol
 - __`GET`__ http://localhost:3330/v1/.well-known/configuration: This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID OAuth2 endpoints.
 - __`GET`__ http://localhost:3330/oauth2/v1/.well-known/openid-configuration: This is the OpenID discovery endpoint. That endpoint is the one that your third-parties are supposed to use.
 
-# UserIn Strategy
+# Auth modes
 
-# Events and event handlers
-## Events overview
-
-UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineer, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
-
-1. `create_end_user`
-2. `create_fip_user`
-3. `get_end_user`
-4. `get_fip_user`
-5. `generate_access_token`
-6. `generate_authorization_code`
-7. `generate_id_token`
-8. `generate_refresh_token`
-9. `get_access_token_claims`
-10. `get_authorization_code_claims`
-11. `get_id_token_claims`
-12. `get_refresh_token_claims`
-13. `get_client`
-14. `get_identity_claims`
-15. `get_jwks`
-16. `get_claims_supported`
-17. `get_scopes_supported`
-18. `get_id_token_signing_alg_values_supported`
-19. `get_config`: Automatically implemented.
-20. `process_fip_auth_response`: Automatically implemented.
-
-
-Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
-
-```js
-userIn.on('generate_access_token', (root, payload, context) => {
-	console.log(`'generate_access_token' event fired. Payload:`)
-	console.log(payload)
-	console.log('Previous handler response:')
-	console.log(root)
-	console.log('Current context:')
-	console.log(context)
-})
-```
-
-`root` is the response returned by the previous event handler. If your handler does not return anything, `root` is passed to the next handler. The code above is similar to this:
-
-```js
-userIn.on('generate_access_token', (root, payload, context) => {
-	console.log(`'generate_access_token' event fired. Payload:`)
-	console.log(payload)
-	console.log('Previous handler response:')
-	console.log(root)
-	console.log('Current context:')
-	console.log(context)
-
-	return root
-})
-```
-
-If, on the other hand, your handler returns a response, that response overrides `root`. 
-
-## Auth modes
-
-UserIn supports multiple flows grouped in three modes:
-1. [`loginsignup`](#loginsignup-mode): Supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
+UserIn supports multiple flows grouped in three modes which can be combined together:
+1. [`loginsignup`](#loginsignup-mode): This is the simplest group of flows to implement. It only supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
 2. [`loginsignupfip`](#loginsignupfip-mode): Supports login and signup with username/password and Federated Identity Providers (e.g., Facebook, Google). Generates short-lived access_token, short-lived authorization code, and optionally long-lived refresh_token upon successfull authentication. This mode is a superset of the `loginsignup` mode. Use it to let your users login and signup to your platform using a username and password as well as one or many FIPs. 
 3. [`openid`](#openid-mode): Supports login (no signup) using any the OpenID Connect flows (Authorization code, Implicit, Credentials and Password). Generates short-lived access_token, short-lived authorization code, short-lived id_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let others systems access your platform. OpenID Connect and OAuth 2.0 powers the following use cases:
 	- Access to your platform by a third-party directly. This flow is called the `Credentials flow`.
 	- Access to your platform by a third-party on behalf of one of your user. In that case, the user has given consent to that third-party system to access some resources on your platform (this consent was given via a redirection to a consent page hosted on your platform). There are two OpenID flows that can achieve this: `Authorization code flow` (recommended) and the `Implicit flow` (deprecated). 
 	- Access to you platform by one of your user using their client_id, username and password (optionally their client_secret if your plaftorm is private). This OpenID flow is called the `password flow`. 
 
-> NOTE: It is interesting to notice that OpenID Connect and OAuth 2.0. are not designed to let you users directly login in or creating an account. That's why UserIn supports the [`loginsignup` mode](#loginsignup-mode) and the [`loginsignupfip` mode](#loginsignupfip-mode) (though the later is a bit of a hybrid as it connects with FIPs which usually implement OAuth 2.0). If you're engineering a web API that only needs to power your web app, you only need the first or second mode. When your API needs to be accessed by third-parties, that's when OpenID Connect becomes useful. The good thing about UserIn is that its implementation lets you upgrade at anytime without re-engineering everything from scratch.
+> NOTE: It is interesting to notice that OpenID Connect and OAuth 2.0. are not designed to let your users directly(1) log in or sign up. That's why UserIn supports the [`loginsignup` mode](#loginsignup-mode) and the [`loginsignupfip` mode](#loginsignupfip-mode) (though the later is a bit of a hybrid as it connects with FIPs which usually implement OAuth 2.0). If you're engineering a web API that only needs to power your web app, you only need the first or second mode. When your API needs to be accessed by third-parties, that's when OpenID Connect becomes useful. The good thing about UserIn is that its implementation lets you upgrade at any time without re-engineering everything from the ground up.
 
-### `loginsignup` mode
-#### `loginsignup` strategy requirements
+> (1) By _directly_ we mean going straight to your middleware/backend without any redirections to let your lambda users log in or create an account using their credentials. Technically, the `password` and `client_credentials` grant types allow a user to acquire tokens in exchange of credentials via the OAuth2 `/token` API, but those flows are not designed to create new accounts. This is not also in their spirit to support log in. When it comes to identity, the idea behind OpenID is to allow third-parties to request identity information so that they can use them in the way they see fit, including for example, using a custom API to login their users.
+
+## `loginsignup` mode
+### `loginsignup` strategy requirements
 
 - Constructor required fields:
 	- `tokenExpiry.access_token`
@@ -233,8 +207,8 @@ UserIn supports multiple flows grouped in three modes:
 	4. `generate_refresh_token`
 	5. `get_refresh_token_claims`
 
-### `loginsignupfip` mode
-#### `loginsignupfip` strategy requirements
+## `loginsignupfip` mode
+### `loginsignupfip` strategy requirements
 
 This mode is a superset of _loginsignup_.
 
@@ -263,8 +237,8 @@ This mode is a superset of _loginsignup_.
 	8. `generate_authorization_code`
 	9. `get_authorization_code_claims`
 
-### `openid` mode
-#### `openid` strategy requirements
+## `openid` mode
+### `openid` strategy requirements
 
 - Constructor required fields:
 	- `modes`: Must be set to `['openid']`.
@@ -302,7 +276,64 @@ This mode is a superset of _loginsignup_.
 	12. `get_jwks`
 	13. `get_claims_supported`
 	14. `get_scopes_supported`
-	15. `get_id_token_signing_alg_values_supported`
+	15. `get_grant_types_supported`
+
+# Events and event handlers
+## Events overview
+
+UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineer, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
+
+1. `create_end_user`
+2. `create_fip_user`
+3. `get_end_user`
+4. `get_fip_user`
+5. `generate_access_token`
+6. `generate_authorization_code`
+7. `generate_id_token`
+8. `generate_refresh_token`
+9. `get_access_token_claims`
+10. `get_authorization_code_claims`
+11. `get_id_token_claims`
+12. `get_refresh_token_claims`
+13. `get_client`
+14. `get_identity_claims`
+15. `get_jwks`
+16. `get_claims_supported`
+17. `get_scopes_supported`
+18. `get_grant_types_supported`
+19. `get_config`: Automatically implemented.
+20. `process_fip_auth_response`: Automatically implemented.
+
+
+Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
+
+```js
+userIn.on('generate_access_token', (root, payload, context) => {
+	console.log(`'generate_access_token' event fired. Payload:`)
+	console.log(payload)
+	console.log('Previous handler response:')
+	console.log(root)
+	console.log('Current context:')
+	console.log(context)
+})
+```
+
+`root` is the response returned by the previous event handler. If your handler does not return anything, `root` is passed to the next handler. The code above is similar to this:
+
+```js
+userIn.on('generate_access_token', (root, payload, context) => {
+	console.log(`'generate_access_token' event fired. Payload:`)
+	console.log(payload)
+	console.log('Previous handler response:')
+	console.log(root)
+	console.log('Current context:')
+	console.log(context)
+
+	return root
+})
+```
+
+If, on the other hand, your handler returns a response, that response overrides `root`. 
 
 ## Event APIs
 ### `create_end_user`
@@ -586,6 +617,14 @@ const handler = async (root, { token }, { repos }) => {
 module.exports = handler
 ```
 
+### `get_jwks`
+
+### `get_claims_supported`
+
+### `get_scopes_supported`
+
+### `get_grant_types_supported`
+
 ### `process_fip_auth_response`
 
 ```js
@@ -604,15 +643,6 @@ const handler = (root, { accessToken, refreshToken, profile }) => {
 	return user
 }
 ```
-
-### `get_jwks`
-
-### `get_claims_supported`
-
-### `get_scopes_supported`
-
-### `get_id_token_signing_alg_values_supported`
-
 
 # OpenID Connect tokens & authorization code requirements
 
@@ -955,6 +985,15 @@ it('Should fail when something bad happens.', done => {
 ```
 
 # Annex
+## Jargon and concepts
+### Grant types
+
+Grant types are labels used in the `/token` API to determine how the provided credentials must be exchanged with tokens. OAuth 2.0. supports the following grant types:
+- `password`
+- `client_credentials`
+- `authorization_code`
+- `refresh_token`
+- `device_code` (not supported yet by UserIn)
 
 
 # References

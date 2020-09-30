@@ -220,6 +220,38 @@ ExhaustiveMockStrategy.prototype.get_access_token_claims = OpenIdMockStrategy.pr
  */
 ExhaustiveMockStrategy.prototype.get_identity_claims = OpenIdMockStrategy.prototype.get_identity_claims
 
+/**
+ * Gets all supported claims.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[String]}	claims				e.g., ['given_name', 'family_name', 'zoneinfo', 'email', 'email_verified', 'address', 'phone', 'phone_number_verified']
+ */
+ExhaustiveMockStrategy.prototype.get_claims_supported = OpenIdMockStrategy.prototype.get_claims_supported
+
+/**
+ * Gets all supported scopes
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[String]}	scopes				e.g., ['profile', 'email', 'phone', 'address', 'openid']
+ */
+ExhaustiveMockStrategy.prototype.get_scopes_supported = OpenIdMockStrategy.prototype.get_scopes_supported
+
+/**
+ * Gets the public JWKs that can be used to verify the id_token.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[JWK]}		jwks
+ */
+ExhaustiveMockStrategy.prototype.get_jwks = OpenIdMockStrategy.prototype.get_jwks
 
 module.exports = ExhaustiveMockStrategy
 

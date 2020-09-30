@@ -248,6 +248,63 @@ OpenIdMockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }, c
 	}
 }
 
+/**
+ * Gets all supported claims.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[String]}	claims				e.g., ['given_name', 'family_name', 'zoneinfo', 'email', 'email_verified', 'address', 'phone', 'phone_number_verified']
+ */
+OpenIdMockStrategy.prototype.get_claims_supported = () => {
+	// Note: You do not need to include the OpenID claims (e.g., 'iss', 'aud'). UserIn takes care of these. 
+
+	return ['given_name', 'family_name', 'zoneinfo', 'email', 'email_verified', 'address', 'phone', 'phone_number_verified']
+}
+
+/**
+ * Gets all supported scopes
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[String]}	scopes				e.g., ['profile', 'email', 'phone', 'address', 'openid']
+ */
+OpenIdMockStrategy.prototype.get_scopes_supported = () => {
+	// Note: You do not need to include the OpenID scope 'openid'. UserIn takes care of that one.
+
+	return ['profile', 'email', 'phone', 'address', 'openid']
+}
+
+/**
+ * Gets the public JWKs that can be used to verify the id_token.
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {[JWK]}		jwks
+ */
+OpenIdMockStrategy.prototype.get_jwks = () => {
+	return [{
+		n: 'mvj-0waJ2owQlFWrlC06goLs9PcNehIzCF0QrkdsYZJXOsipcHCFlXBsgQIdTdLvlCzNI07jSYA-zggycYi96lfDX-FYv_CqC8dRLf9TBOPvUgCyFMCFNUTC69hsrEYMR_J79Wj0MIOffiVr6eX-AaCG3KhBMZMh15KCdn3uVrl9coQivy7bk2Uw-aUJ_b26C0gWYj1DnpO4UEEKBk1X-lpeUMh0B_XorqWeq0NYK2pN6CoEIh0UrzYKlGfdnMU1pJJCsNxMiha-Vw3qqxez6oytOV_AswlWvQc7TkSX6cHfqepNskQb7pGxpgQpy9sA34oIxB_S-O7VS7_h0Qh4vQ',
+		kty: 'RSA',
+		e: 'AQAB',
+		use: 'sig',
+		alg: 'RS256',
+		kid: '2c6fa6f5950a7ce465fcf247aa0b094828ac952c'
+	}, {
+		kty: 'RSA',
+		kid: '5effa76ef33ecb5e346bd512d7d89b30e47d8e98',
+		e: 'AQAB',
+		alg: 'RS256',
+		n: 'teG3wvigoU_KPbPAiEVERFmlGeHWPsnqbEk1pAhz69B0kGHJXU8l8tPHpTw0Gy_M9BJ5WAe9FvXL41xSFbqMGiJ7DIZ32ejlncrf2vGkMl26C5p8OOvuS6ThFjREUzWbV0sYtJL0nNjzmQNCQeb90tDQDZW229ZeUNlM2yN0QRisKlGFSK7uL8X0dRUbXnfgS6eI4mvSAK6tqq3n8IcPA0PxBr-R81rtdG70C2zxlPQ4Wp_MJzjb81d-RPdcYd64loOMhhHFbbfq2bTS9TSn_Y16lYA7gyRGSPhwcsdqOH2qqon7QOiF8gtrvztwd9TpxecPd7mleGGWVFlN6pTQYQ',
+		use: 'sig'
+	}]
+}
+
 
 module.exports = OpenIdMockStrategy
 

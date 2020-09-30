@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/nicolasdao/userin/compare/v1.6.0...v1.7.0) (2020-09-30)
+
+
+### Features
+
+* Add support for jwks_uri in the discovery endpoint ([c06db94](https://github.com/nicolasdao/userin/commit/c06db940209eacf395b2d08ee0392d3e17da58a4))
+
+
+### Bug Fixes
+
+* The PKCE flow is invalid. It should require a valid 'code_challenge_method' ([b7cdcb2](https://github.com/nicolasdao/userin/commit/b7cdcb2e88faccd5a5e30b32adbca967bd1c8691))
+
 ## [1.6.0](https://github.com/nicolasdao/userin/compare/v1.5.3...v1.6.0) (2020-09-23)
 
 

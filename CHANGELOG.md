@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/nicolasdao/userin/compare/v1.7.0...v1.8.0) (2020-10-01)
+
+
+### Features
+
+* Add support for preventing invalid redirect_uri in the authorization_code grant type flow ([eee8d8a](https://github.com/nicolasdao/userin/commit/eee8d8afdb3177f592f99178512ab033e03ba65a))
+
 ## [1.7.0](https://github.com/nicolasdao/userin/compare/v1.6.0...v1.7.0) (2020-09-30)
 
 

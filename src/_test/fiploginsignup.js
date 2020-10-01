@@ -37,11 +37,17 @@ module.exports = function runTest (data, skip, showResults) {
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
 
-	const payload = { client_id, strategy:identityProvider, user:{ id:identityProviderUserId }, response_type:'code' }
+	const payload = {
+		client_id, 
+		strategy:identityProvider, 
+		user:{ id:identityProviderUserId }, 
+		response_type:'code',
+		redirect_uri: 'https://userin.com/authorization'
+	}
 	
 	const showLoginIds = createShowTestResultFn(showResults, 'fiplogin.processLoginWithFIPuser')
 
-	fn('fiplogin', () => {
+	fn('fiploginsignup', () => {
 		const processTheFIPuser = getFIPuserProcessor('login')(openIdMode)
 		describe('processLoginWithFIPuser', () => {		
 
@@ -282,10 +288,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-			}
-
-			if (openIdMode) {
-				it(`10 [${usecase} mode] - Should fail when the client_id and client_secret are from an unauthorized account.`, done => {
+				it(`13 [${usecase} mode] - Should fail when the client_id and client_secret are from an unauthorized account.`, done => {
 					const showResult = showLoginIds('10')
 					const logE = logTest(done)
 
@@ -306,7 +309,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it(`11 [${usecase} mode] - Should NOT fail when response_type contains 'id_token' and the scope DOES NOT contain 'openid' but the 'generate_id_token' event handler is not defined.`, done => {
+				it(`14 [${usecase} mode] - Should NOT fail when response_type contains 'id_token' and the scope DOES NOT contain 'openid' but the 'generate_id_token' event handler is not defined.`, done => {
 					const showResult = showLoginIds('11')
 					const logE = logTest(done)
 
@@ -331,7 +334,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 			}
 
-			it(`12 [${usecase} mode] - Should return a code only when the FIP user ID exists and the response_type contains 'code'.`, done => {
+			it(`15 [${usecase} mode] - Should return a code only when the FIP user ID exists and the response_type contains 'code'.`, done => {
 				const showResult = showLoginIds('12')
 				const logE = logTest(done)
 
@@ -357,7 +360,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it(`13 [${usecase} mode] - Should return an access_token only when the FIP user ID exists and the response_type contains 'token'.`, done => {
+			it(`16 [${usecase} mode] - Should return an access_token only when the FIP user ID exists and the response_type contains 'token'.`, done => {
 				const showResult = showLoginIds('13')
 				const logE = logTest(done)
 
@@ -386,7 +389,7 @@ module.exports = function runTest (data, skip, showResults) {
 			})
 
 			if (openIdMode) {
-				it(`14 [${usecase} mode] - Should not return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope does not include 'openid'.`, done => {
+				it(`17 [${usecase} mode] - Should not return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope does not include 'openid'.`, done => {
 					const showResult = showLoginIds('14')
 					const logE = logTest(done)
 
@@ -408,7 +411,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it(`15 [${usecase} mode] - Should return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope contains 'openid'.`, done => {
+				it(`18 [${usecase} mode] - Should return an id_token only when the FIP user ID exists and the response_type contains 'id_token' and the scope contains 'openid'.`, done => {
 					const showResult = showLoginIds('15')
 					const logE = logTest(done)
 
@@ -448,7 +451,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it(`16 [${usecase} mode] - Should return an id_token, access_token and code when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
+				it(`19 [${usecase} mode] - Should return an id_token, access_token and code when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
 					const showResult = showLoginIds('16')
 					const logE = logTest(done)
 
@@ -488,7 +491,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it(`17 [${usecase} mode] - Should return an access_token and a valid id_token when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
+				it(`20 [${usecase} mode] - Should return an access_token and a valid id_token when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
 					const showResult = showLoginIds('17')
 					const logE = logTest(done)
 
@@ -528,7 +531,7 @@ module.exports = function runTest (data, skip, showResults) {
 					}))
 				})
 			} else {
-				it(`16 [${usecase} mode] - Should return an access_token and a code (no id_token) when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
+				it(`17 [${usecase} mode] - Should return an access_token and a code (no id_token) when the FIP user ID exists and the response_type contains 'id_token token code' and the scope contains 'openid'.`, done => {
 					const showResult = showLoginIds('16')
 					const logE = logTest(done)
 
@@ -557,7 +560,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it(`17 [${usecase} mode] - Should return an access_token (no id_token) when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
+				it(`18 [${usecase} mode] - Should return an access_token (no id_token) when FIP user ID exists and the response_type contains 'id_token token' and the scopes contain 'openid'.`, done => {
 					const showResult = showLoginIds('17')
 					const logE = logTest(done)
 
@@ -587,7 +590,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 			}
 
-			it(`18 [${usecase} mode] - Should not return a refresh_token when FIP user ID exists and the response_type contains 'token' and the scopes contain 'offline_access'.`, done => {
+			it(`19 [${usecase} mode] - Should not return a refresh_token when FIP user ID exists and the response_type contains 'token' and the scopes contain 'offline_access'.`, done => {
 				const showResult = showLoginIds('18')
 				const logE = logTest(done)
 
@@ -616,7 +619,7 @@ module.exports = function runTest (data, skip, showResults) {
 				}))
 			})
 
-			it('19 - Should not fail when the \'create_fip_user\' event handler is not defined.', done => {
+			it('20 - Should not fail when the \'create_fip_user\' event handler is not defined.', done => {
 				const showResult = showLoginIds('19')
 				const logE = logTest(done)
 
@@ -698,9 +701,11 @@ module.exports = function runTest (data, skip, showResults) {
 						const [errors, results] = yield processTheFIPuser({
 							user:fipUser, 
 							strategy:fipStrategy, 
-							response_type: 'code'
+							response_type: 'code',
+							redirect_uri: payload.redirect_uri
 						}, eventHandlerStore)
 
+						logE.push(errors)
 						// 3. Proves that the operation did not fail 
 						assert.isNotOk(errors, '02')
 						assert.isOk(results, '03')
@@ -713,6 +718,7 @@ module.exports = function runTest (data, skip, showResults) {
 							user: fipUser
 						})
 
+						logE.push(existingUser2Errors)
 						assert.isNotOk(existingUser2Errors, '06')
 						assert.isOk(existingUser2, '07')
 						assert.isOk(existingUser2.id, '08')
@@ -747,9 +753,11 @@ module.exports = function runTest (data, skip, showResults) {
 						const [errors, results] = yield processTheFIPuser({
 							user:fipUser, 
 							strategy:fipStrategy, 
-							response_type: 'code'
+							response_type: 'code',
+							redirect_uri: payload.redirect_uri
 						}, eventHandlerStore)
 
+						logE.push(errors)
 						// 3. Proves that the operation did not fail 
 						assert.isNotOk(errors, '02')
 						assert.isOk(results, '03')

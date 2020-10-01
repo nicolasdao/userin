@@ -23,7 +23,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, code_verifier }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
@@ -41,6 +41,8 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
 	if (!code)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code'`)
+	if (!redirect_uri)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'`)
 
 	// B. Gets the client's scopes and audiences as well as the code's claims
 	const [[serviceAccountErrors, serviceAccount], [oidcClaimsErrors, oidcClaims]] = yield [
@@ -58,6 +60,8 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid code. Failed to identified code's client_id.`)
 	if (oidcClaims.client_id != client_id)
 		throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
+	if (oidcClaims.redirect_uri != redirect_uri)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'redirect_uri'. The 'redirect_uri' does not match the redirect_uri used in the authorization request.`)
 
 	// D. Verifies the authorization code
 	const { scope, sub, code_challenge, code_challenge_method, nonce } = oidcClaims

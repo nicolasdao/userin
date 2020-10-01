@@ -131,7 +131,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 	if (eventHandlerStore[eventName])
 		return
 
-	const handler = (root, { client_id, user_id, scopes, state, code_challenge, code_challenge_method, nonce }) => co(function *() {
+	const handler = (root, { client_id, user_id, scopes, state, code_challenge, code_challenge_method, nonce, redirect_uri }) => co(function *() {
 		const errorMsg = 'Failed to generate authorization code'
 		if (!eventHandlerStore.generate_authorization_code)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
@@ -148,6 +148,8 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge_method' is specified, 'code_challenge' is required.`)
 		if (code_challenge_method && code_challenge_method != 'S256' && code_challenge_method != 'plain')
 			throw new userInError.InvalidRequestError(`${errorMsg}. code_challenge_method '${code_challenge_method}' is not a supported OpenID standard. Valid values: 'plain' or 'S256'.`)
+		if (!redirect_uri)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
 
 		const claims = {
 			...oauth2Params.convert.toOIDCClaims({  
@@ -158,7 +160,8 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			...basicOIDCclaims.claims,
 			code_challenge,
 			code_challenge_method,
-			nonce
+			nonce,
+			redirect_uri
 		}
 
 		const [errors, token] = yield eventHandlerStore.generate_authorization_code.exec({ claims, state })

@@ -104,7 +104,7 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 		if (!orig_redirectUri)
 			throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'orig_redirectUri'))
 
-		// The 'orig_redirectUri' URL is a security check. Certain IdPs (e.g., Facebook) requires that you 
+		// The 'orig_redirectUri' URL is a security check. Certain IdPs (e.g., Facebook) require that you 
 		// use the same redirect uri that then one used to get the 'code' in order to get the access_token.
 		const [idpErrors, user] = yield _getIdPuser(context.req, context.res, strategy, orig_redirectUri)
 
@@ -120,7 +120,8 @@ module.exports = function ConsentPageResponseHandler(endpoint, strategy, verifyC
 			scopes: oauth2Params.convert.thingToThings(scope),
 			state,
 			code_challenge,
-			nonce
+			nonce,
+			redirect_uri
 		}, eventHandlerStore)
 
 		if (tokenResultErrors)

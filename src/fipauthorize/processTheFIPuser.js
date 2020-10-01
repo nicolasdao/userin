@@ -45,7 +45,7 @@ const getFIPuserProcessor = loginSignupMode => openIdMode => {
 	 * @yield {String}		output[1].scope
 	 * @yield {Boolean}		output[1].user_already_exists	This property is only returned when 'loginSignupMode' equals 'signup'
 	 */
-	return ({ user, strategy, client_id, response_type, scopes, state, code_challenge, nonce }, eventHandlerStore={}) => catchErrors(co(function *() {
+	return ({ user, strategy, client_id, response_type, scopes, state, code_challenge, nonce, redirect_uri }, eventHandlerStore={}) => catchErrors(co(function *() {
 		const errorMsg = `Failed to process ${strategy} user`
 		// A. Validates input
 		if (openIdMode && !eventHandlerStore.get_client)
@@ -136,7 +136,7 @@ const getFIPuserProcessor = loginSignupMode => openIdMode => {
 		// F. Generates tokens
 		const emptyPromise = Promise.resolve([null, null])
 		const config = { client_id:client_id||null, user_id:canonicalUser.id, audiences, scopes, state }
-		const authCodeConfig = { ...config, code_challenge }
+		const authCodeConfig = { ...config, code_challenge, redirect_uri }
 		const idTokenConfig = { ...config, nonce }
 		
 		const [[accessTokenErrors, accessTokenResult], [codeErrors, codeResult], [idTokenErrors, idTokenResult]] = yield [

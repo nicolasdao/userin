@@ -40,6 +40,7 @@ module.exports = function runTest (data, skip, showResults) {
 	const nonce = 'FqF2DNdNpqJh0iBMyxC7rOGRf6ell.t4'
 	const codeChallengeS256 = 'qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es'
 	const codeVerifier = 'M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag'
+	const redirectUri = 'https://userin.com/authorization'
 	
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
@@ -50,7 +51,12 @@ module.exports = function runTest (data, skip, showResults) {
 			
 			const stubbedServiceAccount = { client_id, client_secret:client_secret }
 			const stubbedUser = { user_id }
-			const stubbedPayload = { ...stubbedServiceAccount, ...stubbedUser, code:invalidCode }
+			const stubbedPayload = { 
+				...stubbedServiceAccount, 
+				...stubbedUser, 
+				code:invalidCode,
+				redirect_uri: redirectUri
+			}
 
 			it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
 				const showResult = showIds('01')
@@ -129,7 +135,7 @@ module.exports = function runTest (data, skip, showResults) {
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
-				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'] }
+				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'], redirect_uri: redirectUri }
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(codePayload)
@@ -160,7 +166,7 @@ module.exports = function runTest (data, skip, showResults) {
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
-				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'] }
+				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'], redirect_uri: redirectUri }
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(codePayload)
@@ -191,7 +197,7 @@ module.exports = function runTest (data, skip, showResults) {
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
-				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'] }
+				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'], redirect_uri: redirectUri }
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(codePayload)
@@ -214,7 +220,36 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('08 - Should fail when the client_id is incorrect.', done => {
+			it('08 - Should fail when the redirect_uri is not passed with the code.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(stubbedPayload)
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						redirect_uri:null
+					})
+					
+					logE.push(errors)	
+					assert.isOk(errors, '04')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'redirect_uri\'') >= 0), '05')
+
+					if (showResult) console.log(result)
+					done()
+				}))
+			})
+			it('09 - Should fail when the client_id is incorrect.', done => {
 				const showResult = showIds('08')
 				const logE = logTest(done)
 
@@ -236,7 +271,36 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('09 - Should fail when the code is incorrect.', done => {
+			it('10 - Should fail when the redirect_uri is passed with the code but it does not exactly match the redirect_uri used to get the code.', done => {
+				const showResult = showIds('14')
+				const logE = logTest(done)
+
+				const eventHandlerStore = {}
+				registerAllHandlers(eventHandlerStore)
+
+				logE.run(co(function *() {
+					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(stubbedPayload)
+					logE.push(codeErrors)
+
+					assert.isNotOk(codeErrors, '01')
+					assert.isOk(codeResults, '02')
+					assert.isOk(codeResults.token, '03')
+					
+					const [errors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
+						...stubbedPayload, 
+						code:codeResults.token,
+						redirect_uri: 'https://dangerous.com'
+					})
+					
+					logE.push(errors)	
+					assert.isOk(errors, '04')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('The \'redirect_uri\' does not match the redirect_uri used in the authorization request') >= 0), '05')
+
+					if (showResult) console.log(result)
+					done()
+				}))
+			})
+			it('11 - Should fail when the code is incorrect.', done => {
 				const showResult = showIds('09')
 				const logE = logTest(done)
 
@@ -254,14 +318,14 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('10 - Should fail when the client_id exists and the code is correct but the client_id not the one associated with the code.', done => {
+			it('12 - Should fail when the client_id exists and the code is correct but the client_id not the one associated with the code.', done => {
 				const showResult = showIds('10')
 				const logE = logTest(done)
 
 				const eventHandlerStore = {}
 				registerAllHandlers(eventHandlerStore)
 
-				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'] }
+				const codePayload = { ...stubbedPayload, scopes:['openid', 'profile', 'email'], redirect_uri: redirectUri }
 
 				logE.run(co(function *() {
 					const [codeErrors, codeResults] = yield eventHandlerStore.generate_openid_authorization_code.exec(codePayload)
@@ -285,7 +349,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('11 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'openid\' and the \'generate_id_token\' event handler is missing.', done => {
+			it('13 - Should fail when a valid code and client_id are passed, but the code\'scopes contain \'openid\' and the \'generate_id_token\' event handler is missing.', done => {
 				const showResult = showIds('11')
 				const logE = logTest(done)
 
@@ -314,7 +378,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('12 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'offline_access\' and the \'generate_refresh_token\' event handler is missing.', done => {
+			it('14 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'offline_access\' and the \'generate_refresh_token\' event handler is missing.', done => {
 				const showResult = showIds('12')
 				const logE = logTest(done)
 
@@ -343,7 +407,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('13 - Should fail when the code has expired.', done => {
+			it('15 - Should fail when the code has expired.', done => {
 				const showResult = showIds('13')
 				const logE = logTest(done)
 
@@ -376,7 +440,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('14 - Should return an access_token when the code is valid.', done => {
+			it('16 - Should return an access_token when the code is valid.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -406,7 +470,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('15 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
+			it('17 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
 				const showResult = showIds('15')
 				const logE = logTest(done)
 
@@ -452,7 +516,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('16 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
+			it('18 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
 				const showResult = showIds('16')
 				const logE = logTest(done)
 
@@ -487,7 +551,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('17 - Should fail when a code_challenge is passed without the code_challenge_method.', done => {
+			it('19 - Should fail when a code_challenge is passed without the code_challenge_method.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -508,7 +572,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('18 - Should fail when a code_challenge is passed with a non-supported code_challenge_method.', done => {
+			it('20 - Should fail when a code_challenge is passed with a non-supported code_challenge_method.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -530,7 +594,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('19 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
+			it('21 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -562,7 +626,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('20 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
+			it('22 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -595,7 +659,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('21 - Should fail even though the code is valid when a code_challenge is required and the code_challenge is not using the correct method (plain vs S256).', done => {
+			it('23 - Should fail even though the code is valid when a code_challenge is required and the code_challenge is not using the correct method (plain vs S256).', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -628,7 +692,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('22 - Should return an access_token when both the code and the S256 code_verifier are valid.', done => {
+			it('24 - Should return an access_token when both the code and the S256 code_verifier are valid.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -666,8 +730,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-
-			it('23 - Should return an access_token when both the code and the plain code_verifier are valid.', done => {
+			it('25 - Should return an access_token when both the code and the plain code_verifier are valid.', done => {
 				const showResult = showIds('14')
 				const logE = logTest(done)
 
@@ -705,7 +768,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('24 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
+			it('26 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
 				const showResult = showIds('15')
 				const logE = logTest(done)
 
@@ -1387,11 +1450,13 @@ module.exports = function runTest (data, skip, showResults) {
 				const [, { token:code }] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 					...stubbedServiceAccount, 
 					user_id, 
-					scopes
+					scopes,
+					redirect_uri: redirectUri
 				})
 				const [, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
 					...stubbedServiceAccount, 
-					code 
+					code,
+					redirect_uri: redirectUri	
 				})
 				return result.refresh_token
 			})

@@ -38,6 +38,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 
 	const showIds = createShowTestResultFn(showResults, 'introspect.handler')
 
+	const redirect_uri = 'https://userin.com/authorization'
+
 	fn('introspect', () => {
 		describe('handler', () => {
 			
@@ -61,13 +63,15 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const [codeErrors, { token:code }] = yield eventHandlerStore.generate_openid_authorization_code.exec({
 					...stubbedServiceAccount, 
 					user_id, 
-					scopes:['openid', 'offline_access']
+					scopes:['openid', 'offline_access'],
+					redirect_uri
 				})
 				if (codeErrors)
 					return [codeErrors, null]
 				const [tokenErrors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
 					...stubbedServiceAccount, 
-					code 
+					code,
+					redirect_uri
 				})
 				if (tokenErrors)
 					return [tokenErrors, null]

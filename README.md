@@ -1,5 +1,5 @@
 # userin &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an Express middleware to build Authorization Servers that support OAuth 2.0 workflows and integrate with Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. UserIn's goal is to let developers focus on implementing basic CRUD operations only (e.g., get user by ID, insert token's claims object) using the backend storage of their choice while UserIn takes care of all the OAuth 2.0/OpenID Connect flows.
+UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0 workflows and integrate with Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
 
 # Table of contents
 
@@ -56,7 +56,7 @@ UserIn is an Express middleware to build Authorization Servers that support OAut
 
 # Getting started
 
-Creating a UserIn Authorization Server consists in creating your own `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. Your `UserInStrategy` class must implement specific methods (based on how many UserIn features you wish to support) that do very basic CRUD operations to your backend storage. UserIn tried as much as possible to remove the burden of implementing business logic in those methods so you can only focus on simple CRUD implementation.
+Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods (based on how many UserIn features must be supported). UserIn removes the burden of implementing business logic in those methods so developer focus only on simple CRUD implementation.
 
 Install UserIn:
 
@@ -703,7 +703,29 @@ npm test
 ```
 
 ### `testSuite` API
+
+The `testSuite` API exposes four different test suite, one for each mode + one that combines all the modes, that use the same signature:
+1. [`testLoginSignup` function](#testloginsignup-function) 
+2. [`testLoginSignupFIP` function](#testloginsignupfip-function) 
+3. [`testOpenId` function](#testopenid-function) 
+4. [`testAll` function](#testall-function) 
+
+
+The signature is `(YourStrategyClass: UserInStrategy, config: Object, stub: Object[, options: Object])` where:
+- `YourStrategyClass` is a custom UserIn `Strategy` class (warning: do not use an instance, use the class).
+- `config` is the required argument that you would pass to the `YourStrategyClass` constructor.
+- `stub` is the required fake data used to unit test the `YourStrategyClass` flows. 
+- `options` is the optional object that help skip some tests or show more test results:
+	- `options.skip: [String]`: Array of test to skip. To skip all test, use `skip: ['all']`.
+	- `options.only: [String]`: Array of test to run.
+	- `options.showResults: [String]`: Array of test assertions. When this array is specified, more details about the assertion outcome are displayed. Example: `showResults:['login.handler.09,10', 'signup.handler.01']`
+
 #### `testLoginSignup` function
+
+Runs the following tests:
+- `strategy`
+- `login`
+- `signup`
 
 ```js
 const { testSuite } = require('userin')
@@ -717,7 +739,9 @@ const { YourStrategyClass } = require('../src/yourStrategy.js')
 // const options = { skip:['login', 'signup'] } // Skips the 'login' and 'signup' tests in this suite.
 // const options = { only:'login' } // Only run the 'login' test in this suite.
 // const options = { only:['login', 'signup'] } // Only run the 'login' and 'signup' tests in this suite.
-const options = { skip:'' } // Does not skip any test.
+const options = { skip:'', showResults:['login.handler.09,10'] } 	// Does not skip any test and show the results of:
+																	// - Test 'login.handler.09'
+																	// - Test 'login.handler.10'
 
 // To test a stragegy in 'loginsignup' mode, the following minimum config is required.
 const config = {
@@ -739,6 +763,12 @@ testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 ```
 
 #### `testLoginSignupFIP` function
+
+Runs the following tests:
+- `strategy`
+- `login`
+- `signup`
+- `fiploginsignup`
 
 ```js
 const { testSuite } = require('userin')
@@ -780,6 +810,12 @@ testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
 ```
 
 #### `testOpenId` function
+
+Runs the following tests:
+- `strategy`
+- `introspect`
+- `token`
+- `userinfo`
 
 ```js
 const { testSuite } = require('userin')

@@ -30,6 +30,7 @@ UserIn is an NodeJS Express middleware to build Authorization Servers that suppo
 >		- [`get_claims_supported`](#get_claims_supported)
 >		- [`get_scopes_supported`](#get_scopes_supported)
 >		- [`get_grant_types_supported`](#get_grant_types_supported)
+>		- [`delete_refresh_token`](#delete_refresh_token)
 >		- [`process_fip_auth_response`](#process_fip_auth_response)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
@@ -82,13 +83,15 @@ class YourStrategy extends Strategy {
 
 		// loginsignup mode
 		// ================
-		// 		Implement those five methods if you need to support the 'loginsignup' 
+		// 		Implement those seven methods if you need to support the 'loginsignup' 
 		// 		mode (i.e., allowing users to login/signup with their username and password only)
 		this.create_end_user = (root, { user }, context) => { /* Implement your logic here */ }
 		this.get_end_user = (root, { user }, context) => { /* Implement your logic here */ }
 		this.generate_access_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.generate_refresh_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_refresh_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.delete_refresh_token = (root, { token }, context) => { /* Implement your logic here */ }
 
 		// loginsignupfip mode
 		// ===================
@@ -101,7 +104,7 @@ class YourStrategy extends Strategy {
 
 		// openid mode
 		// ===================
-		// 		Add those nine methods to the following six if you need to support all the OpenID Connect
+		// 		Add those eight methods to the following eight if you need to support all the OpenID Connect
 		// 		APIs which would allow third-parties to use your APIs:
 		// 			1. 'generate_access_token',
 		// 			2. 'generate_authorization_code',
@@ -109,9 +112,10 @@ class YourStrategy extends Strategy {
 		// 			4. 'get_end_user', 
 		// 			5. 'get_authorization_code_claims',
 		// 			6. 'get_refresh_token_claims'
+		// 			7. 'get_access_token_claims'
+		// 			8. 'delete_refresh_token'
 		this.get_identity_claims = (root, { user_id, scopes }, context) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }, context) => { /* Implement your logic here */ }
-		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.get_id_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_claims_supported = (root) => { /* Implement your logic here */ }
@@ -206,6 +210,8 @@ UserIn supports multiple flows grouped in three modes which can be combined toge
 	3. `generate_access_token`
 	4. `generate_refresh_token`
 	5. `get_refresh_token_claims`
+	6. `get_access_token_claims`
+	7. `delete_refresh_token`
 
 ## `loginsignupfip` mode
 ### `loginsignupfip` strategy requirements
@@ -226,16 +232,18 @@ This mode is a superset of _loginsignup_.
 	> 	}
 	> })
 	> ```
-- Requires eight event handlers:
+- Requires eleven event handlers:
 	1. `create_end_user` (same as _loginsignup_)
 	2. `get_end_user` (same as _loginsignup_)
 	3. `generate_access_token` (same as _loginsignup_)
 	4. `generate_refresh_token` (same as _loginsignup_)
 	5. `get_refresh_token_claims` (same as _loginsignup_)
-	6. `create_fip_user`
-	7. `get_fip_user`
-	8. `generate_authorization_code`
-	9. `get_authorization_code_claims`
+	6. `get_access_token_claims` (same as _loginsignup_)
+	7. `delete_refresh_token` (same as _loginsignup_)
+	8. `create_fip_user`
+	9. `get_fip_user`
+	10. `generate_authorization_code`
+	11. `get_authorization_code_claims`
 
 ## `openid` mode
 ### `openid` strategy requirements
@@ -260,23 +268,23 @@ This mode is a superset of _loginsignup_.
 	> 	}
 	> })
 	> ```
-- Requires eleven event handlers:
+- Requires sixteen event handlers:
 	1. `get_end_user` (same as _loginsignup_ and _loginsignupfip_)
 	2. `generate_access_token` (same as _loginsignup_ and _loginsignupfip_)
-	4. `generate_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
-	3. `get_refresh_token_claims` (same as _loginsignup_ and _loginsignupfip_)
-	4. `generate_authorization_code` (same as _loginsignupfip_)
-	5. `get_authorization_code_claims` (same as _loginsignupfip_)
-	6. `generate_id_token`
-	7. `generate_refresh_token`
-	8. `get_access_token_claims`
-	9. `get_id_token_claims`
-	10. `get_identity_claims`
-	11. `get_client`
-	12. `get_jwks`
-	13. `get_claims_supported`
-	14. `get_scopes_supported`
-	15. `get_grant_types_supported`
+	3. `generate_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
+	4. `get_refresh_token_claims` (same as _loginsignup_ and _loginsignupfip_)
+	5. `get_access_token_claims` (same as _loginsignup_ and _loginsignupfip_)
+	6. `delete_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
+	7. `generate_authorization_code` (same as _loginsignupfip_)
+	8. `get_authorization_code_claims` (same as _loginsignupfip_)
+	9. `generate_id_token`
+	10. `get_id_token_claims`
+	11. `get_identity_claims`
+	12. `get_client`
+	13. `get_jwks`
+	14. `get_claims_supported`
+	15. `get_scopes_supported`
+	16. `get_grant_types_supported`
 
 # Events and event handlers
 ## Events overview
@@ -301,8 +309,9 @@ UserIn behaviors are managed via events and event handlers. Out-of-the-box, User
 16. `get_claims_supported`
 17. `get_scopes_supported`
 18. `get_grant_types_supported`
-19. `get_config`: Automatically implemented.
-20. `process_fip_auth_response`: Automatically implemented.
+19. `delete_refresh_token`
+20. `get_config`: Automatically implemented.
+21. `process_fip_auth_response`: Automatically implemented.
 
 
 Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
@@ -624,6 +633,8 @@ module.exports = handler
 ### `get_scopes_supported`
 
 ### `get_grant_types_supported`
+
+### `delete_refresh_token`
 
 ### `process_fip_auth_response`
 

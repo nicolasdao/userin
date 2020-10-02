@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/nicolasdao/userin/compare/v1.8.0...v1.9.0) (2020-10-02)
+
+
+### Features
+
+* Add support for revoking refresh_token ([9eccd27](https://github.com/nicolasdao/userin/commit/9eccd2778e703d3c192b442f86d125d65048eac0))
+
 ## [1.8.0](https://github.com/nicolasdao/userin/compare/v1.7.0...v1.8.0) (2020-10-01)
 
 

@@ -51,22 +51,20 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	// 1. Validates inputs
 	if (!grant_type)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'grant_type'.`)
-	if (!client_id)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id' argument`)
 
 	if (VALID_GRANT_TYPES.indexOf(grant_type) < 0)
 		throw new userInError.UnsupportedGrantTypeError(`${errorMsg}. grant_type '${grant_type}' is not supported.`)
 
 	if (grant_type == 'client_credentials' && (!client_id || !client_secret))
 		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'client_id' and 'client_secret' are required.`)	
-	if (grant_type == 'password' && (!username || !password))
-		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'username' and 'password' are required.`)
-	if (grant_type == 'authorization_code') {
-		if (!code)
-			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'code' is required.`)
-		if (!client_secret)
-			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'client_secret' is required.`)
+	if (grant_type == 'password') {
+		if (!client_id)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'client_id' is required.`)
+		if (!username || !password)
+			throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}' both 'username' and 'password' are required.`)
 	}
+	if (grant_type == 'authorization_code' && !code)
+		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'code' is required.`)
 	if (grant_type == 'refresh_token' && !refresh_token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. When grant_type is '${grant_type}', 'refresh_token' is required.`)
 

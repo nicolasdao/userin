@@ -33,7 +33,9 @@ LoginSignUpMockStrategy.prototype.generate_access_token = (root, { claims }, con
  * @return {String}		token
  */
 LoginSignUpMockStrategy.prototype.generate_refresh_token = (root, { claims }, context) => {
-	return context.tokenHelper.createValid(claims,'refresh_token')
+	const token = context.tokenHelper.createValid(claims,'refresh_token')
+	context.repos.refreshToken.push({ token, claims })
+	return token
 }
 
 /**
@@ -53,7 +55,7 @@ LoginSignUpMockStrategy.prototype.generate_refresh_token = (root, { claims }, co
  * @return {String}		claims.scope
  */
 LoginSignUpMockStrategy.prototype.get_refresh_token_claims = (root, { token }, context) => {
-	const claims = context.tokenHelper.decrypt(token,'refresh_token')
+	const { claims=null } = context.repos.refreshToken.find(x => x && x.token == token) || {}
 	return claims
 }
 
@@ -107,6 +109,42 @@ LoginSignUpMockStrategy.prototype.create_end_user = (root, { user }, context) =>
 	return {
 		id
 	}
+}
+
+/**
+ * Deletes a refresh_token 
+ * 
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token		
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {Void}
+ */
+LoginSignUpMockStrategy.prototype.delete_refresh_token = (root, { token }, context) => {
+	const idx = context.repos.refreshToken.map(x => x.token).indexOf(token)
+	if (idx >= 0)
+		context.repos.refreshToken.splice(idx,1)
+}
+
+/**
+ * Gets an access_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+LoginSignUpMockStrategy.prototype.get_access_token_claims = (root, { token }, context) => {
+	const claims = context.tokenHelper.decrypt(token,'access_token')
+	return claims
 }
 
 module.exports = LoginSignUpMockStrategy

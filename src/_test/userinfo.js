@@ -190,7 +190,6 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-
 			it('08 - Should have at least one set of claims to be tested', () => {
 				assert.isOk(claimStubs.length, '01 - Your test is missing some claim stubs to assert whether the userinfo works as expected.')
 			})

@@ -2,6 +2,7 @@ const fipLoginSignupTest = require('./fiploginsignup')
 const introspectTest = require('./introspect')
 const tokenTest = require('./token')
 const userinfoTest = require('./userinfo')
+const revokeTest = require('./revoke')
 const loginTest = require('./login')
 const signupTest = require('./signup')
 const strategyTest = require('./Strategy')
@@ -69,6 +70,7 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), showResults)
 	loginTest({ strategy, user }, skipTest('login', skip, only), showResults)
 	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), showResults)
+	revokeTest({ strategy, user }, skipTest('revoke', skip, only), showResults)
 }
 
 /**
@@ -130,6 +132,7 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 		identityProviderUserId: fipUser.id, 
 		userId: fipUser.userId,
 	}, skipTest('fiploginsignup', skip, only), showResults)
+	revokeTest({ strategy, user }, skipTest('revoke', skip, only), showResults)
 }
 
 /**
@@ -206,6 +209,11 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	} = stub
 
 	const { skip, only, showResults } = options
+	const user = { 
+		id:userId,
+		username, 
+		password
+	}
 
 	// 3. Runs all the tests
 	strategyTest({ openIdStrategy:strategy }, skipTest('strategy', skip, only), showResults)
@@ -216,11 +224,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 		altClientId,
 		altClientSecret,
 		strategy, 
-		user: { 
-			id:userId,
-			username, 
-			password
-		},
+		user,
 		aud
 	}, skipTest('introspect', skip, only), showResults)
 
@@ -230,22 +234,17 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 		altClientId, 
 		strategy, 
 		accessTokenExpiresIn: 3600,
-		user: { 
-			id: userId, 
-			username, 
-			password
-		}
+		user
 	}, skipTest('token', skip, only), showResults)
 
 	userinfoTest({
 		clientId, 
 		strategy, 
-		user: { 
-			username, 
-			password
-		},
+		user,
 		claimStubs
 	}, skipTest('userinfo', skip, only), showResults)
+
+	revokeTest({ clientId, altClientId, strategy, user }, skipTest('revoke', skip, only), showResults)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

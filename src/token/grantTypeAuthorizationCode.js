@@ -10,7 +10,6 @@ const { oauth2Params } = require('../_utils')
  *
  * @param {Object}		eventHandlerStore
  * @param {String}		client_id	
- * @param {String}		client_secret	
  * @param {String}		code	
  * @param {String}		state
  * @param {String}		code_verifier				Used for PKCE
@@ -23,7 +22,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
@@ -35,31 +34,35 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
 
-	if (!client_id)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
-	if (!client_secret)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
 	if (!code)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code'`)
 	if (!redirect_uri)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'`)
 
 	// B. Gets the client's scopes and audiences as well as the code's claims
-	const [[serviceAccountErrors, serviceAccount], [oidcClaimsErrors, oidcClaims]] = yield [
-		eventHandlerStore.get_client.exec({ client_id, client_secret }),
-		eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state })
+	const [[oidcClaimsErrors, oidcClaims], [serviceAccountErrors, serviceAccount]] = yield [
+		eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state }),
+		client_id ? eventHandlerStore.get_client.exec({ client_id }) : Promise.resolve([null,{}])
 	]
-
+	
 	// C. Verifies the details are correct
 	if (serviceAccountErrors || oidcClaimsErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors || oidcClaimsErrors)
 
+	if (!serviceAccount)
+		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+
 	if (!oidcClaims)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid authorization code.`)
-	if (!oidcClaims.client_id)
-		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid code. Failed to identified code's client_id.`)
-	if (oidcClaims.client_id != client_id)
-		throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
+
+	// If the code is associated with a client_id (openid mode), then verify it (note: The code does not need to be 
+	// associated with the client_id in the loginsignup or loginsignupfip mode). 
+	if (client_id || oidcClaims.client_id) {
+		if (!client_id)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
+		if (oidcClaims.client_id != client_id)
+			throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
+	}
 	if (oidcClaims.redirect_uri != redirect_uri)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'redirect_uri'. The 'redirect_uri' does not match the redirect_uri used in the authorization request.`)
 

@@ -83,6 +83,35 @@ LoginSignupFIPMockStrategy.prototype.get_end_user = LoginSignupMockStrategy.prot
 LoginSignupFIPMockStrategy.prototype.create_end_user = LoginSignupMockStrategy.prototype.create_end_user 
 
 /**
+ * Deletes a refresh_token 
+ * 
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token		
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {Void}
+ */
+LoginSignupFIPMockStrategy.prototype.delete_refresh_token = LoginSignupMockStrategy.prototype.delete_refresh_token 
+
+/**
+ * Gets an access_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+LoginSignupFIPMockStrategy.prototype.get_access_token_claims = LoginSignupMockStrategy.prototype.get_access_token_claims
+
+/**
  * Inserts new FIP user.
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 

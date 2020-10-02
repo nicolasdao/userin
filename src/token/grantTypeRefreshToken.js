@@ -52,6 +52,8 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 		if (claimsExpiredErrors)
 			throw wrapErrors(errorMsg, claimsExpiredErrors)
 	}
+	if (!serviceAccount)
+		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
 	if (!claims.client_id)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Corrupted refresh_token. This token is not associated with any client_id.`)

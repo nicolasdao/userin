@@ -57,15 +57,15 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 	if (!token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
 
-	const [[serviceAccountErrors], [claimErrors, claims]] = yield [
+	const [[serviceAccountErrors, serviceAccount], [claimErrors, claims]] = yield [
 		eventHandlerStore.get_client.exec({ client_id, client_secret }),
 		eventHandlerStore[tokenClaimsEventName].exec({ token })
 	]
 	
 	if (serviceAccountErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors)
-
-	if (claimErrors)
+	
+	if (claimErrors || !serviceAccount)
 		return { active:false }
 
 	if (!claims)

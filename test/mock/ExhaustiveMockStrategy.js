@@ -253,6 +253,17 @@ ExhaustiveMockStrategy.prototype.get_scopes_supported = OpenIdMockStrategy.proto
  */
 ExhaustiveMockStrategy.prototype.get_jwks = OpenIdMockStrategy.prototype.get_jwks
 
+/**
+ * Deletes a refresh_token 
+ * 
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token		
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {Void}
+ */
+ExhaustiveMockStrategy.prototype.delete_refresh_token = OpenIdMockStrategy.prototype.delete_refresh_token 
+
 module.exports = ExhaustiveMockStrategy
 
 

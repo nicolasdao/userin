@@ -984,6 +984,7 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 
 This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
 
+
 # Contributing - Developer notes
 ## Contribution guidelines
 

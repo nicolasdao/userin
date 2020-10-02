@@ -168,25 +168,15 @@ OpenIdMockStrategy.prototype.get_authorization_code_claims = LoginSignupFIPMockS
 OpenIdMockStrategy.prototype.get_refresh_token_claims = LoginSignupFIPMockStrategy.prototype.get_refresh_token_claims
 
 /**
- * Gets an id_token's claims
+ * Deletes a refresh_token 
  * 
- * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		payload.token
- * @param  {Object}		context				Strategy's configuration
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token		
+ * @param  {Object}		context					Strategy's configuration
  * 
- * @return {Object}		claims				This object should always defined the following properties at a minimum.
- * @return {String}		claims.iss			
- * @return {Object}		claims.sub			String or number
- * @return {String}		claims.aud
- * @return {Number}		claims.exp
- * @return {Number}		claims.iat
- * @return {Object}		claims.client_id	String or number
- * @return {String}		claims.scope
+ * @return {Void}
  */
-OpenIdMockStrategy.prototype.get_id_token_claims = (root, { token }, context) => {
-	const claims = context.tokenHelper.decrypt(token,'id_token')
-	return claims
-}
+OpenIdMockStrategy.prototype.delete_refresh_token = LoginSignupFIPMockStrategy.prototype.delete_refresh_token 
 
 /**
  * Gets an access_token's claims
@@ -204,8 +194,26 @@ OpenIdMockStrategy.prototype.get_id_token_claims = (root, { token }, context) =>
  * @return {Object}		claims.client_id	String or number
  * @return {String}		claims.scope
  */
-OpenIdMockStrategy.prototype.get_access_token_claims = (root, { token }, context) => {
-	const claims = context.tokenHelper.decrypt(token,'access_token')
+OpenIdMockStrategy.prototype.get_access_token_claims = LoginSignupFIPMockStrategy.prototype.get_access_token_claims
+
+/**
+ * Gets an id_token's claims
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.token
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {Object}		claims				This object should always defined the following properties at a minimum.
+ * @return {String}		claims.iss			
+ * @return {Object}		claims.sub			String or number
+ * @return {String}		claims.aud
+ * @return {Number}		claims.exp
+ * @return {Number}		claims.iat
+ * @return {Object}		claims.client_id	String or number
+ * @return {String}		claims.scope
+ */
+OpenIdMockStrategy.prototype.get_id_token_claims = (root, { token }, context) => {
+	const claims = context.tokenHelper.decrypt(token,'id_token')
 	return claims
 }
 

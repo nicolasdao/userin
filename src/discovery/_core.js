@@ -42,6 +42,8 @@ const getOpenIdDiscoveryData = (req, endpoints, eventHandlerStore) => catchError
 		discovery.userinfo_endpoint = getFullUrl(req, endpoints.userinfo_endpoint)
 	if (endpoints.jwks_uri)
 		discovery.jwks_uri = getFullUrl(req, endpoints.jwks_uri)
+	if (endpoints.revocation_endpoint)
+		discovery.revocation_endpoint = getFullUrl(req, endpoints.revocation_endpoint)
 
 	const openIdReady = isOpenIdReady(eventHandlerStore)
 	const authCodeFlowReady = supportsAuthCodeFlow(eventHandlerStore)

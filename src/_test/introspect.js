@@ -294,7 +294,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					done()
 				}))
 			})
-			it('11 - Should fail when the client_id and client_secret are not the identifying the client associated with the token.', done => {
+			it('11 - Should fail when the client_id and client_secret are not identifying the client associated with the token.', done => {
 				const showResult = showIds('11')
 				const logE = logTest(done)
 

@@ -96,6 +96,8 @@ const USER_TO_CLIENT_STORE = [{
 	client_id: CLIENT_STORE[0].client_id
 }]
 
+const REFRESH_TOKEN_STORE = []
+
 module.exports = {
 	SCOPES,
 	CLAIMS,
@@ -108,5 +110,6 @@ module.exports = {
 	CLIENT_STORE,
 	USER_STORE,
 	USER_TO_FIP_STORE,
-	USER_TO_CLIENT_STORE
+	USER_TO_CLIENT_STORE,
+	REFRESH_TOKEN_STORE
 }

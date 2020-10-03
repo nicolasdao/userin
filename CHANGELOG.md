@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/nicolasdao/userin/compare/v1.9.0...v1.10.0) (2020-10-03)
+
+
+### Features
+
+* Add support for registering external OpenID providers using their discovery endpoint only ([7cac6dd](https://github.com/nicolasdao/userin/commit/7cac6dd5b69c682c32dfd510af0664b6e02dc251))
+
 ## [1.9.0](https://github.com/nicolasdao/userin/compare/v1.8.0...v1.9.0) (2020-10-02)
 
 

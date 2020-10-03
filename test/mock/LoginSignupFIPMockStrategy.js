@@ -125,6 +125,7 @@ LoginSignupFIPMockStrategy.prototype.get_access_token_claims = LoginSignupMockSt
  */
 LoginSignupFIPMockStrategy.prototype.create_fip_user = (root, { strategy, user }, context) => {
 	const id = crypto.randomBytes(7).toString('base64')
+	// console.log(user)
 	context.repos.user.push({ ...user, id })
 
 	context.repos.userToFip.push({

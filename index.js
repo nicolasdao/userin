@@ -3,7 +3,8 @@ const Facebook = require('passport-facebook')
 const app = express()
 const { UserIn } = require('./src')
 const MockStrategy = require('./test/mock/ExhaustiveMockStrategy')
-const { FIP_USER_TO_STRATEGY } = require('./test/mock/stub')
+const repos = require('./test/mock/repos')
+const tokenHelper = require('./test/mock/token')
 
 const userIn = new UserIn({
 	Strategy: MockStrategy,
@@ -16,7 +17,9 @@ const userIn = new UserIn({
 				id_token: 3600,
 				code: 30
 			}
-		}
+		},
+		repos,
+		tokenHelper
 	}
 })
 
@@ -25,15 +28,21 @@ userIn.use(Facebook, {
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 })
 
+userIn.use({
+	name:'google',
+	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
+	scopes:['profile', 'email']
+})
+
 // userIn.use(MockStrategy)
 
-const log = (eventName, root, args) => {
-	console.log(`${eventName} FIRED`)
-	console.log('root')
-	console.log(root)
-	console.log('args')
-	console.log(args)
-}
+// const log = (eventName, root, args) => {
+// 	console.log(`${eventName} FIRED`)
+// 	console.log('root')
+// 	console.log(root)
+// 	console.log('args')
+// 	console.log(args)
+// }
 
 // userIn.on('generate_id_token', (root, args) => log('generate_id_token', root, args))
 // userIn.on('generate_access_token', (root, args) => log('generate_access_token', root, args))
@@ -44,10 +53,6 @@ const log = (eventName, root, args) => {
 // userIn.on('get_fip_user', (root, args) => log('get_fip_user', root, args))
 // userIn.on('get_client', (root, args) => log('get_client', root, args))
 // userIn.on('get_token_claims', (root, args) => log('get_token_claims', root, args))
-userIn.on('process_fip_auth_response', (root, args) => {
-	log('process_fip_auth_response', root, args)
-	return { id: FIP_USER_TO_STRATEGY.strategy_user_id, firstName:'Mike', lastName:'Nichols' }
-})
 
 app.use(userIn)
 

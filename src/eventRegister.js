@@ -178,27 +178,6 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 	setEventHandler(eventHandlerStore, eventName, handler)
 }
 
-const addProcessFIPauthResponseHandler = eventHandlerStore => {
-	const eventName = 'process_fip_auth_response'
-	if (eventHandlerStore[eventName])
-		return
-	const handler = (root, { accessToken, refreshToken, profile }) => co(function *() {
-		yield Promise.resolve(null)
-		
-		const id = profile.id
-		const { givenName: firstName, middleName, familyName: lastName } = profile.name || {}
-		const email = ((profile.emails || [])[0] || {}).value || null
-		const profileImg = ((profile.photos || [])[0] || {}).value
-
-		const user = { id, firstName, middleName, lastName, email, profileImg, accessToken, refreshToken }
-
-		return user
-	})
-
-	// eventHandlerStore[eventName] = new EventHandler(handler)
-	setEventHandler(eventHandlerStore, eventName, handler)
-}
-
 const registerSingleEvent = eventHandlerStore => (eventName, handler) => {
 	if (!eventName)
 		throw new Error('Missing required \'eventName\'')
@@ -224,7 +203,6 @@ module.exports = eventHandlerStore => {
 	addGenerateRefreshTokenHandler(eventHandlerStore)
 	addGenerateIdTokenHandler(eventHandlerStore)
 	addGenerateAuthorizationCodeHandler(eventHandlerStore)
-	addProcessFIPauthResponseHandler(eventHandlerStore)
 
 	const registerEvent = registerSingleEvent(eventHandlerStore)
 

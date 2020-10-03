@@ -13,9 +13,7 @@ const { oauth2Params } = require('../_utils')
  * 
  * @return {Function}	processTheFIPuser
  */
-const getFIPuserProcessor = loginSignupMode => openIdMode => {
-	if (!loginSignupMode)
-		throw new Error('Missing required \'loginSignupMode\'')
+const getFIPuserProcessor = (loginSignupMode='login') => openIdMode => {
 	if (loginSignupMode != 'login' && loginSignupMode != 'signup')
 		throw new Error(`'${loginSignupMode}' is an unsupported 'loginSignupMode' value. Valid values are: 'login', 'signup'`)
 

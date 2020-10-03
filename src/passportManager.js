@@ -1,21 +1,7 @@
 const passport = require('passport')
-const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { error: { InternalServerError } } = require('userin-core')
+const { error: { catchErrors } } = require('puffy')
 
-const DUMMY_CALLBACK_URL = 'https:example.com'
-
-const createFIPresponseHandler = eventHandlerStore => async (accessToken, refreshToken, profile, next) => {
-	const errorMsg = 'Failed to process the successfull response from the idenity provider'
-	
-	if (!eventHandlerStore.process_fip_auth_response)
-		next(new InternalServerError(`${errorMsg}. Missing required 'process_fip_auth_response' event handler.`), null)
-
-	const [errors, user] = await eventHandlerStore.process_fip_auth_response.exec({ accessToken, refreshToken, profile })
-	if (errors)
-		next(wrapErrors(errorMsg, errors), null)
-	else
-		next(null, user)
-}
+const DUMMY_CALLBACK_URL = 'https://example.com'
 
 /**
  * Adds a new Passport Strategy. 
@@ -31,8 +17,8 @@ const createFIPresponseHandler = eventHandlerStore => async (accessToken, refres
  * @return {String}		output[1].name
  * @return {[String]}	output[1].scopes
  */
-const addStrategy = (Strategy, eventHandlerStore, config={}) => catchErrors(() => {
-	const errorMsg = 'Failed to add new Passport Strategy'
+const install = (Strategy, eventHandlerStore, config={}) => catchErrors(() => {
+	const errorMsg = 'Failed to register new Passport Strategy'
 	
 	if (!eventHandlerStore)
 		throw new Error(`${errorMsg}. Missing required 'eventHandlerStore'.`)
@@ -66,7 +52,10 @@ const addStrategy = (Strategy, eventHandlerStore, config={}) => catchErrors(() =
 		scopes
 	}
 
-	passport.use(new Strategy(passportConfig, createFIPresponseHandler(eventHandlerStore)))
+	passport.use(new Strategy(passportConfig, (accessToken, refreshToken, profile={}, next) => {
+		const user = { ...profile, accessToken, refreshToken }
+		next(null, user)
+	}))
 
 	return {
 		name: passportStrategy,
@@ -75,7 +64,7 @@ const addStrategy = (Strategy, eventHandlerStore, config={}) => catchErrors(() =
 })
 
 module.exports = {
-	addStrategy
+	install
 }
 
 

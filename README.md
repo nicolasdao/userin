@@ -31,7 +31,6 @@ UserIn is an NodeJS Express middleware to build Authorization Servers that suppo
 >		- [`get_scopes_supported`](#get_scopes_supported)
 >		- [`get_grant_types_supported`](#get_grant_types_supported)
 >		- [`delete_refresh_token`](#delete_refresh_token)
->		- [`process_fip_auth_response`](#process_fip_auth_response)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
 >	- [`access_token` requirements](#access_token-requirements)
@@ -46,6 +45,14 @@ UserIn is an NodeJS Express middleware to build Authorization Servers that suppo
 >			- [`testOpenId` function](#testopenid-function)
 >			- [`testAll` function](#testall-function)
 >		- [Dependency injection](#dependency-injection)
+# Flexible flows
+
+Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
+
+## Login/Signup flow using an third-part Identity Provider
+
+http://localhost:3330/v1/google/authorize?client_id=123445&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3330%2Fgoogle%2Foauth2callback&scope=profile
+Flexible flows](#flexible-flows)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
 >	- [Unit tests](#unit-tests)
@@ -311,7 +318,6 @@ UserIn behaviors are managed via events and event handlers. Out-of-the-box, User
 18. `get_grant_types_supported`
 19. `delete_refresh_token`
 20. `get_config`: Automatically implemented.
-21. `process_fip_auth_response`: Automatically implemented.
 
 
 Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
@@ -635,25 +641,6 @@ module.exports = handler
 ### `get_grant_types_supported`
 
 ### `delete_refresh_token`
-
-### `process_fip_auth_response`
-
-```js
-const handler = (root, { accessToken, refreshToken, profile }) => {
-	console.log('process_fip_auth_response fired')
-	console.log('Previous handler response:')
-	console.log(root)
-	
-	const id = profile.id
-	const { givenName: firstName, middleName, familyName: lastName } = profile.name || {}
-	const email = ((profile.emails || [])[0] || {}).value || null
-	const profileImg = ((profile.photos || [])[0] || {}).value
-
-	const user = { id, firstName, middleName, lastName, email, profileImg, accessToken, refreshToken }
-
-	return user
-}
-```
 
 # OpenID Connect tokens & authorization code requirements
 
@@ -995,6 +982,25 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 
 This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
 
+# Flexible flows
+
+Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
+
+## Login/Signup flow using an third-part Identity Provider
+
+```
+GET https://YOUR_DOMAIN/v1/google/authorize?
+    response_type=code&
+    redirect_uri=https://YOUR_DOMAIN/v1/google/authorizecallback&
+    scope=profile&
+    mode=signup
+```
+
+Notice that this HTTP GET is similar to the OAuth 2.0. `/authorize` request used in the Authorization Code flow except:
+- There is no `client_id` because you are serving your own users. Client IDs are generally used to identity a third-party accessing your platform. 
+- The `mode` variable helps to determine whether this request aims to create a new user or to log the user in. The supported values are:
+	- `login` (default)
+	- `signup`
 
 # Contributing - Developer notes
 ## Contribution guidelines

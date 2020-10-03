@@ -317,7 +317,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 						logE.push(errors)
 						
 						assert.isOk(errors, '06')
-						assert.isOk(errors.some(e => e.message && e.message.indexOf(`Invalid 'client_id'`) >= 0), '07')
+						assert.isOk(errors.some(e => e.message && e.message.indexOf('Invalid \'client_id\'') >= 0), '07')
 
 						if (showResult) console.log(errors)
 						done()

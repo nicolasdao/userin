@@ -15,7 +15,7 @@ const endpoint = '.well-known/openid-configuration'
  *  
  * @return {Object}		fullyQualifiedEndpoints	
  */
-const handler = (payload, eventHandlerStore, context={}) => getOpenIdDiscoveryData(context.req, context.endpoints, eventHandlerStore)
+const handler = (payload, eventHandlerStore, context={}) => getOpenIdDiscoveryData(context.baseUrl, context.endpoints, eventHandlerStore)
 
 module.exports = {
 	endpoint,

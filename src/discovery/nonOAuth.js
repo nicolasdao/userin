@@ -15,7 +15,7 @@ const endpoint = '.well-known/configuration'
  *  
  * @return {Object}		fullyQualifiedEndpoints	
  */
-const handler = (payload, eventHandlerStore, context={}) => getDiscoveryData(context.req, context.endpoints, eventHandlerStore)
+const handler = (payload, eventHandlerStore, context={}) => getDiscoveryData(context.baseUrl, context.endpoints, eventHandlerStore) 
 
 module.exports = {
 	endpoint,

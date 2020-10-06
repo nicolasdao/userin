@@ -1,5 +1,4 @@
-const { error: { catchErrors, wrapErrors } } = require('puffy')
-const { request: { getFullUrl } } = require('../_utils')
+const { error: { catchErrors, wrapErrors }, url:{ buildUrl }, collection } = require('puffy')
 const { getOpenIdEvents, getLoginSignupEvents } = require('userin-core')
 
 const OPENID_CLAIMS = ['iss', 'sub', 'aud', 'exp', 'iat']
@@ -13,14 +12,41 @@ const isOpenIdReady = eventHandlerStore => getOpenIdEvents({ required:true }).ev
 const supportsAuthCodeFlow = eventHandlerStore => AUTH_CODE_FLOW_REQUIRED_EVENTS.every(e => eventHandlerStore[e])
 
 /**
+ * Rearranges the discovery fields to present them in a better order. This is pure cosmetic.
+ * 
+ * @param  {Object} discovery
+ * @return {Object}
+ */
+const orderFields = discovery => {
+	const { urls, issuer, others } = Object.keys(discovery).reduce((acc, key) => {
+		const value = discovery[key]
+		if (key == 'issuer')
+			acc.issuer = value
+		else if (typeof(value) == 'string' && value.indexOf('http') == 0)
+			acc.urls.push({ name:key, value }) 
+		else
+			acc.others.push({ name:key, value })
+		return acc
+	}, { issuer:null, urls:[], others:[] })
+
+	return { 
+		issuer,
+		...collection.sortBy(urls, x => x.name).reduce((acc, { name, value }) => { acc[name] = value; return acc }, {}),
+		...collection.sortBy(others, x => x.name).reduce((acc, { name, value }) => { acc[name] = value; return acc }, {})
+	}
+}
+
+const joinUrlParts = (origin='', pathname='') => origin ? buildUrl({ origin, pathname }) : pathname
+
+/**
  * Gets the OpenID Connect discovery data. 
  * 					
- * @param  {Request}	req						Express Request
+ * @param  {String}		baseUrl					
  * @param  {Object}		endpoints				Object containing all the OIDC endpoints (pathname only)
  *  
  * @return {Object}		discovery	
  */
-const getOpenIdDiscoveryData = (req, endpoints, eventHandlerStore) => catchErrors((async () => {
+const getOpenIdDiscoveryData = (baseUrl='', endpoints, eventHandlerStore) => catchErrors((async () => {
 	const errorMsg = 'Failed to get the OpenID Connect discovery data'
 
 	const [configErrors, config={}] = await eventHandlerStore.get_config.exec()
@@ -35,15 +61,15 @@ const getOpenIdDiscoveryData = (req, endpoints, eventHandlerStore) => catchError
 	}
 
 	if (endpoints.introspection_endpoint)
-		discovery.introspection_endpoint = getFullUrl(req, endpoints.introspection_endpoint)
+		discovery.introspection_endpoint = joinUrlParts(baseUrl, endpoints.introspection_endpoint)
 	if (endpoints.token_endpoint)
-		discovery.token_endpoint = getFullUrl(req, endpoints.token_endpoint)
+		discovery.token_endpoint = joinUrlParts(baseUrl, endpoints.token_endpoint)
 	if (endpoints.userinfo_endpoint)
-		discovery.userinfo_endpoint = getFullUrl(req, endpoints.userinfo_endpoint)
+		discovery.userinfo_endpoint = joinUrlParts(baseUrl, endpoints.userinfo_endpoint)
 	if (endpoints.jwks_uri)
-		discovery.jwks_uri = getFullUrl(req, endpoints.jwks_uri)
+		discovery.jwks_uri = joinUrlParts(baseUrl, endpoints.jwks_uri)
 	if (endpoints.revocation_endpoint)
-		discovery.revocation_endpoint = getFullUrl(req, endpoints.revocation_endpoint)
+		discovery.revocation_endpoint = joinUrlParts(baseUrl, endpoints.revocation_endpoint)
 
 	const openIdReady = isOpenIdReady(eventHandlerStore)
 	const authCodeFlowReady = supportsAuthCodeFlow(eventHandlerStore)
@@ -89,21 +115,21 @@ const getOpenIdDiscoveryData = (req, endpoints, eventHandlerStore) => catchError
 		discovery.grant_types_supported = Array.from(new Set([...discovery.grant_types_supported, ...values]))
 	}
 
-	return discovery
+	return orderFields(discovery)
 })())
 
 /**
  * Gets the UserIn discovery data (incl. OpenID discovery data).  
  * 					
- * @param  {Request}		req						Express Request
+ * @param  {String}		baseUrl					
  * @param  {Object}		endpoints				Object containing all the OIDC endpoints (pathname only)
  *  
  * @return {Object}		discovery	
  */
-const getDiscoveryData = (req, endpoints, eventHandlerStore) => catchErrors((async () => {
+const getDiscoveryData = (baseUrl='', endpoints, eventHandlerStore) => catchErrors((async () => {
 	const errorMsg = 'Failed to get the UserIn discovery data'
 
-	const [openIdDiscoveryErrors, openIdDiscovery] = await getOpenIdDiscoveryData(req, endpoints, eventHandlerStore)
+	const [openIdDiscoveryErrors, openIdDiscovery] = await getOpenIdDiscoveryData(baseUrl, endpoints, eventHandlerStore)
 	if (openIdDiscoveryErrors)
 		throw wrapErrors(errorMsg, openIdDiscoveryErrors)
 
@@ -111,7 +137,7 @@ const getDiscoveryData = (req, endpoints, eventHandlerStore) => catchErrors((asy
 	for(let endpointKey in endpoints) {
 		const pathname = endpoints[endpointKey]
 		if (endpointKey.indexOf('authorization_') == 0)
-			authorizationEndpoints[endpointKey] = getFullUrl(req, pathname)
+			authorizationEndpoints[endpointKey] = joinUrlParts(baseUrl, pathname)
 	}
 
 	// Set up non OAuth2 endpoints
@@ -121,18 +147,20 @@ const getDiscoveryData = (req, endpoints, eventHandlerStore) => catchErrors((asy
 	}
 
 	if (endpoints.browse_endpoint)
-		discovery.browse_endpoint = getFullUrl(req, endpoints.browse_endpoint)
+		discovery.browse_endpoint = joinUrlParts(baseUrl, endpoints.browse_endpoint)
 	if (endpoints.browse_redirect_endpoint)
-		discovery.browse_redirect_endpoint = getFullUrl(req, endpoints.browse_redirect_endpoint)
+		discovery.browse_redirect_endpoint = joinUrlParts(baseUrl, endpoints.browse_redirect_endpoint)
 	if (endpoints.openidconfiguration_endpoint)
-		discovery.openidconfiguration_endpoint = getFullUrl(req, endpoints.openidconfiguration_endpoint)
+		discovery.openidconfiguration_endpoint = joinUrlParts(baseUrl, endpoints.openidconfiguration_endpoint)
+	if (endpoints.configuration_endpoint)
+		discovery.configuration_endpoint = joinUrlParts(baseUrl, endpoints.configuration_endpoint)
 
 	if (endpoints.login_endpoint)
-		discovery.login_endpoint = getFullUrl(req, endpoints.login_endpoint)
+		discovery.login_endpoint = joinUrlParts(baseUrl, endpoints.login_endpoint)
 	if (endpoints.signup_endpoint)
-		discovery.signup_endpoint = getFullUrl(req, endpoints.signup_endpoint)
+		discovery.signup_endpoint = joinUrlParts(baseUrl, endpoints.signup_endpoint)
 
-	return discovery
+	return orderFields(discovery)
 
 })())
 

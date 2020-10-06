@@ -1,6 +1,8 @@
 # userin &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0 workflows and integrate with Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
 
+To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) that allows to export a `collection.json` to [Postman](https://www.postman.com/).  
+
 # Table of contents
 
 > * [Getting started](#getting-started)
@@ -45,18 +47,15 @@ UserIn is an NodeJS Express middleware to build Authorization Servers that suppo
 >			- [`testOpenId` function](#testopenid-function)
 >			- [`testAll` function](#testall-function)
 >		- [Dependency injection](#dependency-injection)
-# Flexible flows
-
-Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
-
-## Login/Signup flow using an third-part Identity Provider
-
-http://localhost:3330/v1/google/authorize?client_id=123445&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3330%2Fgoogle%2Foauth2callback&scope=profile
-Flexible flows](#flexible-flows)
+>	- [Integration testing](#integration testing)
+>		- [Exporting the API to Postman](#exporting-the-api-to-postman)
+> * [Flexible flows](#flexible-flows)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
 >	- [Unit tests](#unit-tests)
 >		- [The `logTestErrors` API](#the-logtesterrors-api)
+> * [FAQ](faq)
+>	- [When is the `client_secret` required?](#when-is-the-client_secret-required)
 > * [Annex](#annex)
 >	- [Jargon and concepts](#jargon-and-concepts)
 >		- [Grant types](#grant-types)
@@ -146,8 +145,8 @@ const userin = new UserIn({
 	Strategy: YourStrategy,
 	modes:['loginsignup', 'loginsignupfip', 'openid'], // You have to define at least one of those three values.
 	config: {
+		baseUrl: 'http://localhost:3330',
 		openid: {
-			iss: 'http://localhost:3330',
 			tokenExpiry: {
 				access_token: 3600,
 				id_token: 3600,
@@ -201,6 +200,7 @@ UserIn supports multiple flows grouped in three modes which can be combined toge
 ### `loginsignup` strategy requirements
 
 - Constructor required fields:
+	- `baseUrl`
 	- `tokenExpiry.access_token`
 	> Example:
 	> ```js
@@ -226,7 +226,8 @@ UserIn supports multiple flows grouped in three modes which can be combined toge
 This mode is a superset of _loginsignup_.
 
 - Constructor required fields:
-	- `modes`: Must be set to `['loginsignupfip']`.
+	- `baseUrl`
+	- `modes`: Must contain `'loginsignupfip'`.
 	- `tokenExpiry.access_token`
 	- `tokenExpiry.code`
 	> Example:
@@ -256,7 +257,8 @@ This mode is a superset of _loginsignup_.
 ### `openid` strategy requirements
 
 - Constructor required fields:
-	- `modes`: Must be set to `['openid']`.
+	- `baseUrl`
+	- `modes`: Must contain `'openid'`.
 	- `openid.iss`
 	- `openid.tokenExpiry.id_token`
 	- `openid.tokenExpiry.access_token`
@@ -982,6 +984,66 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 
 This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
 
+## Integration testing
+### Exporting the API to Postman
+
+Once the UserIn instance has been created and configured, use the `Postman` utility as follow:
+
+```js
+Postman.export({
+	userIn,
+	name: 'userin-my-app',
+	path: './postman-collection.json'
+})
+```
+
+The full example looks like this:
+
+```js
+const express = require('express')
+const app = express()
+const Facebook = require('passport-facebook')
+const { UserIn, Postman } = require('userin')
+const YourStrategy = require('./src/YourStrategy')
+
+const userIn = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		openid: {
+			tokenExpiry: {
+				access_token: 3600,
+				id_token: 3600,
+				code: 30
+			}
+		}
+	}
+})
+
+userIn.use(Facebook, {
+	scopes: ['public_profile'],
+	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
+})
+
+userIn.use({
+	name:'google',
+	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
+	scopes:['profile', 'email']
+})
+
+Postman.export({
+	userIn,
+	name: 'userin-my-app',
+	path: './postman-collection.json'
+})
+
+app.use(userIn)
+app.listen(3330, () => console.log('UserIn listening on https://localhost:3330'))
+```
+
+When this code is executed, a `postman-collection.json` file is autogenerated. Use Postman to import the collection using this file.
+
 # Flexible flows
 
 Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
@@ -1037,6 +1099,12 @@ it('Should fail when something bad happens.', done => {
 	}))
 })
 ```
+
+# FAQ
+## When is the `client_secret` required?
+
+https://developer.okta.com/blog/2019/08/22/okta-authjs-pkce
+https://auth0.com/docs/flows/authorization-code-flow-with-proof-key-for-code-exchange-pkce
 
 # Annex
 ## Jargon and concepts

@@ -40,7 +40,7 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @yield {String}		output[1].refresh_token
  * @yield {String}		output[1].scope
  */
-const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *() {
+const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(function *() {
 	const { grant_type, username, password, client_id, client_secret, refresh_token, code, state, scope, data:extraData } = payload
 	
 	if (TRACE_ON)
@@ -76,10 +76,10 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 
 	// 2. Decices which flow to use
 	const fn = 
-		grant_type == 'password' ? grantTypePassword.exec(eventHandlerStore, { ...baseConfig, user }) :
-			grant_type == 'client_credentials' ? grantTypeClientCredentials.exec(eventHandlerStore, { ...baseConfig, client_secret }) :
-				grant_type == 'authorization_code' ? grantTypeAuthorizationCode.exec(eventHandlerStore, { ...baseConfig, code, client_secret }) :
-					grantTypeRefreshToken.exec(eventHandlerStore, { ...baseConfig, refresh_token })
+		grant_type == 'password' ? grantTypePassword.exec(eventHandlerStore, { ...baseConfig, user }, context) :
+			grant_type == 'client_credentials' ? grantTypeClientCredentials.exec(eventHandlerStore, { ...baseConfig, client_secret }, context) :
+				grant_type == 'authorization_code' ? grantTypeAuthorizationCode.exec(eventHandlerStore, { ...baseConfig, code, client_secret }, context) :
+					grantTypeRefreshToken.exec(eventHandlerStore, { ...baseConfig, refresh_token }, context)
 
 	const [errors, results] = yield fn
 	if (errors)

@@ -40,34 +40,34 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'`)
 
 	// B. Gets the client's scopes and audiences as well as the code's claims
-	const [[oidcClaimsErrors, oidcClaims], [serviceAccountErrors, serviceAccount]] = yield [
+	const [[codeClaimsErrors, codeClaims], [serviceAccountErrors, serviceAccount]] = yield [
 		eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state }),
 		client_id ? eventHandlerStore.get_client.exec({ client_id }) : Promise.resolve([null,{}])
 	]
 	
 	// C. Verifies the details are correct
-	if (serviceAccountErrors || oidcClaimsErrors)
-		throw wrapErrors(errorMsg, serviceAccountErrors || oidcClaimsErrors)
+	if (serviceAccountErrors || codeClaimsErrors)
+		throw wrapErrors(errorMsg, serviceAccountErrors || codeClaimsErrors)
 
 	if (!serviceAccount)
 		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
-	if (!oidcClaims)
+	if (!codeClaims)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid authorization code.`)
 
 	// If the code is associated with a client_id (openid mode), then verify it (note: The code does not need to be 
 	// associated with the client_id in the loginsignup or loginsignupfip mode). 
-	if (client_id || oidcClaims.client_id) {
+	if (client_id || codeClaims.client_id) {
 		if (!client_id)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
-		if (oidcClaims.client_id != client_id)
+		if (codeClaims.client_id != client_id)
 			throw new userInError.InvalidClientError(`${errorMsg}. Invalid client_id.`)
 	}
-	if (oidcClaims.redirect_uri != redirect_uri)
+	if (codeClaims.redirect_uri != redirect_uri)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'redirect_uri'. The 'redirect_uri' does not match the redirect_uri used in the authorization request.`)
 
 	// D. Verifies the authorization code
-	const { scope, sub, code_challenge, code_challenge_method, nonce } = oidcClaims
+	const { scope, sub, code_challenge, code_challenge_method, nonce } = codeClaims
 
 	// D.1. Basic verification
 	const scopes = oauth2Params.convert.thingToThings(scope) || []
@@ -79,7 +79,7 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 	if (requestRefreshToken && !eventHandlerStore.generate_refresh_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_refresh_token' handler. This event handler is required when 'scope' contains 'offline_access'.`)
 
-	const [claimsError] = oauth2Params.verify.claimsExpired(oidcClaims)
+	const [claimsError] = oauth2Params.verify.claimsExpired(codeClaims)
 	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, serviceAccountScopes:serviceAccount.scopes })
 	if (claimsError || scopeErrors)
 		throw wrapErrors(errorMsg, claimsError || scopeErrors)

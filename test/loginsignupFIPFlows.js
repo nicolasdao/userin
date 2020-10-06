@@ -18,6 +18,7 @@ const tokenHelper = require('./mock/token')
 const options = { skip:'' }
 
 const config = {
+	baseUrl: 'https://userin.com',
 	tokenExpiry: {
 		access_token: 3600,
 		code: 30

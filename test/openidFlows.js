@@ -18,8 +18,8 @@ const tokenHelper = require('./mock/token')
 const options = { skip:'' }
 
 const config = {
+	baseUrl: 'https://www.userin.com',
 	openid: {
-		iss: 'https://www.userin.com',
 		tokenExpiry: {
 			id_token: 3600,
 			access_token: 3600,

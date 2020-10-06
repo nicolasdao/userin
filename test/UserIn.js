@@ -18,8 +18,24 @@ const logTest = logTestErrors()
 // Used to consume params that are not used and avoid linting warnings
 const voidFn = () => null
 
-const exhaustiveConfig = { openid: { iss:'https://example.com', tokenExpiry: { access_token: 3600, id_token:3600, code:30 } } }
-const loginSignupConfig = { modes:['loginsignup'], tokenExpiry: { access_token:3600 } }
+const exhaustiveConfig = { 
+	baseUrl: 'https://userin.com',
+	openid: { 
+		tokenExpiry: { 
+			access_token: 3600, 
+			id_token:3600, 
+			code:30 
+		} 
+	} 
+}
+const loginSignupConfig = { 
+	baseUrl: 'https://userin.com',
+	modes:['loginsignup'], 
+	tokenExpiry: { 
+		access_token:3600 
+	} 
+}
+
 const loginSignupStrategy = new LoginSignupStrategy(loginSignupConfig)
 
 describe('UserIn', () => {
@@ -239,6 +255,114 @@ describe('UserIn', () => {
 				assert.isOk(userin, '02')
 				done()
 			}))
+		})
+	})
+	describe('getEndpoints', () => {
+		it('01 - Should return the baseUrl and all the endpoints with their path only by default.', done => {
+			const logE = logTest(done)
+			logE.run((async () => {
+				let error, userin
+				try {
+					userin = new UserIn({
+						Strategy: ExhaustiveStrategy,
+						modes:['loginsignup', 'loginsignupfip', 'openid'],
+						config: exhaustiveConfig
+					})
+				} catch(err) {
+					error = err
+				}
+
+				logE.push(error)
+				assert.isNotOk(error, '01')
+				assert.isOk(userin, '02.A')
+
+				const [errors, result] = await userin.getEndpoints({ fullyQualified:true })
+
+				logE.push(errors)
+				assert.isNotOk(errors, '02.B')
+				const { baseUrl, endpoints } = result
+				assert.equal(baseUrl, exhaustiveConfig.baseUrl, '03')
+				assert.isOk(endpoints, '04')
+
+				const { 
+					configuration_endpoint,
+					introspection_endpoint,
+					jwks_uri,
+					login_endpoint,
+					openidconfiguration_endpoint,
+					revocation_endpoint,
+					signup_endpoint,
+					token_endpoint,
+					userinfo_endpoint
+				} = endpoints
+
+				// OpenID
+				assert.equal(openidconfiguration_endpoint, '/oauth2/v1/.well-known/openid-configuration', '05')
+				assert.equal(token_endpoint, '/oauth2/v1/token', '06')
+				assert.equal(userinfo_endpoint, '/oauth2/v1/userinfo', '07')
+				assert.equal(introspection_endpoint, '/oauth2/v1/introspect', '08')
+				assert.equal(revocation_endpoint, '/oauth2/v1/revoke', '09')
+				assert.equal(jwks_uri, '/oauth2/v1/certs', '10')
+				// Non-standard OAuth
+				assert.equal(configuration_endpoint, '/v1/.well-known/configuration', '11')
+				assert.equal(login_endpoint, '/v1/login', '12')
+				assert.equal(signup_endpoint, '/v1/signup', '13')
+				
+				done()
+			})())
+		})
+		it('02 - Should add the endpoints with their fully qualified URL when the \'fullyQualified\' option is true.', done => {
+			const logE = logTest(done)
+			logE.run((async () => {
+				let error, userin
+				try {
+					userin = new UserIn({
+						Strategy: ExhaustiveStrategy,
+						modes:['loginsignup', 'loginsignupfip', 'openid'],
+						config: exhaustiveConfig
+					})
+				} catch(err) {
+					error = err
+				}
+
+				logE.push(error)
+				assert.isNotOk(error, '01')
+				assert.isOk(userin, '02.A')
+
+				const [errors, result] = await userin.getEndpoints({ fullyQualified:true })
+
+				logE.push(errors)
+				assert.isNotOk(errors, '02.B')
+				const { baseUrl, endpoints, fqEndpoints } = result
+				assert.equal(baseUrl, exhaustiveConfig.baseUrl, '03')
+				assert.isOk(endpoints, '04')
+
+				// OpenID
+				assert.equal(endpoints.openidconfiguration_endpoint, '/oauth2/v1/.well-known/openid-configuration', '05')
+				assert.equal(endpoints.token_endpoint, '/oauth2/v1/token', '06')
+				assert.equal(endpoints.userinfo_endpoint, '/oauth2/v1/userinfo', '07')
+				assert.equal(endpoints.introspection_endpoint, '/oauth2/v1/introspect', '08')
+				assert.equal(endpoints.revocation_endpoint, '/oauth2/v1/revoke', '09')
+				assert.equal(endpoints.jwks_uri, '/oauth2/v1/certs', '10')
+				// Non-standard OAuth
+				assert.equal(endpoints.configuration_endpoint, '/v1/.well-known/configuration', '11')
+				assert.equal(endpoints.login_endpoint, '/v1/login', '12')
+				assert.equal(endpoints.signup_endpoint, '/v1/signup', '13')
+
+				// OpenID
+				assert.equal(fqEndpoints.openidconfiguration_endpoint, `${exhaustiveConfig.baseUrl}/oauth2/v1/.well-known/openid-configuration`, '14')
+				assert.equal(fqEndpoints.token_endpoint, `${exhaustiveConfig.baseUrl}/oauth2/v1/token`, '15')
+				assert.equal(fqEndpoints.userinfo_endpoint, `${exhaustiveConfig.baseUrl}/oauth2/v1/userinfo`, '16')
+				assert.equal(fqEndpoints.introspection_endpoint, `${exhaustiveConfig.baseUrl}/oauth2/v1/introspect`, '17')
+				assert.equal(fqEndpoints.revocation_endpoint, `${exhaustiveConfig.baseUrl}/oauth2/v1/revoke`, '18')
+				assert.equal(fqEndpoints.jwks_uri, `${exhaustiveConfig.baseUrl}/oauth2/v1/certs`, '19')
+				// Non-standard OAuth
+				assert.equal(fqEndpoints.configuration_endpoint, `${exhaustiveConfig.baseUrl}/v1/.well-known/configuration`, '20')
+				assert.equal(fqEndpoints.login_endpoint, `${exhaustiveConfig.baseUrl}/v1/login`, '21')
+				assert.equal(fqEndpoints.signup_endpoint, `${exhaustiveConfig.baseUrl}/v1/signup`, '22')
+				
+				done()
+			})())
 		})
 	})
 })

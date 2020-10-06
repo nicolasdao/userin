@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.11.0](https://github.com/nicolasdao/userin/compare/v1.10.0...v1.11.0) (2020-10-06)
+
+
+### Features
+
+* Add support to export APIs to Postman ([9416972](https://github.com/nicolasdao/userin/commit/941697221dc59be3fdb80243b291c1b18e3fc3ea))
+
 ## [1.10.0](https://github.com/nicolasdao/userin/compare/v1.9.0...v1.10.0) (2020-10-03)
 
 

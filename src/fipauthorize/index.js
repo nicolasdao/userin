@@ -1,6 +1,6 @@
 module.exports = {
-	consentPageRequest: require('./consentPageRequest'),
-	consentPageResponse: require('./consentPageResponse'),
+	consentPageRequest: require('./passportConsentPageRequest'),
+	consentPageResponse: require('./passportConsentPageResponse'),
 	openIdConsentPageRequest: require('./openIdConsentPageRequest'),
 	openIdConsentPageResponse: require('./openIdConsentPageResponse')
 }

@@ -10,7 +10,7 @@
 
 const { assert } = require('chai')
 const express = require('express')
-const { UserIn } = require('../src')
+const { UserIn } = require('../src/index.js')
 const { logTestErrors } = require('../src/_test/_core')
 const { ExhaustiveStrategy, LoginSignupStrategy } = require('./mock/strategy')
 

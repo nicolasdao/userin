@@ -6,6 +6,8 @@ To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) th
 # Table of contents
 
 > * [Getting started](#getting-started)
+> * [Endpoints](#endpoints)
+> * [Setting up an identity provider](#setting-up-an-identity-provider)
 > * [Auth modes](#auth-modes)
 >	- [`loginsignup`](#loginsignup-mode)
 >	- [`loginsignupfip`](#loginsignupfip-mode)
@@ -190,6 +192,109 @@ app.listen(3330)
 All the endpoints that the UserIn middleware exposes are discoverable at the following two endpoints:
 - __`GET`__ http://localhost:3330/v1/.well-known/configuration: This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID OAuth2 endpoints.
 - __`GET`__ http://localhost:3330/oauth2/v1/.well-known/openid-configuration: This is the OpenID discovery endpoint. That endpoint is the one that your third-parties are supposed to use.
+
+# Endpoints
+
+By default, UserIn exposes the following web APIs:
+
+| Name | Method | Type | Pathname | Description |
+|:-----|:-------|:-----|:---------|:------------|
+| `configuration` | __`GET`__ 	| Not OAuth 2.0. | `/v1/.well-known/configuration` | Discovery metadata JSON about all web API. |
+| `login` | __`POST`__ 	| Not OAuth 2.0. | `/v1/login` | Lets user log in. |
+| `signup` | __`POST`__ 	| Not OAuth 2.0. | `/v1/signup` | Lets user sign up. |
+| `openid-configuration` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/.well-known/openid-configuration` | Discovery metadata JSON about OpenID web API only. |
+| `introspect` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/introspect` | Intraspects a token (e.g., access_token, refresh_token, id_token). |
+| `revoke` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/revoke` | Revokes a refresh_token. |
+| `userinfo` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/userinfo` | Returns user's profile based on the claims associated with the access_token. |
+| `jwk` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/certs` | Array of public JWK keys used to verify id_tokens. |
+| `token` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/token` | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
+
+Additionally, for each identity provider installed in UserIn, the following new endpoint is added (this example uses Facebook):
+
+| Name | Method | Type | Pathname | Description |
+|:-----|:-------|:-----|:---------|:------------|
+| `identity_provider` | __`GET`__ 	| Not OAuth 2.0. | `/v1/facebook/authorize` | Redirects to Facebook consent page. |
+
+To learn more about setting up identity providers, please refer to the [next section](#setting-up-an-identity-provider). 
+
+# Setting up an identity provider
+
+UserIn supports both [Passport strategies](http://www.passportjs.org/) and native OpenID providers via their `.well-known/openid-configuration` discovery endpoint (e.g., https://accounts.google.com/.well-known/openid-configuration). 
+
+## Using Passport
+
+The next example uses Facebook:
+
+```js
+const { UserIn } = require('userin')
+const Facebook = require('passport-facebook')
+const YourStrategy = require('./src/YourStrategy.js')
+
+const userin = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		openid: {
+			tokenExpiry: {
+				access_token: 3600,
+				id_token: 3600,
+				code: 30
+			}
+		}
+	}
+})
+
+userIn.use(Facebook, {
+	clientID: '12234',
+	clientSecret: '54332432',
+	scopes: ['public_profile'],
+	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
+})
+```
+
+> NOTES:
+>	- Both the `clientID` and `clientSecret` could have been omitted when the following two environment variables are set:
+>		- `FACEBOOK_CLIENT_ID`
+>		- `FACEBOOK_CLIENT_SECRET`
+>		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the Passport's name in uppercase.
+>	- The rest of the configuration is the same as what is described on the Passport package documentation. 
+
+## Using an OpenID discovery endpoint
+
+```js
+const { UserIn } = require('userin')
+const YourStrategy = require('./src/YourStrategy.js')
+
+const userin = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		openid: {
+			tokenExpiry: {
+				access_token: 3600,
+				id_token: 3600,
+				code: 30
+			}
+		}
+	}
+})
+
+userIn.use({
+	name:'google',
+	client_id: '12234',
+	client_secret: '54332432',
+	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
+	scopes:['profile', 'email']
+})
+```
+
+> NOTES:
+>	- Both the `client_id` and `client_secret` could have been omitted when the following two environment variables are set:
+>		- `GOOGLE_CLIENT_ID`
+>		- `GOOGLE_CLIENT_SECRET`
+>		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the `name` value.
 
 # Auth modes
 

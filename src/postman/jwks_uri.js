@@ -1,10 +1,13 @@
 const { getUrlObj } = require('./_utils')
 
+const description = '# OPENID JWK API'
+
 const create = (pathname) => ({
-	name:'jwks_uri',
+	name:'[OpenID] - jwks_uri',
 	request: {
 		method:'GET',
-		url: getUrlObj(pathname)
+		url: getUrlObj(pathname),
+		description
 	}
 })
 

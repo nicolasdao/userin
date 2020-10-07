@@ -20,6 +20,9 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  */
 const _getRedirectUri = (req, redirectPath) => {
 	const requestUrlInfo = getUrlInfo(req)
+	// If the request is not from localhost and the protocol is HTTP, then upgrade to HTTPS.
+	if (requestUrlInfo.host.indexOf('localhost') < 0 && requestUrlInfo.protocol == 'http:')
+		requestUrlInfo.protocol = 'https:'
 	const query = requestUrlInfo.query
 	const redirectUri = urlHelp.buildUrl({ ...requestUrlInfo, pathname:redirectPath, query:'' })
 	query.orig_redirectUri = redirectUri

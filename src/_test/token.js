@@ -234,7 +234,7 @@ module.exports = function runTest (data, skip, showResults) {
 					
 					logE.push(errors)
 					assert.isOk(errors, '01')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Service account sbaug67437e93279ce27 not found') >= 0), '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('\'client_id\' not found') >= 0), '02')
 
 					if (showResult) console.log(errors)
 					done()
@@ -941,7 +941,7 @@ module.exports = function runTest (data, skip, showResults) {
 						
 					logE.push(errors)
 					assert.isOk(errors, '01')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf(`Service account ${invalidClientId} not found`) >= 0), '02')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('\'client_id\' not found') >= 0), '02')
 
 					if (showResult) console.log(errors)
 					done()

@@ -24,6 +24,7 @@ const { oauth2Params } = require('../_utils')
  */
 const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
+	const verifyClientId = client_id
 	// A. Validates input
 	if (!eventHandlerStore.get_client)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
@@ -40,16 +41,16 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'`)
 
 	// B. Gets the client's scopes and audiences as well as the code's claims
-	const [[codeClaimsErrors, codeClaims], [serviceAccountErrors, serviceAccount]] = yield [
+	const [[codeClaimsErrors, codeClaims], [clientErrors, client]] = yield [
 		eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state }),
-		client_id ? eventHandlerStore.get_client.exec({ client_id }) : Promise.resolve([null,{}])
+		verifyClientId ? eventHandlerStore.get_client.exec({ client_id }) : Promise.resolve([null,{}])
 	]
 	
 	// C. Verifies the details are correct
-	if (serviceAccountErrors || codeClaimsErrors)
-		throw wrapErrors(errorMsg, serviceAccountErrors || codeClaimsErrors)
+	if (clientErrors || codeClaimsErrors)
+		throw wrapErrors(errorMsg, clientErrors || codeClaimsErrors)
 
-	if (!serviceAccount)
+	if (!client)
 		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
 	if (!codeClaims)
@@ -80,7 +81,7 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_refresh_token' handler. This event handler is required when 'scope' contains 'offline_access'.`)
 
 	const [claimsError] = oauth2Params.verify.claimsExpired(codeClaims)
-	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, serviceAccountScopes:serviceAccount.scopes })
+	const [scopeErrors] = verifyClientId ? oauth2Params.verify.scopes({ scopes, clientScopes:client.scopes }) : [null]
 	if (claimsError || scopeErrors)
 		throw wrapErrors(errorMsg, claimsError || scopeErrors)
 
@@ -107,7 +108,7 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 	}
 
 	// E. Get the access_token, id_token, and potentially the refresh_token for that user_id
-	const config = { client_id, user_id:sub, audiences:serviceAccount.audiences, scopes, state }
+	const config = { client_id, user_id:sub, audiences:client.audiences, scopes, state }
 	const idTokenConfig = { ...config, nonce }
 
 	const emptyPromise = Promise.resolve([null, null])

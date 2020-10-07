@@ -1,7 +1,9 @@
 const { getUrlObj } = require('./_utils')
 
+const description = '# OAUTH 2.0. USERINFO API'
+
 const create = (pathname) => ({
-	name:'userinfo_endpoint',
+	name:'[OAuth] - userinfo_endpoint',
 	request: {
 		method:'GET',
 		auth: {
@@ -12,7 +14,8 @@ const create = (pathname) => ({
 				type: 'string'
 			}]
 		},
-		url: getUrlObj(pathname)
+		url: getUrlObj(pathname),
+		description
 	}
 })
 

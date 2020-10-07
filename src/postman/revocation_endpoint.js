@@ -1,7 +1,9 @@
 const { getUrlObj } = require('./_utils')
 
+const description = '# OAUTH 2.0. REVOKE API'
+
 const create = (pathname) => ({
-	name:'revocation_endpoint',
+	name:'[OAuth] - revocation_endpoint',
 	request: {
 		method:'POST',
 		auth: {
@@ -18,7 +20,8 @@ const create = (pathname) => ({
 			raw: JSON.stringify({ 
 				token:'ENTER_REFRESH_TOKEN_HERE'
 			}, null, '    ')
-		}
+		},
+		description
 	}
 })
 

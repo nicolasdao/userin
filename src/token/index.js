@@ -20,7 +20,8 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @param {String}		payload.password							
  * @param {String}		payload.client_id							
  * @param {String}		payload.client_secret							
- * @param {String}		payload.refresh_token							
+ * @param {String}		payload.refresh_token
+ * @param {String}		payload.redirect_uri							
  * @param {String}		payload.code	
  * @param {String}		payload.state	
  * @param {String}		payload.scope							
@@ -41,7 +42,7 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @yield {String}		output[1].scope
  */
 const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(function *() {
-	const { grant_type, username, password, client_id, client_secret, refresh_token, code, state, scope, data:extraData } = payload
+	const { grant_type, username, password, client_id, client_secret, refresh_token, code, state, scope, redirect_uri, data:extraData } = payload
 	
 	if (TRACE_ON)
 		console.log(`INFO - Request to get token (grant_type: ${grant_type})`)
@@ -78,7 +79,7 @@ const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(fu
 	const fn = 
 		grant_type == 'password' ? grantTypePassword.exec(eventHandlerStore, { ...baseConfig, user }, context) :
 			grant_type == 'client_credentials' ? grantTypeClientCredentials.exec(eventHandlerStore, { ...baseConfig, client_secret }, context) :
-				grant_type == 'authorization_code' ? grantTypeAuthorizationCode.exec(eventHandlerStore, { ...baseConfig, code, client_secret }, context) :
+				grant_type == 'authorization_code' ? grantTypeAuthorizationCode.exec(eventHandlerStore, { ...baseConfig, code, client_secret, redirect_uri }, context) :
 					grantTypeRefreshToken.exec(eventHandlerStore, { ...baseConfig, refresh_token }, context)
 
 	const [errors, results] = yield fn

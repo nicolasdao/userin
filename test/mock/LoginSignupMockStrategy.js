@@ -104,7 +104,7 @@ LoginSignUpMockStrategy.prototype.get_end_user = (root, { user }, context) => {
  */
 LoginSignUpMockStrategy.prototype.create_end_user = (root, { user }, context) => {
 	const id = crypto.randomBytes(7).toString('base64')
-	context.repos.user.push({ ...user, id })
+	context.repos.user.push({ ...user, id, email:user.username })
 
 	return {
 		id

@@ -4,6 +4,7 @@ const { url: { getInfo, buildUrl } } = require('puffy')
  * Creates a Postman url object. 
  * 
  * @param  {String} 	pathname			e.g., '/hello/world?name=yep#query'
+ * @param  {Object} 	queryParams			e.g., { name:'Nic' } or { name: { value:'Nic', disabled:true, description: 'First name' } }
  * 
  * @return {String}		urlObj.raw			e.g., '{{base_url}}/hello/world?name=yep#query'
  * @return {[String]}	urlObj.host			e.g., ['example', 'com']
@@ -16,14 +17,12 @@ const getUrlObj = (pathname, queryParams={}) => {
 	const queryArgs = Object.keys(queryParams).reduce((acc,key) => {
 		const val = queryParams[key]
 		const t = typeof(val)
-		if (t == 'object')
-			acc[key] = val 
-		else if (t == 'string') {
-			if (/^{{(.*?)}}$/.test(val))
-				acc[key] = { noEscape:true, value:val }
-			else
-				acc[key] = val
-		}
+		if (t == 'object') {
+			const noEscape = /^{{(.*?)}}$/.test(val.value||'')
+			acc[key] = { ...val, noEscape } 
+		} else if (t == 'string')
+			acc[key] = { noEscape:/^{{(.*?)}}$/.test(val), value:val }
+		
 		return acc
 	}, {})
 	const query = { ...(info.query||{}), ...queryArgs }
@@ -40,8 +39,15 @@ const getUrlObj = (pathname, queryParams={}) => {
 			const value = query[key]
 			if (value === null || value === undefined || value === '')
 				return
-			const val = !value.value ? encodeURIComponent(value) : value.noEscape ? value.value : encodeURIComponent(value.value)
-			return { key, value:val }
+
+			const t = typeof(value)
+			if (t == 'string')
+				return { key, value:encodeURIComponent(value) }
+			else if (t == 'object') {
+				const { noEscape, value:v, disabled, description } = value
+				return { key, disabled, description, value: noEscape ? v : encodeURIComponent(typeof(v) == 'string' ? v : `${v}`) }
+			} else
+				return { key, value }
 		}).filter(x => x)
 	if (info.hash)
 		urlObj.hash = info.hash.replace('#','')

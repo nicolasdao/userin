@@ -35,19 +35,19 @@ const parseToOIDCClaims = ({ iss, client_id, user_id, audiences, scopes, extra={
 	}
 }
 
-const verifyScopes = ({ scopes=[], serviceAccountScopes=[] }) => catchErrors(() => {
+const verifyScopes = ({ scopes=[], clientScopes=[] }) => catchErrors(() => {
 	const scopesWithoutOpenId = scopes.filter(s => s != 'openid')
 	if (scopesWithoutOpenId.length) {
-		const invalidScopes = scopesWithoutOpenId.filter(s => serviceAccountScopes.indexOf(s) < 0)
+		const invalidScopes = scopesWithoutOpenId.filter(s => clientScopes.indexOf(s) < 0)
 		const l = invalidScopes.length
 		if (l)
 			throw new userInError.InvalidScopeError(`Access to scope${l > 1 ? 's' : ''} ${invalidScopes.join(', ')} is not allowed.`)
 	}
 })
 
-const verifyAudiences = ({ audiences=[], serviceAccountAudiences=[] }) => catchErrors(() => {
+const verifyAudiences = ({ audiences=[], clientAudiences=[] }) => catchErrors(() => {
 	if (audiences.length) {
-		const invalidAudiences = audiences.filter(s => serviceAccountAudiences.indexOf(s) < 0)
+		const invalidAudiences = audiences.filter(s => clientAudiences.indexOf(s) < 0)
 		const l = invalidAudiences.length
 		if (l)
 			throw new userInError.UnauthorizedClientError(`Access to audience${l > 1 ? 's' : ''} ${invalidAudiences.join(', ')} is not allowed.`)

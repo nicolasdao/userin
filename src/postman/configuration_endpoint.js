@@ -1,10 +1,13 @@
 const { getUrlObj } = require('./_utils')
 
+const description = '# DISCOVERY API'
+
 const create = (pathname) => ({
-	name:'configuration_endpoint',
+	name:'[Non OAuth] - configuration_endpoint',
 	request: {
 		method:'GET',
-		url: getUrlObj(pathname)
+		url: getUrlObj(pathname),
+		description
 	}
 })
 

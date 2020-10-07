@@ -179,7 +179,8 @@ LoginSignupFIPMockStrategy.prototype.get_fip_user = (root, { strategy, user }, c
  * @return {String}		token
  */
 LoginSignupFIPMockStrategy.prototype.generate_authorization_code = (root, { claims }, context) => {
-	return context.tokenHelper.createValid(claims,'code')
+	const code = context.tokenHelper.createValid(claims,'code')
+	return code
 }
 
 /**

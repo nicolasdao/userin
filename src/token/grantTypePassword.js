@@ -51,7 +51,7 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 	if (!serviceAccount)
 		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
-	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, serviceAccountScopes:serviceAccount.scopes })
+	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, clientScopes:serviceAccount.scopes })
 	if (scopeErrors)
 		throw wrapErrors(errorMsg, scopeErrors)
 

@@ -70,6 +70,8 @@ const getOpenIdDiscoveryData = (baseUrl='', endpoints, eventHandlerStore) => cat
 		discovery.jwks_uri = joinUrlParts(baseUrl, endpoints.jwks_uri)
 	if (endpoints.revocation_endpoint)
 		discovery.revocation_endpoint = joinUrlParts(baseUrl, endpoints.revocation_endpoint)
+	if (endpoints.postman_endpoint)
+		discovery.postman_endpoint = joinUrlParts(baseUrl, endpoints.postman_endpoint)
 
 	const openIdReady = isOpenIdReady(eventHandlerStore)
 	const authCodeFlowReady = supportsAuthCodeFlow(eventHandlerStore)

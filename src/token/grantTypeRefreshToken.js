@@ -67,7 +67,7 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler. This event handler is required when 'scope' contains 'openid'.`)
 	
 	if (claims.scope) {
-		const [scopeErrors] = oauth2Params.verify.scopes({ scopes:refreshTokenScopes, serviceAccountScopes:serviceAccount.scopes })
+		const [scopeErrors] = oauth2Params.verify.scopes({ scopes:refreshTokenScopes, clientScopes:serviceAccount.scopes })
 		if (scopeErrors)
 			throw wrapErrors(errorMsg, scopeErrors)
 	}

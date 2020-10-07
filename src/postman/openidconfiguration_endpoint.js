@@ -1,10 +1,13 @@
 const { getUrlObj } = require('./_utils')
 
+const description = '# OPENID DISCOVERY API'
+
 const create = (pathname) => ({
-	name:'openidconfiguration_endpoint',
+	name:'[OpenID] - openidconfiguration_endpoint',
 	request: {
 		method:'GET',
-		url: getUrlObj(pathname)
+		url: getUrlObj(pathname),
+		description
 	}
 })
 

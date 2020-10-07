@@ -19,7 +19,7 @@ const verifyScopes = (eventHandlerStore, { client_id, scopes }) => catchErrors(c
 	if (serviceAccountErrors)
 		throw wrapErrors(errorMsg, serviceAccountErrors)
 
-	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, serviceAccountScopes:serviceAccount.scopes })
+	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, clientScopes:serviceAccount.scopes })
 	if (scopeErrors)
 		throw wrapErrors(errorMsg, scopeErrors)
 

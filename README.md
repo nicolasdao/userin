@@ -1,5 +1,5 @@
-# userin &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0 workflows and integrate with Federated Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
+# UserIn 2.0. &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0. workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
 
 To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) that allows to export a `collection.json` to [Postman](https://www.postman.com/).  
 
@@ -49,12 +49,16 @@ To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) th
 >		- [Dependency injection](#dependency-injection)
 >	- [Integration testing](#integration testing)
 >		- [Exporting the API to Postman](#exporting-the-api-to-postman)
+>			- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
+>			- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
 > * [Flexible flows](#flexible-flows)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
 >	- [Unit tests](#unit-tests)
 >		- [The `logTestErrors` API](#the-logtesterrors-api)
 > * [FAQ](faq)
+>	- [How to use UserIn in Postman?](#how-to-use-userin-in-postman)
+>	- [How to deal with Facebook restriction to HTTPS redirect only when testing locally?](#how-to-deal-with-facebook-restriction-to-https-redirect-only-when-testing-locally)
 >	- [When is the `client_secret` required?](#when-is-the-client_secret-required)
 > * [Annex](#annex)
 >	- [Jargon and concepts](#jargon-and-concepts)
@@ -79,7 +83,8 @@ npm i passport-facebook
 
 ```js
 const express = require('express')
-const { UserIn, Strategy } = require('userin')
+const app = express()
+const { UserIn, Strategy, Postman } = require('userin')
 const Facebook = require('passport-facebook')
 
 class YourStrategy extends Strategy {
@@ -126,7 +131,7 @@ class YourStrategy extends Strategy {
 		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_claims_supported = (root) => { /* Implement your logic here */ }
 		this.get_scopes_supported = (root) => { /* Implement your logic here */ }
-		// Those three OpenID event handlers are optional. If they are not implemented, the UserIn middleware uses default
+		// Those two OpenID event handlers are optional. If they are not implemented, the UserIn middleware uses default
 		// values instead:
 		// 	For 'get_jwks' UserIn uses an empty array.
 		// 	For 'get_grant_types_supported' UserIn uses this array: ['password', 'client_credentials', 'authorization_code', 'refresh_token']
@@ -171,7 +176,11 @@ userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(context)
 })
 
-const app = express()
+Postman.export({
+	userIn,
+	name: 'userin-my-app',
+	path: './postman-collection.json'
+})
 
 app.use(userIn)
 
@@ -987,6 +996,61 @@ This design pattern is called dependency injection. It allows to replace the beh
 ## Integration testing
 ### Exporting the API to Postman
 
+UserIn can publish its API documentation using Postman Collection v2.1. There are two ways to export a Postman collection:
+1. [Publish a new web endpoint at `{{YOUR_DOMAIN}}/v1/postman/collection.json`](#publishing-a-postman-collection-as-a-web-link) and use that link in Postman to import that collection.
+2. [Export the collection in a local file](#export-a-postman-collection-in-a-local-file) and then import that file in Postman.
+
+#### Publishing a Postman collection as a web link
+
+Use this API:
+
+```js
+userIn.use(new Postman('your-collection-name'))
+```
+
+The full example looks like this:
+
+```js
+const express = require('express')
+const app = express()
+const Facebook = require('passport-facebook')
+const { UserIn, Postman } = require('userin')
+const YourStrategy = require('./src/YourStrategy')
+
+const userIn = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		openid: {
+			tokenExpiry: {
+				access_token: 3600,
+				id_token: 3600,
+				code: 30
+			}
+		}
+	}
+})
+
+userIn.use(Facebook, {
+	scopes: ['public_profile'],
+	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
+})
+
+userIn.use({
+	name:'google',
+	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
+	scopes:['profile', 'email']
+})
+
+userIn.use(new Postman('userin-my-app'))
+
+app.use(userIn)
+app.listen(3330, () => console.log('UserIn listening on https://localhost:3330'))
+```
+
+#### Export a Postman collection in a local file
+
 Once the UserIn instance has been created and configured, use the `Postman` utility as follow:
 
 ```js
@@ -1101,6 +1165,14 @@ it('Should fail when something bad happens.', done => {
 ```
 
 # FAQ
+## How to use UserIn in Postman?
+
+Please refer to [Exporting the API to Postman](#exporting-the-api-to-postman).
+
+## How to deal with Facebook restriction to HTTPS redirect only when testing locally?
+
+The easiest solution is to use [`ngrok`](https://ngrok.com/) which can expose a web server running on your local machine to the internet via both HTTP and HTTPS. For example, your UserIn server that is locally accessible via http://localhost:3330 will be available publicly via https://2e6c759d16cf.ngrok.io. Add that URL to the allowlist in your Facebook App and then update the `{{base_url}}` in Postman to use that new URL.
+
 ## When is the `client_secret` required?
 
 https://developer.okta.com/blog/2019/08/22/okta-authjs-pkce

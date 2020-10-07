@@ -115,19 +115,19 @@ OpenIdMockStrategy.prototype.generate_refresh_token = LoginSignupFIPMockStrategy
  * @param  {String}		payload.client_secret	Optional. If specified, this method should validate the client_secret.
  * @param  {Object}		context					Strategy's configuration
  * 
- * @return {[String]}	output.audiences		Service account's audiences.	
- * @return {[String]}	output.scopes			Service account's scopes.	
+ * @return {[String]}	output.audiences		Client ID's audiences.	
+ * @return {[String]}	output.scopes			Client ID's scopes.	
  */
 OpenIdMockStrategy.prototype.get_client = (root, { client_id, client_secret }, context) => {
-	const serviceAccount = context.repos.client.find(x => x.client_id == client_id)
-	if (!serviceAccount)
-		throw new Error(`Service account ${client_id} not found`)
-	if (client_secret && serviceAccount.client_secret != client_secret)
+	const client = context.repos.client.find(x => x.client_id == client_id)
+	if (!client)
+		return null
+	if (client_secret && client.client_secret != client_secret)
 		throw new Error('Unauthorized access')
 
 	return {
-		audiences: serviceAccount.audiences || [],
-		scopes: serviceAccount.scopes || []
+		audiences: client.audiences || [],
+		scopes: client.scopes || []
 	}
 }
 

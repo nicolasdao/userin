@@ -282,13 +282,13 @@ module.exports = function runTest (data, skip, showResults=[]) {
 							...payload, 
 							token:'123', 
 							token_type_hint:'refresh_token',
-							client_id: 'GYUE&((#VYVV(V',
-							client_secret:altClientSecret
+							client_id: altClientId,
+							client_secret:'GYUE&((#VYVV(V'
 						}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Service account GYUE&((#VYVV(V not found') >= 0), '06')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '06')
 
 					if (showResult) console.log(errors)
 					done()

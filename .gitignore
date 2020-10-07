@@ -3,6 +3,5 @@
 node_modules/
 .env
 .env.*
-userin.js
 demo.js
 postman-collection.json

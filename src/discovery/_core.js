@@ -1,4 +1,4 @@
-const { error: { catchErrors, wrapErrors }, url:{ buildUrl }, collection } = require('puffy')
+const { error: { catchErrors, wrapErrors }, url:{ buildUrl, getInfo }, collection } = require('puffy')
 const { getOpenIdEvents, getLoginSignupEvents } = require('userin-core')
 
 const OPENID_CLAIMS = ['iss', 'sub', 'aud', 'exp', 'iat']
@@ -120,7 +120,7 @@ const getOpenIdDiscoveryData = (eventHandlerStore, context={}) => catchErrors((a
 		throw wrapErrors(errorMsg, configErrors)
 	
 	const discovery = {
-		issuer: config.iss||null,
+		issuer: baseUrl ? getInfo(baseUrl).origin : null,
 		claims_supported:[],
 		scopes_supported:[],
 		grant_types_supported:[]

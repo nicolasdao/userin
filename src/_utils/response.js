@@ -56,7 +56,8 @@ const formatResponseError = (errors, res) => {
 	let category = 'internal_server_error'
 	let error_description = 'Unknown'
 	if (errors && errors.length) {
-		errors.forEach(error => console.log(error.stack || error.message))
+		if (!(process.env.TEST_MODE === true || process.env.TEST_MODE === 'true'))
+			errors.forEach(error => console.log(error.stack || error.message))
 		category = (errors.find(e => e.category) || {}).category || category
 		code = (errors.find(e => e.code) || {}).code || code
 		error_description = errors

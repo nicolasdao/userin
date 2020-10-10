@@ -16,6 +16,10 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @param {Request}		context.req					Express Request
  * @param {Response}	context.res					Express Response
  * @param {String}		context.authorization		HTTP Authorization header value (e.g., 'Bearer 12345')
+ * @param {String}		context.baseUrl
+ * @param {Object}		context.tokenExpiry			
+ * @param {[String]}	context.modes				Valid values: 'loginsignup', 'loginsignupfip', 'openid'
+ * @param {String}		context.version
  *  
  * @yield {[Error]}		output[0]					Array of errors
  * @yield {Boolean}		output[1].active

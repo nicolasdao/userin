@@ -1,3 +1,27 @@
+const chai = require('chai')
+const portscanner = require('portscanner')
+const chaiHttp = require('chai-http')
+const express = require('express')
+
+chai.use(chaiHttp)
+
+let port = 3287
+const getUserInServer = async (userIn) => {
+	let status = 'open'
+
+	while(status != 'closed') {
+		status = await portscanner.checkPortStatus(port)
+		if (status != 'closed')
+			++port
+	}
+
+	port++
+
+	const app = express()
+	app.use(userIn)
+	const server = app.listen(port)
+	return { server, app }
+}
 
 const setUpScopeAssertion = assert => {
 	assert.scopes = (scope, values, idx=0) => {
@@ -49,5 +73,6 @@ const createShowTestResultFn = (showResults, ...args) =>  {
 module.exports = {
 	setUpScopeAssertion,
 	logTestErrors,
-	createShowTestResultFn
+	createShowTestResultFn,
+	getUserInServer
 }

@@ -8,11 +8,16 @@
 
 // To skip a test, either use 'xit' instead of 'it', or 'describe.skip' instead of 'describe'
 
-const { assert } = require('chai')
+const chai = require('chai')
+const chaiHttp = require('chai-http')
 const express = require('express')
 const { UserIn } = require('../src/index.js')
 const { logTestErrors } = require('../src/_test/_core')
 const { ExhaustiveStrategy, LoginSignupStrategy } = require('./mock/strategy')
+
+chai.use(chaiHttp)
+
+const { assert } = chai
 
 const logTest = logTestErrors()
 // Used to consume params that are not used and avoid linting warnings

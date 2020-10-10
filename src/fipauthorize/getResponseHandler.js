@@ -28,6 +28,10 @@ module.exports = getUserProfile => (endpoint, strategy, verifyClientId=true) => 
 	 * @param {Request}		context.req					Express Request
 	 * @param {Response}	context.res					Express Response
 	 * @param {String}		context.authorization		HTTP Authorization header value (e.g., 'Bearer 12345')
+	 * @param {String}		context.baseUrl
+	 * @param {Object}		context.tokenExpiry			
+	 * @param {[String]}	context.modes				Valid values: 'loginsignup', 'loginsignupfip', 'openid'
+	 * @param {String}		context.version
 	 *  
 	 * @yield {[Error]}		output[0]					Array of errors
 	 * @return {Void}		output[1]

@@ -31,7 +31,11 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @param {Object}		context.endpoints			Object containing all the OIDC endpoints (pathname only)
  * @param {Request}		context.req					Express Request
  * @param {Response}	context.res					Express Response
- * @param {String}		context.authorization		HTTP Authorization header value (e.g., 'Bearer 12345')				
+ * @param {String}		context.authorization		HTTP Authorization header value (e.g., 'Bearer 12345')	
+ * @param {String}		context.baseUrl
+ * @param {Object}		context.tokenExpiry			
+ * @param {[String]}	context.modes				Valid values: 'loginsignup', 'loginsignupfip', 'openid'
+ * @param {String}		context.version			
  *  
  * @yield {[Error]}		output[0]					Array of errors
  * @yield {String}		output[1].access_token
@@ -41,9 +45,11 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @yield {String}		output[1].refresh_token
  * @yield {String}		output[1].scope
  */
-const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(function *() {
+const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co(function *() {
 	const { grant_type, username, password, client_id, client_secret, refresh_token, code, state, scope, redirect_uri, data:extraData } = payload
-	
+
+	const modes = context.modes || []
+
 	if (TRACE_ON)
 		console.log(`INFO - Request to get token (grant_type: ${grant_type})`)
 
@@ -73,7 +79,7 @@ const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(fu
 		? { ...extraData, username, password } 
 		: { username, password } 
 
-	const baseConfig = { client_id, scopes, state }
+	const baseConfig = { client_id, scopes, state, modes }
 
 	// 2. Decices which flow to use
 	const fn = 

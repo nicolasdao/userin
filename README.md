@@ -1,12 +1,28 @@
-# UserIn 2.0. &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+# UserIn 2.0 &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0. workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
 
 To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) that allows to export a `collection.json` to [Postman](https://www.postman.com/).  
+
+UserIn is designed to expose web APIs that support two different flow types:
+- OAuth 2.0/OpenID Connect flows. These are the ones that often(1) start with your platform's consent page so that your users can leverage some or all of your plaftorm's API via an authorized third-party.
+- Non-OAuth 2.0 flows. These are the ones start with your platform's login/signup form.
+
+> (1) Other OAuth 2.0 authorization flows that do not require a consent page are the `password`, `client_credentials` grant type flows. Those flows are generally used for programmatic access. 
 
 # Table of contents
 
 > * [Getting started](#getting-started)
 > * [Endpoints](#endpoints)
+>	- [/.well-known/configuration](#well-knownconfiguration)
+>	- [/login](#login)
+>	- [/signup](#signup)
+>	- [/token](#token)
+>	- [/revoke](#revoke)
+>	- [/.well-known/openid-configuration](#well-knownopenid-configuration)
+>	- [/introspect](#introspect)
+>	- [/userinfo](#userinfo)
+>	- [/certs](#certs)
+>	- [/<IdP>/authorize](#idpauthorize)
 > * [Setting up an identity provider](#setting-up-an-identity-provider)
 > * [Auth modes](#auth-modes)
 >	- [`loginsignup`](#loginsignup-mode)
@@ -49,7 +65,7 @@ To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) th
 >			- [`testOpenId` function](#testopenid-function)
 >			- [`testAll` function](#testall-function)
 >		- [Dependency injection](#dependency-injection)
->	- [Integration testing](#integration testing)
+>	- [Integration testing](#integration-testing)
 >		- [Exporting the API to Postman](#exporting-the-api-to-postman)
 >			- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
 >			- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
@@ -195,27 +211,110 @@ All the endpoints that the UserIn middleware exposes are discoverable at the fol
 
 # Endpoints
 
+The number of endpoints exposed by UserIn depends on its modes. UserIn supports three modes which can be combined together:
+1. `loginsignup`: Non-OAuth 2.0 compliant set of APIs that powers an Authorization Server that can exchange your user's username and password with an access_token, and a refresh_token. Those tokens allow your Apps to safely access your platform's API.
+2. `loginsignupfip`: Same as the `loginsignup` mode with the extra ability to use an identity provider (e.g., Facebook) to access the tokens.
+3. `openid`: OAuth 2.0. and OpenID Connect compliant set of APIs that powers an Authorization Server that support multiple flows to exchange your user's username and password with various tokens. The difference between this mode and the previous two is that your user is making that exchange request within the context of a third-party system which is uniquely identify by its `client_id`. That third-party system must be registered on your platform before your user can use your APIs within that context. Contrary to the first two modes, OAuth 2.0 make it possible to restrict which APIs can be used by combining the `client_id` with `scopes`. OAuth 2.0 and OpenID are not designed to support creating accounts, which explain why UserIn supports the first two modes above. The purpose of OAuth 2.0 is to let third-party systems registered on your platform with specific scopes to leverage some or all of your APIs to enhance the experience of a subset of their users that also have an account on your platform.
+
 By default, UserIn exposes the following web APIs:
 
-| Name | Method | Type | Pathname | Description |
-|:-----|:-------|:-----|:---------|:------------|
-| `configuration` | __`GET`__ 	| Not OAuth 2.0. | `/v1/.well-known/configuration` | Discovery metadata JSON about all web API. |
-| `login` | __`POST`__ 	| Not OAuth 2.0. | `/v1/login` | Lets user log in. |
-| `signup` | __`POST`__ 	| Not OAuth 2.0. | `/v1/signup` | Lets user sign up. |
-| `openid-configuration` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/.well-known/openid-configuration` | Discovery metadata JSON about OpenID web API only. |
-| `introspect` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/introspect` | Intraspects a token (e.g., access_token, refresh_token, id_token). |
-| `revoke` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/revoke` | Revokes a refresh_token. |
-| `userinfo` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/userinfo` | Returns user's profile based on the claims associated with the access_token. |
-| `jwk` | __`GET`__ 	| OAuth 2.0. | `/oauth2/v1/certs` | Array of public JWK keys used to verify id_tokens. |
-| `token` | __`POST`__ 	| OAuth 2.0. | `/oauth2/v1/token` | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
+| Pathname | Mode | Method | Type | Description |
+|:---------|:-----|:-------|:-----|:------------|
+| `/v1/.well-known/configuration` | `All` | __`GET`__ 	| Not OAuth 2.0. | Discovery metadata JSON about all web API. |
+| `/v1/login` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user log in. |
+| `/v1/signup` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user sign up. |
+| `/oauth2/v1/token` | `All` | __`POST`__ 	| OAuth 2.0. | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
+| `/oauth2/v1/revoke` | `All` | __`POST`__ 	| OAuth 2.0. | Revokes a refresh_token. |
+| `/oauth2/v1/.well-known/openid-configuration` | `openid` | __`GET`__ 	| OAuth 2.0. | Discovery metadata JSON about OpenID web API only. |
+| `/oauth2/v1/introspect` | `openid` | __`POST`__ 	| OAuth 2.0. | Intraspects a token (e.g., access_token, refresh_token, id_token). |
+| `/oauth2/v1/userinfo` | `openid` | __`GET`__ 	| OAuth 2.0. | Returns user's profile based on the claims associated with the access_token. |
+| `/oauth2/v1/certs` | `openid` | __`GET`__ 	| OAuth 2.0. | Array of public JWK keys used to verify id_tokens. |
 
-Additionally, for each identity provider installed in UserIn, the following new endpoint is added (this example uses Facebook):
+Additionally, for each identity provider installed on UserIn, the following new endpoint is added (this example uses Facebook):
 
-| Name | Method | Type | Pathname | Description |
-|:-----|:-------|:-----|:---------|:------------|
-| `identity_provider` | __`GET`__ 	| Not OAuth 2.0. | `/v1/facebook/authorize` | Redirects to Facebook consent page. |
+| Pathname | Mode | Method | Type | Description |
+|:---------|:-----|:-------|:-----|:------------|
+| `/v1/facebook/authorize` | `loginsignupfip` | __`GET`__ 	| Not OAuth 2.0. | Redirects to Facebook consent page. |
 
 To learn more about setting up identity providers, please refer to the [next section](#setting-up-an-identity-provider). 
+
+## /.well-known/configuration
+
+- HTTP method: `GET`
+- Parameters: `none`
+- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+
+## /login
+
+## /signup
+
+## /token
+
+- HTTP method: `POST`
+- Parameters: Depends on the grant type. 
+- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+
+### `refresh_token` grant type 
+
+- Supported modes: `all`
+- Description: With this grant type, a refresh_token is exchanged for a new access_token and potentially a new id_token if the mode is `openid` and is the initial scopes contained `openid`.
+- Required body parameters:
+	- `grant_type` [required]: `refresh_token`
+	- `refresh_token` [required]: `<REFRESH TOKEN VALUE>`
+	- `client_id` [optional]: Only required for OpenID clients. This means that the modes must contain `openid` and that the refresh_token must have been acquired via an OpenID flow (e.g., consent page).
+
+### `authorization_code` grant type 
+
+- Supported modes: `loginsignupfip` and `openid`
+- Description: With this grant type, an authorization code is exchanged for an access_token and potentially:
+	- An id_token if the mode is `openid` and is the initial scopes contained `openid`.
+	- A refresh_token if the initial scopes contained `offline_access`. If the mode contains `openid`, then the `offline_access` scope must be explicitely supported by the client_id. This is configured on the [`get_client`](#get_client) event handler.
+	That authorization code is acquired via one of the following two flows:
+		1. The login/signup screen (`loginsignupfip` mode) when the user selected an identity provider (e.g., Facebook) rather than the username/password method.
+		2. A third-party system redirected one of your user to your platform consent page (`openid` mode). 
+- Required body parameters:
+	- `grant_type` [required]: `authorization_code`
+	- `code` [required]: `<AUTHORIZATION CODE VALUE>`
+	- `redirect_uri` [required]: This is a security precaution. This redirect uri must be the same as the one that was used by the consent page to redirect to your platform to return the authorization code. 
+	- `client_id` [optional]: Only required for OpenID clients. This means that the modes must contain `openid` and that the authorization code must have been acquired via an OpenID flow (e.g., consent page).
+	- `code_verifier` [optional]: This value is only required when the authorization code was acquired with a `code_challenge`. This security strategy is called PKCE (Proof Key for Code Exchange).
+
+### `password` grant type 
+
+- Supported modes: `openid`
+- Description: With this grant type, a client_id, username and password are exchanged for an access_token and potentially an id_token if the scopes contain `openid`.
+- Required body parameters:
+	- `grant_type` [required]: `password`
+	- `username` [required]: `<USERNAME>`
+	- `password` [required]: `<PASSWORD>`
+	- `client_id` [required]: `<CLIENT_ID>`
+	- `scope` [optional]: `<SPACE DELIMITED SCOPES>`
+
+### `client_credentials` grant type 
+
+- Supported modes: `openid`
+- Description: With this grant type, a client_id and a client_secret are exchanged for an access_token and potentially an id_token if the scopes contain `openid`.
+- Required body parameters:
+	- `grant_type` [required]: `client_credentials`
+	- `client_id` [required]: `<CLIENT_ID>`
+	- `client_secret` [required]: `<CLIENT_SECRET>`
+	- `scope` [optional]: `<SPACE DELIMITED SCOPES>`
+
+## /revoke
+
+## /.well-known/openid-configuration
+
+- HTTP method: `GET`
+- Parameters: `none`
+- Required modes: `openid`
+
+## /introspect
+
+## /userinfo
+
+## /certs
+
+## /<IdP>/authorize
 
 # Setting up an identity provider
 
@@ -1217,7 +1316,11 @@ When this code is executed, a `postman-collection.json` file is autogenerated. U
 
 Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
 
-## Login/Signup flow using an third-part Identity Provider
+Generally speaking, those flows exist to power the non-third-party use cases, i.e., the ones where your API powers your own Apps directly (e.g., signing up with username and password). Those flows do not need any `client_id` (which exist to identity a third-party). UserIn's value proposition is to leverage the existing OAuth 2.0 APIs to support both standard (requires a client_id and maybe a client_secret too) and non-standard flows. To deliver this value, UserIn uses this simple approach. When users are authorized via your platform's consent page (OAuth 2.0 flow), then tokens (including the authorization code) are linked to a client_id. All subsequent flows involving those tokens require a client_id. On the other hand, When users login or signup via your login/signup page (non-OAuth 2.0 flow), then no client_id is associated with the generated tokens, and therefore the client_id is not required.
+
+## Login/Signup flow using an third-party Identity Provider
+
+This is the case where a user wish to use an identity provider such as Facebook to login or signup to your platform. Behind the scene, UserIn interacts with the identity provider's _OAuth 2.0 authorization code flow_ to make this happen, but this next web API is not part of the OAuth 2.0 specification.
 
 ```
 GET https://YOUR_DOMAIN/v1/google/authorize?

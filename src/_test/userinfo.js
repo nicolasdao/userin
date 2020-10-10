@@ -16,6 +16,16 @@ const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
 setUpScopeAssertion(assert)
 
+/**
+ * Runs the test suites.
+ * 
+ * @param  {UserIn}		data.strategy
+ * @param  {String}		data.user.password
+ * @param  {String}		data.user.password
+ * @param  {Boolean}	skip			
+ *
+ * @return {Void}
+ */
 module.exports = function runTest (data, skip, showResults) {
 	
 	const { 

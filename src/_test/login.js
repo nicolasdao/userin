@@ -5,11 +5,14 @@ const eventRegister = require('../eventRegister')
 const { logTestErrors, createShowTestResultFn } = require('./_core')
 
 /**
- * Runs the test suites for the login handler.
+ * Runs the test suites.
  * 
- * @param  {String}		data.user.username
+ * @param  {UserIn}		data.strategy
  * @param  {String}		data.user.password
- * @param  {Boolean}	skip					
+ * @param  {String}		data.user.password
+ * @param  {Boolean}	skip			
+ *
+ * @return {Void}
  */
 module.exports = function runTest (data, skip, showResults) {
 	const {

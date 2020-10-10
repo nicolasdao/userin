@@ -24,56 +24,65 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 	// A. Validates input
 	if (!eventHandlerStore.get_refresh_token_claims)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_refresh_token_claims' handler.`)
-	if (!eventHandlerStore.get_client)
-		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
 	if (!eventHandlerStore.generate_access_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_access_token' handler.`)
 	if (!eventHandlerStore.get_config)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
-
-	if (!client_id)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
 	if (!refresh_token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'refresh_token'`)
 
-	// B. Gets the client's scopes and audiences as well as the claims originally associated with the refresh_token
-	const [[claimsErrors, claims], [serviceAccountErrors, serviceAccount]] = yield [
-		eventHandlerStore.get_refresh_token_claims.exec({ token:refresh_token }),
-		eventHandlerStore.get_client.exec({ client_id })
-	]
-	if (claimsErrors || serviceAccountErrors)
-		throw wrapErrors(errorMsg, claimsErrors || serviceAccountErrors)
+	// B. Gets the claims originally associated with the refresh_token
+	const [claimsErrors, claims] = yield eventHandlerStore.get_refresh_token_claims.exec({ token:refresh_token })
 
-	// C. Validates that the details match between the client and the refresh_token.
+	// C. Validate claims
+	if (claimsErrors)
+		throw wrapErrors(errorMsg, claimsErrors)
 	if (!claims)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid refresh_token.`)
+
+	// D. Verifies client
+	const verifyClientId = claims.client_id
+	const clientScopes = []
+	const clientAudiences = []
+	if (verifyClientId) {
+		if (!eventHandlerStore.get_client)
+			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_client' handler.`)
+		if (!client_id)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'`)
+		if (claims.client_id != client_id)
+			throw new userInError.InvalidClientError(`${errorMsg}. Unauthorized access.`)
+
+		const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id })
+		if (clientErrors)
+			throw wrapErrors(errorMsg, clientErrors)
+		if (!client)
+			throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+
+		clientScopes.push(...(client.scopes||[]))
+		clientAudiences.push(...(client.audiences||[]))
+	}
+
+	// E. Validates that the details match between the client and the refresh_token.
 	if (claims.exp) {
 		const [claimsExpiredErrors] = oauth2Params.verify.claimsExpired(claims)
 		if (claimsExpiredErrors)
 			throw wrapErrors(errorMsg, claimsExpiredErrors)
 	}
-	if (!serviceAccount)
-		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
-	if (!claims.client_id)
-		throw new userInError.InvalidTokenError(`${errorMsg}. Corrupted refresh_token. This token is not associated with any client_id.`)
-	if (claims.client_id != client_id)
-		throw new userInError.InvalidClientError(`${errorMsg}. Unauthorized access.`)
-
-	const refreshTokenScopes = claims.scope ? oauth2Params.convert.thingToThings(claims.scope) : serviceAccount.scopes
+	const refreshTokenScopes = claims.scope ? oauth2Params.convert.thingToThings(claims.scope) : clientScopes
 	const requestIdToken = refreshTokenScopes && refreshTokenScopes.indexOf('openid') >= 0
 
 	if (requestIdToken && !eventHandlerStore.generate_id_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_id_token' handler. This event handler is required when 'scope' contains 'openid'.`)
 	
-	if (claims.scope) {
-		const [scopeErrors] = oauth2Params.verify.scopes({ scopes:refreshTokenScopes, clientScopes:serviceAccount.scopes })
+	if (verifyClientId && claims.scope) {
+		const [scopeErrors] = oauth2Params.verify.scopes({ scopes:refreshTokenScopes, clientScopes })
 		if (scopeErrors)
 			throw wrapErrors(errorMsg, scopeErrors)
 	}
 
 	// D. Get the access_token (and potentially the id_token to) for that user_id
-	const config = { client_id, user_id:claims.sub, audiences:serviceAccount.audiences, scopes:refreshTokenScopes, state }
+	const config = { client_id, user_id:claims.sub, audiences:clientAudiences, scopes:refreshTokenScopes, state }
 
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult]] = yield [
 		eventHandlerStore.generate_openid_access_token.exec(config),

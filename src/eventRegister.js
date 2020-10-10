@@ -141,7 +141,7 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield oauth2Params.getAuthorizationCodeBasicClaims(eventHandlerStore)
 		if (basicOIDCclaimsErrors)
 			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
-		
+
 		if (code_challenge && !code_challenge_method)
 			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge' is specified, 'code_challenge_method' is required.`)
 		if (!code_challenge && code_challenge_method)

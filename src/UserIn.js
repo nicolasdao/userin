@@ -1,8 +1,7 @@
 const { co } = require('core-async')
 const express = require('express')
 const { error: { catchErrors, wrapErrors }, promise:{ delay } } = require('puffy')
-const { verifyStrategy, isLoginSignupModeOn, isOpenIdModeOn, Strategy, getSupportedModes } = require('userin-core')
-const browseApi = require('./browse')
+const { verifyStrategy, Strategy, getSupportedModes } = require('userin-core')
 const introspectApi = require('./introspect')
 const discoveryApi = require('./discovery')
 const tokenApi = require('./token')
@@ -148,15 +147,16 @@ class UserIn extends express.Router {
 
 		// 2. Merges all the configs
 		const appConfig = { 
-			...config.config,
+			...strategy.config,
+			modes,
 			version: config.version || 'v1', 
 			authorizeCallbackName: 'authorizecallback',
 			endpoints: {} 
 		}
 		
 		// 3. Determines the modes
-		const loginSignupModeOn = isLoginSignupModeOn(modes)
-		const openIdModeOn = isOpenIdModeOn(modes)
+		const loginSignupModeOn = modes.indexOf('loginsignup') >= 0 || modes.indexOf('loginsignupfip') >= 0
+		const openIdModeOn = modes.indexOf('openid') >= 0
 
 		// 4. Creates a store to maintain this instance's event handlers. This store is dynamically populated 
 		// outside of the instance vie the 'use' or 'on' APIs.
@@ -172,21 +172,18 @@ class UserIn extends express.Router {
 
 		createOauth2HttpHandler('token_endpoint', 'post', tokenApi)
 		createOauth2HttpHandler('revocation_endpoint', 'post', revokeApi)
-		createOauth2HttpHandler('openidconfiguration_endpoint', 'get', discoveryApi.openid, { formatJSON:true })
-		createHttpHandler('browse_endpoint', 'get', browseApi)
-		createHttpHandler('browse_redirect_endpoint', 'get', browseApi.redirect)
-
-		if (eventHandlerStore.get_jwks)
-			createOauth2HttpHandler('jwks_uri', 'get', jwksUriApi, { formatJSON:true })
+		createHttpHandler('configuration_endpoint', 'get', discoveryApi.nonOAuth, { formatJSON:true })
 
 		// 6. Create the HTTP endpoint based on the modes. 
 		if (openIdModeOn) {
 			createOauth2HttpHandler('introspection_endpoint', 'post', introspectApi)
 			createOauth2HttpHandler('userinfo_endpoint', 'get', userinfoApi)
+			createOauth2HttpHandler('openidconfiguration_endpoint', 'get', discoveryApi.openid, { formatJSON:true })
+			if (eventHandlerStore.get_jwks)
+				createOauth2HttpHandler('jwks_uri', 'get', jwksUriApi, { formatJSON:true })
 		} 
 
 		if (loginSignupModeOn) {
-			createHttpHandler('configuration_endpoint', 'get', discoveryApi.nonOAuth, { formatJSON:true })
 			createHttpHandler('login_endpoint', 'post', loginApi)
 			createHttpHandler('signup_endpoint', 'post', signupApi)
 		}
@@ -224,6 +221,16 @@ class UserIn extends express.Router {
 			
 			return { baseUrl:appConfig.baseUrl, endpoints, fqEndpoints }
 		}))
+
+		this.config = appConfig
+
+		Object.defineProperty(this, 'eventHandlerStore', {
+			get() {
+				return eventHandlerStore
+			}
+		})
+
+		return this
 	}
 }
 

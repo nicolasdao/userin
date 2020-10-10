@@ -15,6 +15,16 @@ const eventRegister = require('../eventRegister')
 const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
 setUpScopeAssertion(assert)
 
+/**
+ * Runs the test suites.
+ * 
+ * @param  {UserIn}		data.strategy
+ * @param  {String}		data.user.password
+ * @param  {String}		data.user.password
+ * @param  {Boolean}	skip			
+ *
+ * @return {Void}
+ */
 module.exports = function runTest (data, skip, showResults=[]) {
 	const { 
 		clientId:client_id, 
@@ -391,7 +401,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					assert.isOk(refresh_token, '04')
 					
 					const [refreshTokenClaimsErrors, refreshTokenClaims] = yield eventHandlerStore.get_refresh_token_claims.exec({ token:refresh_token })
-					
+
 					logE.push(refreshTokenClaimsErrors)
 					assert.isNotOk(refreshTokenClaimsErrors, '05')
 					assert.isOk(refreshTokenClaims, '06')
@@ -406,6 +416,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const [refreshTokenClaims2Errors, refreshTokenClaims2] = yield eventHandlerStore.get_refresh_token_claims.exec({ token:refresh_token })
 					
 					logE.push(refreshTokenClaims2Errors)
+
 					assert.isOk(refreshTokenClaims2Errors || !refreshTokenClaims2, '08')
 
 					if (showResult) console.log(errors)

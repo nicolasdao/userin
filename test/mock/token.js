@@ -1,16 +1,17 @@
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 
 const KEY = 'supersecret'
 
 const createToken = delay => claims => {
 	claims = claims || {}
 	const exp = Math.floor(Date.now()/1000) + delay
-	return jwt.sign({ ...claims, exp }, KEY)
+	return jwt.sign({ ...claims, exp, _key:crypto.randomBytes(10).toString('base64') }, KEY)
 }
 
 const createValid = claims => {
 	claims = claims || {}
-	return jwt.sign(claims, KEY)
+	return jwt.sign({ ...claims, _key:crypto.randomBytes(10).toString('base64') }, KEY)
 }
 
 const decryptToken = token => jwt.decode(token)

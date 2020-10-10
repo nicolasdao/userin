@@ -11,11 +11,14 @@ const endpoint = '.well-known/openid-configuration'
  * @param {Request}		context.req					Express Request
  * @param {Response}	context.res					Express Response
  * @param {String}		context.authorization		HTTP Authorization header value (e.g., 'Bearer 12345')
- * @param {Boolean}		includeNonStandard			Default false
+ * @param {String}		context.baseUrl
+ * @param {Object}		context.tokenExpiry			
+ * @param {[String]}	context.modes				Valid values: 'loginsignup', 'loginsignupfip', 'openid'
+ * @param {String}		context.version
  *  
  * @return {Object}		fullyQualifiedEndpoints	
  */
-const handler = (payload, eventHandlerStore, context={}) => getOpenIdDiscoveryData(context.baseUrl, context.endpoints, eventHandlerStore)
+const handler = (payload, eventHandlerStore, context={}) => getOpenIdDiscoveryData(eventHandlerStore, context)
 
 module.exports = {
 	endpoint,

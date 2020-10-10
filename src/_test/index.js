@@ -5,8 +5,10 @@ const userinfoTest = require('./userinfo')
 const revokeTest = require('./revoke')
 const loginTest = require('./login')
 const signupTest = require('./signup')
+const discoveryTest = require('./discovery')
 const strategyTest = require('./Strategy')
 const { logTestErrors } = require('./_core')
+const UserIn = require('../UserIn.js')
 
 const skipTest = (name, skip, only) => {
 	if (skip)
@@ -20,6 +22,8 @@ const skipTest = (name, skip, only) => {
 // Used to consume params that are not used and avoid linting warnings
 const voidFn = () => null
 
+const toggleTestMode = () => process.env.TEST_MODE = true
+
 /**
  * Unit tests a LoginSignup UserIn strategy. 
  * 
@@ -28,16 +32,18 @@ const voidFn = () => null
  * @param  {String}		stub.user.username				
  * @param  {String}		stub.user.password		
  * @param  {String}		stub.newUserPassword		
- * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup'
- * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup'
+ * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup', 'token', 'discovery'
+ * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup', 'token', 'discovery'
  */
 const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
-	const loginSignupConfig = { ...config, modes:['loginsignup'] }
+	toggleTestMode()
+	const modes = ['loginsignup']
+	const loginSignupConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
 
 	// 1. Tests that the strategy is instantiable
-	describe('Concrete loginsignup strategy', () => {
+	describe('loginsignup Strategy instance', () => {
 		it('Should create an instance when the valid params are provided', done => {
 			const logE = logTest(done)
 			logE.run(Promise.resolve(null).then(() => {
@@ -53,24 +59,58 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 		})
 	})
 
-	// 2. Creates a new strategy instance. If ot fails, abort the test.
-	let strategy
+	// 2. Tests that the strategy is instantiable
+	describe('loginsignup UserIn instance', () => {
+		it('Should create an instance when the valid params are provided', done => {
+			const logE = logTest(done)
+			logE.run(Promise.resolve(null).then(() => {
+				try {
+					const userIn = new UserIn({
+						Strategy,
+						modes,
+						config
+					})
+					voidFn(userIn)
+					done()
+				} catch(err) {
+					logE.push([new Error('Failed to create UserIn instance in \'loginsignup\' mode'), err])
+					throw err
+				}
+			}))
+		})
+	})
+
+	// 3. Creates strategy and userIn instances. If it fails, abort the test.
+	let strategy, userIn
 	try {
 		strategy = new Strategy(loginSignupConfig)
+		userIn = new UserIn({
+			Strategy,
+			modes,
+			config
+		})
 	} catch (err) {
 		strategy  = (() => null)(err)
+		userIn = null
 	}
 
-	if (!strategy)
+	if (!strategy || !userIn)
 		return
 
 	const { user, newUserPassword } = stub
 	const { skip, only, showResults } = options
 
 	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), showResults)
-	loginTest({ strategy, user }, skipTest('login', skip, only), showResults)
-	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), showResults)
-	revokeTest({ strategy, user }, skipTest('revoke', skip, only), showResults)
+	loginTest({ strategy, user, userIn }, skipTest('login', skip, only), showResults)
+	signupTest({ newUserPassword, strategy, user, userIn }, skipTest('signup', skip, only), showResults)
+	revokeTest({ strategy, user, userIn }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName: 'loginsignup', userIn }, skipTest('discovery', skip, only), showResults)
+	tokenTest({
+		testSuiteName: 'loginsignup',
+		strategy, 
+		user,
+		userIn
+	}, skipTest('token', skip, only), showResults)
 }
 
 /**
@@ -84,11 +124,13 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
  * @param  {String}		stub.fipUser.id					ID of the user in the FIP (not the user ID on your system)
  * @param  {String}		stub.fipUser.fipName			e.g., 'facebook', 'google'
  * @param  {String}		stub.fipUser.userId				ID if the user on your system.
- * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup'
- * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup', 'fiploginsignup'
+ * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'login', 'signup', 'fiploginsignup', 'token', 'discovery'
+ * @param  {[String]}	options.only					Valid values: 'strategy', 'login', 'signup', 'fiploginsignup', 'token', 'discovery'
  */
 const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
-	const loginSignupConfig = { ...config, modes:['loginsignupfip'] }
+	toggleTestMode()
+	const modes = ['loginsignupfip']
+	const loginSignupConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
 
@@ -109,15 +151,42 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 		})
 	})
 
-	// 2. Creates a new strategy instance. If ot fails, abort the test.
-	let strategy
+	// 2. Tests that the strategy is instantiable
+	describe('loginsignupfip UserIn instance', () => {
+		it('Should create an instance when the valid params are provided', done => {
+			const logE = logTest(done)
+			logE.run(Promise.resolve(null).then(() => {
+				try {
+					const userIn = new UserIn({
+						Strategy,
+						modes,
+						config
+					})
+					voidFn(userIn)
+					done()
+				} catch(err) {
+					logE.push([new Error('Failed to create UserIn instance in \'loginsignup\' mode'), err])
+					throw err
+				}
+			}))
+		})
+	})
+
+	// 3. Creates strategy and userIn instances. If it fails, abort the test.
+	let strategy, userIn
 	try {
 		strategy = new Strategy(loginSignupConfig)
+		userIn = new UserIn({
+			Strategy,
+			modes,
+			config
+		})
 	} catch (err) {
 		strategy  = (() => null)(err)
+		userIn = null
 	}
 
-	if (!strategy)
+	if (!strategy || !userIn)
 		return
 
 	const { user, newUserPassword, fipUser } = stub
@@ -133,6 +202,13 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 		userId: fipUser.userId,
 	}, skipTest('fiploginsignup', skip, only), showResults)
 	revokeTest({ strategy, user }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName: 'loginsignupfip', userIn }, skipTest('discovery', skip, only), showResults)
+	tokenTest({
+		testSuiteName: 'loginsignupfip',
+		strategy, 
+		user,
+		userIn
+	}, skipTest('token', skip, only), showResults)
 }
 
 /**
@@ -158,7 +234,9 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
  * @return {Void}
  */
 const testOpenId = (Strategy, config={}, stub={}, options={}) => {
-	const openIdConfig = { ...config, modes:['openid'] }
+	toggleTestMode()
+	const modes = ['openid']
+	const openIdConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
 
@@ -179,15 +257,42 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 		})
 	})
 
-	// 2. Creates a new strategy instance. If ot fails, abort the test.
-	let strategy
+	// 2. Tests that the strategy is instantiable
+	describe('loginsignupfip UserIn instance', () => {
+		it('Should create an instance when the valid params are provided', done => {
+			const logE = logTest(done)
+			logE.run(Promise.resolve(null).then(() => {
+				try {
+					const userIn = new UserIn({
+						Strategy,
+						modes,
+						config
+					})
+					voidFn(userIn)
+					done()
+				} catch(err) {
+					logE.push([new Error('Failed to create UserIn instance in \'loginsignup\' mode'), err])
+					throw err
+				}
+			}))
+		})
+	})
+
+	// 3. Creates strategy and userIn instances. If it fails, abort the test.
+	let strategy, userIn
 	try {
 		strategy = new Strategy(openIdConfig)
+		userIn = new UserIn({
+			Strategy,
+			modes,
+			config
+		})
 	} catch (err) {
 		strategy  = (() => null)(err)
+		userIn = null
 	}
 
-	if (!strategy)
+	if (!strategy || !userIn)
 		return
 
 	const {
@@ -229,12 +334,13 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	}, skipTest('introspect', skip, only), showResults)
 
 	tokenTest({
+		testSuiteName: 'openid',
 		clientId, 
 		clientSecret, 
 		altClientId, 
 		strategy, 
-		accessTokenExpiresIn: 3600,
-		user
+		user,
+		userIn
 	}, skipTest('token', skip, only), showResults)
 
 	userinfoTest({
@@ -245,6 +351,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	}, skipTest('userinfo', skip, only), showResults)
 
 	revokeTest({ clientId, altClientId, strategy, user }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName: 'openid', userIn }, skipTest('discovery', skip, only), showResults)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

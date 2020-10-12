@@ -19,7 +19,7 @@ setUpScopeAssertion(assert)
 /**
  * Runs the test suites.
  * 
- * @param  {UserIn}		data.strategy
+ * @param  {UserIn}		data.userIn
  * @param  {String}		data.user.password
  * @param  {String}		data.user.password
  * @param  {Boolean}	skip			
@@ -27,14 +27,11 @@ setUpScopeAssertion(assert)
  * @return {Void}
  */
 module.exports = function runTest (data, skip, showResults) {
+	const { userIn, stub: { client={} } } = data || {}
+	client.user = client.user || {}
+	const claimStubs = client.user.claimStubs || []
 	
-	const { 
-		clientId:client_id, 
-		strategy, 
-		user: { username, password },
-		claimStubs=[]
-	} = data
-	
+	const strategy = userIn.strategy
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
 
@@ -48,11 +45,9 @@ module.exports = function runTest (data, skip, showResults) {
 		}
 		
 		describe('handler', () => {
-			
-			const user = { username, password }
 
 			const getValidAccessToken = (eventHandlerStore, scopes) => co(function *() {
-				const [errors, result] = yield grantTypePassword.exec(eventHandlerStore, { client_id, user, scopes })
+				const [errors, result] = yield grantTypePassword.exec(eventHandlerStore, { client_id:client.id, user:client.user, scopes })
 				if (errors)
 					return [errors, null]
 				else

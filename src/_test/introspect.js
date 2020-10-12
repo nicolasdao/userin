@@ -9,12 +9,12 @@
 // To skip a test, either use 'xit' instead of 'it', or 'describe.skip' instead of 'describe'
 
 const { co } = require('core-async')
-const { assert } = require('chai')
+const chai = require('chai')
+const { error:{ mergeErrors } } = require('puffy')
 const { handler:introspectHandler } = require('../introspect')
-const grantTypePassword = require('../token/grantTypePassword')
-const grantTypeAuthorizationCode = require('../token/grantTypeAuthorizationCode')
 const eventRegister = require('../eventRegister')
-const { setUpScopeAssertion, logTestErrors, createShowTestResultFn } = require('./_core')
+const { setUpScopeAssertion, logTestErrors, createShowTestResultFn, getUserInServer } = require('./_core')
+const { assert } = chai
 setUpScopeAssertion(assert)
 
 /**
@@ -28,65 +28,68 @@ setUpScopeAssertion(assert)
  * @return {Void}
  */
 module.exports = function runTest (data, skip, showResults=[]) {
-	const { 
-		clientId:client_id, 
-		clientSecret:client_secret, 
-		altClientId,
-		altClientSecret,
-		strategy, 
-		user: { id: user_id, username, password },
-		aud
-	} = data
+	const { userIn, stub:{ client, altClient, privateClient } } = data || {}
 
+	const strategy = userIn.strategy
 	const registerAllHandlers = eventHandlerStore => {
 		const registerEventHandler = eventRegister(eventHandlerStore)
 		registerEventHandler(strategy)
 	}
+
+	const { version='v1' } = userIn.config || {}
 
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
 
 	const showIds = createShowTestResultFn(showResults, 'introspect.handler')
 
-	const redirect_uri = 'https://userin.com/authorization'
+	const getAccessToken = (eventHandlerStore, client_id, user_id, scopes=[]) => co(function *() {
+		const [errors, result] = yield eventHandlerStore.generate_openid_access_token.exec({
+			client_id,
+			user_id, 
+			scopes
+		})
+
+		if (errors)
+			throw mergeErrors(errors)
+		
+		const { token } = result
+
+		return token
+	})
+
+	const getIdToken = (eventHandlerStore, client_id, user_id, scopes=[]) => co(function *() {
+		const [errors, result] = yield eventHandlerStore.generate_openid_id_token.exec({
+			client_id,
+			user_id, 
+			scopes
+		})
+
+		if (errors)
+			throw mergeErrors(errors)
+		
+		const { token } = result
+
+		return token
+	})
+
+	const getRefreshToken = (eventHandlerStore, client_id, user_id, scopes=[]) => co(function *() {
+		const [errors, result] = yield eventHandlerStore.generate_openid_refresh_token.exec({
+			client_id,
+			user_id, 
+			scopes
+		})
+
+		if (errors)
+			throw mergeErrors(errors)
+		
+		const { token } = result
+
+		return token
+	})
 
 	fn('introspect', () => {
 		describe('handler', () => {
-			
-			const payload = { client_id, client_secret }
-			const user = { username, password }
-
-			const getValidAccessToken = (eventHandlerStore) => co(function *() {
-				const [errors, result] = yield grantTypePassword.exec(eventHandlerStore, { 
-					client_id:payload.client_id, 
-					user, 
-					scopes:[]
-				})
-				if (errors)
-					return [errors, null]
-				else
-					return [null, result.access_token]
-			})
-
-			const getValidIdAndRefreshToken = (eventHandlerStore) => co(function *() {
-				const stubbedServiceAccount = { client_id, client_secret }
-				const [codeErrors, { token:code }] = yield eventHandlerStore.generate_openid_authorization_code.exec({
-					...stubbedServiceAccount, 
-					user_id, 
-					scopes:['openid', 'offline_access'],
-					redirect_uri
-				})
-				if (codeErrors)
-					return [codeErrors, null]
-				const [tokenErrors, result] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
-					...stubbedServiceAccount, 
-					code,
-					redirect_uri
-				})
-				if (tokenErrors)
-					return [tokenErrors, null]
-				return [null, result]
-			})
 
 			it('01 - Should fail when the token_type_hint is missing.', done => {
 				const showResult = showIds('01')
@@ -96,12 +99,11 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:'123', 
-							token_type_hint:null,
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id:client.id, client_secret:client.secret, 
+						token:'123', 
+						token_type_hint:null,
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
@@ -121,7 +123,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				logE.run(co(function *() {
 					const [errors] = yield introspectHandler(
 						{ 
-							...payload, 
+							client_id:client.id, client_secret:client.secret, 
 							token:'123', 
 							token_type_hint:'hello',
 						}, eventHandlerStore)
@@ -140,7 +142,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
 					const [errors] = yield introspectHandler({
-						...payload,
+						client_id:client.id, client_secret:client.secret,
 						token_type_hint: 'id_token'
 					}, eventHandlerStore)
 					logE.push(errors)
@@ -158,7 +160,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
 					const [errors] = yield introspectHandler({
-						...payload,
+						client_id:client.id, 
+						client_secret:client.secret,
 						token_type_hint: 'access_token'
 					}, eventHandlerStore)
 					logE.push(errors)
@@ -176,7 +179,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const eventHandlerStore = {}
 				logE.run(co(function *() {
 					const [errors] = yield introspectHandler({
-						...payload,
+						client_id:client.id, 
+						client_secret:client.secret,
 						token_type_hint: 'refresh_token'
 					}, eventHandlerStore)
 					logE.push(errors)
@@ -196,7 +200,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerEventHandler('get_access_token_claims', strategy.get_access_token_claims)
 				logE.run(co(function *() {
 					const [errors] = yield introspectHandler({
-						...payload,
+						client_id:client.id,
+						client_secret:client.secret,
 						token_type_hint: 'access_token'
 					}, eventHandlerStore)
 					logE.push(errors)
@@ -216,13 +221,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:'123', 
-							token_type_hint:'refresh_token',
-							client_id:null
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id:null,
+						client_secret:client.secret, 
+						token:'123', 
+						token_type_hint:'refresh_token'
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
@@ -232,7 +236,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					done()
 				}))
 			})
-			it('08 - Should fail when the client_secret is missing.', done => {
+			it('08 - Should fail when the token is missing.', done => {
 				const showResult = showIds('08')
 				const logE = logTest(done)
 
@@ -240,23 +244,22 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:'123', 
-							token_type_hint:'refresh_token',
-							client_secret:null
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token:null, 
+						token_type_hint:'refresh_token',
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_secret\'') >= 0), '06')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token\'') >= 0), '06')
 
 					if (showResult) console.log(errors)
 					done()
 				}))
 			})
-			it('09 - Should fail when the token is missing.', done => {
+			it('09 - Should fail when the client_secret is missing and the client is configured to require it.', done => {
 				const showResult = showIds('09')
 				const logE = logTest(done)
 
@@ -264,16 +267,16 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:null, 
-							token_type_hint:'refresh_token',
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id: privateClient.id,
+						client_secret:null,
+						token:'123', 
+						token_type_hint:'refresh_token'
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'token\'') >= 0), '06')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('Missing required \'client_secret\'') >= 0), '06')
 
 					if (showResult) console.log(errors)
 					done()
@@ -287,24 +290,22 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:'123', 
-							token_type_hint:'refresh_token',
-							client_id: altClientId,
-							client_secret:'GYUE&((#VYVV(V'
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						token:'123', 
+						token_type_hint:'refresh_token',
+						client_id: privateClient.id,
+						client_secret:'GYUE&((#VYVV(V'
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
-					assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '06')
+					assert.isOk(errors.some(e => e.message && e.message.indexOf('client_id not found') >= 0), '06')
 
 					if (showResult) console.log(errors)
 					done()
 				}))
 			})
-			it('11 - Should fail when the client_id and client_secret are not identifying the client associated with the token.', done => {
+			it('11 - Should fail when the client_id are not identifying the client associated with the token.', done => {
 				const showResult = showIds('11')
 				const logE = logTest(done)
 
@@ -312,22 +313,14 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
+					const token = yield getRefreshToken(eventHandlerStore, client.id, client.user.id)
 
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:result.refresh_token, 
-							token_type_hint:'refresh_token',
-							client_id: altClientId,
-							client_secret:altClientSecret
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id: altClient.id, 
+						client_secret:client.secret, 
+						token, 
+						token_type_hint:'refresh_token'
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
@@ -345,12 +338,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:12344, 
-							token_type_hint:'refresh_token',
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token:12344, 
+						token_type_hint:'refresh_token',
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
@@ -368,23 +361,24 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, access_token] = yield getValidAccessToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
+					const access_token = yield getAccessToken(eventHandlerStore, client.id, client.user.id)
+
 					assert.isOk(access_token, '02')
 					
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:access_token, token_type_hint:'access_token' }, eventHandlerStore)
+					const [errors, tokenInfo] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token:access_token, 
+						token_type_hint:'access_token' 
+					}, eventHandlerStore)
 					logE.push(errors)
 					
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
 					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.equal(tokenInfo.sub, client.user.id, '07')
+					assert.equal(tokenInfo.client_id, client.id, '09')
 					assert.equal(tokenInfo.token_type, 'Bearer', '10')
 
 					if (showResult) console.log(tokenInfo)
@@ -399,25 +393,22 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
+					const token = yield getIdToken(eventHandlerStore, client.id, client.user.id, ['openid', 'offline_access'])
 
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:result.id_token, token_type_hint:'id_token' }, eventHandlerStore)
+					const [errors, tokenInfo] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token, 
+						token_type_hint:'id_token' 
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
 					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.equal(tokenInfo.sub, client.user.id, '07')
+					assert.equal(tokenInfo.client_id, client.id, '09')
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
 					assert.equal(tokenInfo.token_type, 'Bearer', '13')
 
@@ -433,25 +424,22 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
+					const token = yield getRefreshToken(eventHandlerStore, client.id, client.user.id, ['openid', 'offline_access'])
 
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:result.refresh_token, token_type_hint:'refresh_token' }, eventHandlerStore)
+					const [errors, tokenInfo] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token, 
+						token_type_hint:'refresh_token' 
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isNotOk(errors, '03')
 					assert.isOk(tokenInfo, '04')
 					assert.isOk(tokenInfo.active, '05')
 					assert.equal(tokenInfo.iss, strategy.config.iss, '06')
-					assert.equal(tokenInfo.sub, user_id, '07')
-					assert.equal(tokenInfo.aud, aud, '08')
-					assert.equal(tokenInfo.client_id, client_id, '09')
+					assert.equal(tokenInfo.sub, client.user.id, '07')
+					assert.equal(tokenInfo.client_id, client.id, '09')
 					assert.scopes(tokenInfo.scope, ['openid', 'offline_access'], 10)
 					assert.equal(tokenInfo.token_type, 'Bearer', '13')
 
@@ -467,20 +455,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const [codeErrors, result] = yield getValidIdAndRefreshToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
-					assert.isOk(result, '02')
-					assert.isOk(result.id_token, '03')
-					assert.isOk(result.refresh_token, '04')
-
-					const [errors] = yield introspectHandler(
-						{ 
-							...payload, 
-							token:12344, 
-							token_type_hint:'refresh_token',
-						}, eventHandlerStore)
+					const [errors] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token:12344, 
+						token_type_hint:'refresh_token',
+					}, eventHandlerStore)
 					logE.push(errors)
 
 					assert.isOk(errors, '05')
@@ -504,14 +484,16 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				})
 
 				logE.run(co(function *() {
-					const [codeErrors, access_token] = yield getValidAccessToken(eventHandlerStore)
-					logE.push(codeErrors)
-					
-					assert.isNotOk(codeErrors, '01')
+					const access_token = yield getAccessToken(eventHandlerStore, client.id, client.user.id)
+
 					assert.isOk(access_token, '02')
 					
-					const [errors, tokenInfo] = yield introspectHandler(
-						{ ...payload, token:access_token, token_type_hint:'access_token' }, eventHandlerStore)
+					const [errors, tokenInfo] = yield introspectHandler({ 
+						client_id:client.id, 
+						client_secret:client.secret, 
+						token:access_token, 
+						token_type_hint:'access_token' 
+					}, eventHandlerStore)
 					logE.push(errors)
 					
 					assert.isNotOk(errors, '01')
@@ -519,6 +501,333 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					assert.isOk(tokenInfo.active === false, '03')
 
 					if (showResult) console.log(tokenInfo)
+					done()
+				}))
+			})
+		})
+
+		describe('/introspect', () => {	
+			const showIds = createShowTestResultFn(showResults, 'introspect/introspect')		
+
+			it('01 - Should fail when the token_type_hint is missing.', done => {
+				const showResult = showIds('01')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 400, '01')
+					assert.equal(body.error, 'invalid_request','02')
+					assert.include(body.error_description, 'Missing required \'token_type_hint\'', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('02 - Should fail when the token_type_hint is invalid.', done => {
+				const showResult = showIds('02')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'hello'
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 400, '01')
+					assert.equal(body.error, 'invalid_request','02')
+					assert.include(body.error_description, 'token_type_hint \'hello\' is not supported', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('03 - Should fail when the client_id is missing.', done => {
+				const showResult = showIds('03')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'refresh_token'
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 400, '01')
+					assert.equal(body.error, 'invalid_request','02')
+					assert.include(body.error_description, 'Missing required \'client_id\'', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('04 - Should fail when the token is missing.', done => {
+				const showResult = showIds('04')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint: 'refresh_token',
+						client_id: client.id
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 400, '01')
+					assert.equal(body.error, 'invalid_request','02')
+					assert.include(body.error_description, 'Missing required \'token\'', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('05 - Should fail when the client_secret is missing and the client\'s auth_methods contain \'client_secret_post\'.', done => {
+				const showResult = showIds('05')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint: 'refresh_token',
+						token: '123',
+						client_id: privateClient.id
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 400, '01')
+					assert.equal(body.error, 'invalid_request','02')
+					assert.include(body.error_description, 'Missing required \'client_secret\'', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('06 - Should fail when the client_secret is invalid and the client\'s auth_methods contain \'client_secret_post\'.', done => {
+				const showResult = showIds('06')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint: 'refresh_token',
+						token: '123',
+						client_id: privateClient.id,
+						client_secret: privateClient.secret + '123'
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 401, '01')
+					assert.equal(body.error, 'invalid_client','02')
+					assert.include(body.error_description, 'client_id not found', '03')					
+
+					server.close()
+					done()
+				}))
+			})
+			it('07 - Should return the access_token details when a valid access_token is provided without a client_secret and the client\'s auth_methods is not configured.', done => {
+				const showResult = showIds('07')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getAccessToken(userIn.eventHandlerStore, client.id, client.user.id)
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'access_token',
+						token,
+						client_id: client.id
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, client.user.id, '03')
+					assert.equal(body.client_id, client.id, '04')
+					assert.equal(body.active, true, '05')
+					assert.isAbove(body.exp*1000, Date.now(), '06')
+
+					server.close()
+					done()
+				}))
+			})
+			it('08 - Should return the access_token details when a valid access_token is provided with a valid client_secret and the client\'s auth_methods contain \'client_secret_post\'.', done => {
+				const showResult = showIds('08')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getAccessToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'access_token',
+						token,
+						client_id: privateClient.id,
+						client_secret: privateClient.secret
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, privateClient.user.id, '03')
+					assert.equal(body.client_id, privateClient.id, '04')
+					assert.equal(body.active, true, '05')
+					assert.isAbove(body.exp*1000, Date.now(), '06')				
+
+					server.close()
+					done()
+				}))
+			})
+			it('09 - Should return the id_token details when a valid id_token is provided without a client_secret and the client\'s auth_methods is not configured.', done => {
+				const showResult = showIds('07')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getIdToken(userIn.eventHandlerStore, client.id, client.user.id)
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'id_token',
+						token,
+						client_id: client.id
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, client.user.id, '03')
+					assert.equal(body.client_id, client.id, '04')
+					assert.equal(body.active, true, '05')
+					assert.isAbove(body.exp*1000, Date.now(), '06')
+
+					server.close()
+					done()
+				}))
+			})
+			it('10 - Should return the id_token details when a valid id_token is provided with a valid client_secret and the client\'s auth_methods contain \'client_secret_post\'.', done => {
+				const showResult = showIds('08')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getIdToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'id_token',
+						token,
+						client_id: privateClient.id,
+						client_secret: privateClient.secret
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, privateClient.user.id, '03')
+					assert.equal(body.client_id, privateClient.id, '04')
+					assert.equal(body.active, true, '05')
+					assert.isAbove(body.exp*1000, Date.now(), '06')				
+
+					server.close()
+					done()
+				}))
+			})
+			it('11 - Should return the refresh_token details when a valid refresh_token is provided without a client_secret and the client\'s auth_methods is not configured.', done => {
+				const showResult = showIds('07')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getRefreshToken(userIn.eventHandlerStore, client.id, client.user.id)
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'refresh_token',
+						token,
+						client_id: client.id
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, client.user.id, '03')
+					assert.equal(body.client_id, client.id, '04')
+					assert.equal(body.active, true, '05')
+
+					server.close()
+					done()
+				}))
+			})
+			it('12 - Should return the refresh_token details when a valid refresh_token is provided with a valid client_secret and the client\'s auth_methods contain \'client_secret_post\'.', done => {
+				const showResult = showIds('08')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const token = yield getRefreshToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+
+					const { server, app } = yield getUserInServer(userIn)
+					const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/introspect`).send({
+						token_type_hint:'refresh_token',
+						token,
+						client_id: privateClient.id,
+						client_secret: privateClient.secret
+					})
+
+					if (showResult) console.log(body)
+
+					if (status != 200)
+						logE.push(new Error(body.error_description || body.error))
+
+					assert.equal(status, 200, '01')
+					assert.isOk(body,'02')
+					assert.equal(body.sub, privateClient.user.id, '03')
+					assert.equal(body.client_id, privateClient.id, '04')
+					assert.equal(body.active, true, '05')			
+
+					server.close()
 					done()
 				}))
 			})

@@ -92,7 +92,7 @@ const createHttpHandlerFactory = (app, eventHandlerStore, appConfig) => {
 						res.header('Content-Type','application/json')
 						return res.status(200).send(JSON.stringify(result, null, 4))
 					} else
-						return res.status(200).send(result)
+						return res.status(200).send(result||{})
 				}	
 			})
 		}
@@ -227,6 +227,12 @@ class UserIn extends express.Router {
 		Object.defineProperty(this, 'eventHandlerStore', {
 			get() {
 				return eventHandlerStore
+			}
+		})
+
+		Object.defineProperty(this, 'strategy', {
+			get() {
+				return strategy
 			}
 		})
 

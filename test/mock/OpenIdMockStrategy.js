@@ -115,19 +115,21 @@ OpenIdMockStrategy.prototype.generate_refresh_token = LoginSignupFIPMockStrategy
  * @param  {String}		payload.client_secret	Optional. If specified, this method should validate the client_secret.
  * @param  {Object}		context					Strategy's configuration
  * 
- * @return {[String]}	output.audiences		Client ID's audiences.	
- * @return {[String]}	output.scopes			Client ID's scopes.	
+ * @return {[String]}	output.audiences		Client's audiences.	
+ * @return {[String]}	output.scopes			Client's scopes.	
+ * @return {[String]}	output.auth_methods		Client's auth_methods.	
  */
 OpenIdMockStrategy.prototype.get_client = (root, { client_id, client_secret }, context) => {
 	const client = context.repos.client.find(x => x.client_id == client_id)
 	if (!client)
 		return null
 	if (client_secret && client.client_secret != client_secret)
-		throw new Error('Unauthorized access')
+		throw new Error('Access denied')
 
 	return {
 		audiences: client.audiences || [],
-		scopes: client.scopes || []
+		scopes: client.scopes || [],
+		auth_methods: client.auth_methods || []
 	}
 }
 
@@ -234,7 +236,7 @@ OpenIdMockStrategy.prototype.get_identity_claims = (root, { user_id, scopes }, c
 
 	const user = context.repos.user.find(x => x.id == user_id)
 	if (!user)
-		throw new Error(`user_id ${user_id} not found.`)
+		throw new Error(`user_id '${user_id}' not found.`)
 	
 	const client_ids = context.repos.userToClient.filter(x => x.user_id == user.id).map(x => x.client_id)
 

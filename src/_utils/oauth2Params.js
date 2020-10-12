@@ -173,6 +173,8 @@ const createCodeChallenge = (codeVerifier, method) => {
 		throw new Error(`Code challenge method '${method}' is not supported. Supported methods: 'plain', 'S256'.`)
 }
 
+const isClientPrivate = client => client && client.auth_methods && client.auth_methods.some(m => m == 'client_secret_basic' || m == 'client_secret_post')
+
 module.exports = {
 	convert: {
 		thingToThings,
@@ -188,6 +190,11 @@ module.exports = {
 		audiences: verifyAudiences,
 		claimsExpired: areClaimsExpired,
 		clientId: verifyClientIds
+	},
+	check: {
+		client: {
+			isPrivate: isClientPrivate
+		}
 	},
 	getIdTokenBasicClaims: getBasicOIDCclaims('id_token'),
 	getAccessTokenBasicClaims: getBasicOIDCclaims('access_token'),

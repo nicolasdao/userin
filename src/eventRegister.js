@@ -40,6 +40,26 @@ const addGenerateAccessOrRefreshTokenHandler = type => eventHandlerStore => {
 		if (!eventHandlerStore[underlyingEvent])
 			throw new userInError.InternalServerError(`${errorMsg}. Missing '${underlyingEvent}' handler.`)
 		
+		// When both the client_id and the user_id are specified, a check must validate if that client can 
+		// receive an access_token or a refresh_token for that user. 
+		if (client_id && user_id) {
+			if (!eventHandlerStore.get_identity_claims)
+				throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
+
+			const [identityClaimsErrors, identityClaims={}] = yield eventHandlerStore.get_identity_claims.exec({ client_id, user_id, scopes, state })
+			if (identityClaimsErrors)
+				throw wrapErrors(errorMsg, identityClaimsErrors)
+
+			const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id, user_client_ids:identityClaims.client_ids })
+			if (clientIdErrors)
+				throw wrapErrors(errorMsg, clientIdErrors)
+		}
+		// There should always be at least a client_id, a user_id or both specified.
+		// 	1. There is no client_id in non-OAuth 2.0 compliant flows, but there is a user_id
+		// 	2. There is no user_id with the client_credentials or password grant types, but there is a client_id 
+		else if (!client_id && !user_id)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required argument. 'client_id' and 'user_id' cannot be both undefined.`)
+
 		const getBasicOIDCclaims = oauth2Params.getBasicOIDCclaims(type)
 		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield getBasicOIDCclaims(eventHandlerStore)
 		if (basicOIDCclaimsErrors)
@@ -137,6 +157,19 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'generate_authorization_code' handler.`)
 		if (!eventHandlerStore.get_config)
 			throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_config' handler.`)
+		
+		if (client_id) {
+			if (!eventHandlerStore.get_identity_claims)
+				throw new userInError.InternalServerError(`${errorMsg}. Missing 'get_identity_claims' handler.`)
+			
+			const [identityClaimsErrors, identityClaims={}] = yield eventHandlerStore.get_identity_claims.exec({ client_id, user_id, scopes, state })
+			if (identityClaimsErrors)
+				throw wrapErrors(errorMsg, identityClaimsErrors)
+
+			const [clientIdErrors] = oauth2Params.verify.clientId({ client_id, user_id, user_client_ids:identityClaims.client_ids })
+			if (clientIdErrors)
+				throw wrapErrors(errorMsg, clientIdErrors)
+		}
 		
 		const [basicOIDCclaimsErrors, basicOIDCclaims] = yield oauth2Params.getAuthorizationCodeBasicClaims(eventHandlerStore)
 		if (basicOIDCclaimsErrors)

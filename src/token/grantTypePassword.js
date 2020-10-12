@@ -7,6 +7,7 @@ const { oauth2Params } = require('../_utils')
  * Creates a new access token using username and password.
  * 	
  * @param {String}		client_id	
+ * @param {String}		client_secret
  * @param {String}		user.username
  * @param {String}		user.password	
  * @param {[String]}	scopes	
@@ -19,7 +20,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore, { client_id, client_secret, user, scopes, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'password\''
 	const requestIdToken = scopes && scopes.indexOf('openid') >= 0
 
@@ -45,13 +46,24 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user.password'`)
 
 	// B. Verifying those scopes are allowed for that client_id
-	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_client.exec({ client_id })
-	if (serviceAccountErrors)
-		throw wrapErrors(errorMsg, serviceAccountErrors)
-	if (!serviceAccount)
+	const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id })
+	if (clientErrors)
+		throw wrapErrors(errorMsg, clientErrors)
+	if (!client)
 		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
 
-	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, clientScopes:serviceAccount.scopes })
+	if (oauth2Params.check.client.isPrivate(client)) {
+		if (!client_secret)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+
+		const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+		if (clientErrors)
+			throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...clientErrors])
+		if (!client)
+			throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+	}
+
+	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, clientScopes:client.scopes })
 	if (scopeErrors)
 		throw wrapErrors(errorMsg, scopeErrors)
 
@@ -74,7 +86,7 @@ const exec = (eventHandlerStore, { client_id, user, scopes, state }) => catchErr
 		throw wrapErrors(errorMsg, clientIdErrors)
 
 	// E. Generates tokens
-	const config = { client_id, user_id:validUser.id, audiences:serviceAccount.audiences, scopes, state }
+	const config = { client_id, user_id:validUser.id, audiences:client.audiences, scopes, state }
 	const [[accessTokenErrors, accessTokenResult], [idTokenErrors, idTokenResult]] = yield [
 		eventHandlerStore.generate_openid_access_token.exec(config),
 		requestIdToken ? eventHandlerStore.generate_openid_id_token.exec(config) : Promise.resolve([null, null])

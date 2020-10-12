@@ -221,6 +221,7 @@ By default, UserIn exposes the following web APIs:
 | Pathname | Mode | Method | Type | Description |
 |:---------|:-----|:-------|:-----|:------------|
 | `/v1/.well-known/configuration` | `All` | __`GET`__ 	| Not OAuth 2.0. | Discovery metadata JSON about all web API. |
+| `/v1/postman/collection.json` | `All` | __`GET`__ 	| Not OAuth 2.0. | Postman collection 2.0 definition to create a Postman client. This endpoint is not toggled by default. To toggle it, please refer to the [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link) section. |
 | `/v1/login` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user log in. |
 | `/v1/signup` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user sign up. |
 | `/oauth2/v1/token` | `All` | __`POST`__ 	| OAuth 2.0. | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
@@ -240,9 +241,11 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /.well-known/configuration
 
+- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+- OAuth 2.0. compliant: No. 
+- Description: Gets a JSON object describing where all the other endpoints are located and what type of configuration is supported.
 - HTTP method: `GET`
 - Parameters: `none`
-- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
 
 ## /login
 
@@ -250,18 +253,21 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /token
 
-- HTTP method: `POST`
-- Parameters: Depends on the grant type. 
 - Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- Description: Exchanges credentials for tokens.
+- HTTP method: `POST`
+- Parameters: Depends on the grant type and the API private configuration.
 
 ### `refresh_token` grant type 
 
 - Supported modes: `all`
 - Description: With this grant type, a refresh_token is exchanged for a new access_token and potentially a new id_token if the mode is `openid` and is the initial scopes contained `openid`.
-- Required body parameters:
+- Body parameters:
 	- `grant_type` [required]: `refresh_token`
 	- `refresh_token` [required]: `<REFRESH TOKEN VALUE>`
 	- `client_id` [optional]: Only required for OpenID clients. This means that the modes must contain `openid` and that the refresh_token must have been acquired via an OpenID flow (e.g., consent page).
+	- `client_secret` [optional]: Only required when the client_id is required and that specific client is configured so that the client_secret is required.
 
 ### `authorization_code` grant type 
 
@@ -272,29 +278,31 @@ To learn more about setting up identity providers, please refer to the [next sec
 	That authorization code is acquired via one of the following two flows:
 		1. The login/signup screen (`loginsignupfip` mode) when the user selected an identity provider (e.g., Facebook) rather than the username/password method.
 		2. A third-party system redirected one of your user to your platform consent page (`openid` mode). 
-- Required body parameters:
+- Body parameters:
 	- `grant_type` [required]: `authorization_code`
 	- `code` [required]: `<AUTHORIZATION CODE VALUE>`
 	- `redirect_uri` [required]: This is a security precaution. This redirect uri must be the same as the one that was used by the consent page to redirect to your platform to return the authorization code. 
 	- `client_id` [optional]: Only required for OpenID clients. This means that the modes must contain `openid` and that the authorization code must have been acquired via an OpenID flow (e.g., consent page).
+	- `client_secret` [optional]: Only required when the client_id is required and that specific client is configured so that the client_secret is required.
 	- `code_verifier` [optional]: This value is only required when the authorization code was acquired with a `code_challenge`. This security strategy is called PKCE (Proof Key for Code Exchange).
 
 ### `password` grant type 
 
 - Supported modes: `openid`
 - Description: With this grant type, a client_id, username and password are exchanged for an access_token and potentially an id_token if the scopes contain `openid`.
-- Required body parameters:
+- Body parameters:
 	- `grant_type` [required]: `password`
 	- `username` [required]: `<USERNAME>`
 	- `password` [required]: `<PASSWORD>`
 	- `client_id` [required]: `<CLIENT_ID>`
+	- `client_secret` [optional]: Only required when the client_id is required and that specific client is configured so that the client_secret is required.
 	- `scope` [optional]: `<SPACE DELIMITED SCOPES>`
 
 ### `client_credentials` grant type 
 
 - Supported modes: `openid`
 - Description: With this grant type, a client_id and a client_secret are exchanged for an access_token and potentially an id_token if the scopes contain `openid`.
-- Required body parameters:
+- Body parameters:
 	- `grant_type` [required]: `client_credentials`
 	- `client_id` [required]: `<CLIENT_ID>`
 	- `client_secret` [required]: `<CLIENT_SECRET>`
@@ -302,15 +310,45 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /revoke
 
+- Required modes: `openid`
+- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- Description: Revokes a `refresh_token`. In theory, this method should also allow to revoke an `access_token`, but in practice this is not always possible. Usually, the access_token is self-signed, which means the only way to revoke it is to wait until it expires and prevent the refresh_token to be used to issue a new one, which is similar to revoke the refresh_token. This is why UserIn does not support revoking access_tokens.
+- HTTP method: `POST`
+- Header:
+	- `Authorization` [required]: Must be the access_token value prefixed with the `Bearer` scheme (e.g., `Bearer 123`).
+- Body parameters: 
+	- `token` [required]: `<TOKEN VALUE>`
+	- `client_id` [optional]: Only required for OpenID clients. This means that the modes must contain `openid` and that the refresh_token must have been acquired via an OpenID flow (e.g., consent page).
+	- `client_secret` [optional]: Only required when the client_id is required and that specific client is configured so that the client_secret is required.
+
 ## /.well-known/openid-configuration
 
+- Required modes: `openid`
+- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- Description: Gets a JSON object describing where all the other OpenID endpoints are located and what type of OpenID configuration is supported.
 - HTTP method: `GET`
 - Parameters: `none`
-- Required modes: `openid`
 
 ## /introspect
 
+- Required modes: `openid`
+- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- Description: Returns basic details about a token (e.g., active or not, expiry date, creation date, scopes). 
+- HTTP method: `POST`
+- Body parameters: 
+	- `token` [required]: `<TOKEN VALUE>`
+	- `token_type_hint` [required]: Valid values are: `access_token`, `id_token` and `refresh_token`.
+	- `client_id` [required]: `<CLIENT_ID>`
+	- `client_secret` [optional]: Only required when the client_id is required and that specific client is configured so that the client_secret is required.
+
 ## /userinfo
+
+- Required modes: `openid`
+- OAuth 2.0. compliant: Yes
+- Description: Returns details about a user. The level of details depends on the scopes associated with the access_token.
+- HTTP method: `GET`
+- Header:
+	- `Authorization` [required]: Must be the access_token value prefixed with the `Bearer` scheme (e.g., `Bearer 123`).
 
 ## /certs
 
@@ -696,6 +734,36 @@ module.exports = handler
 
 ### `get_client`
 
+```js
+/**
+ * Gets the client's audiences, scopes and auth_methods.  
+ *  
+ * @param  {Object} 	root					Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.client_id
+ * @param  {String}		payload.client_secret	Optional. If specified, this method should validate the client_secret.
+ * @param  {Object}		context					Strategy's configuration
+ * 
+ * @return {[String]}	output.audiences		Client's audiences.	
+ * @return {[String]}	output.scopes			Client's scopes.	
+ * @return {[String]}	output.auth_methods		Client's auth_methods.	
+ */
+const handler = (root, { client_id, client_secret }, context) => {
+	const client = context.repos.client.find(x => x.client_id == client_id)
+	
+	if (!client)
+		return null
+
+	if (client_secret && client.client_secret != client_secret)
+		throw new Error('Unauthorized access')
+
+	return {
+		audiences: client.audiences || [],
+		scopes: client.scopes || [],
+		auth_methods: client.auth_methods || []
+	}
+}
+```
+
 ### `get_config`
 
 ```js
@@ -893,7 +961,7 @@ const config = {
 	}
 }
 
-// The required stub's value are:
+// The required stub's properties are (change the values to your own stub):
 const stub = {
 	user: {
 		username: 'valid@example.com', // Valid username in your own stub data.
@@ -963,9 +1031,10 @@ const config = {
 	}
 }
 
-// The required stub's value are:
+// The required stub's properties are (change the values to your own stub):
 const stub = {
 	user: {
+		id: 1,
 		username: 'valid@example.com', // Valid username in your own stub data.
 		password: '123456' // Valid password in your own stub data.
 	},
@@ -1005,18 +1074,19 @@ const config = {
 	}
 }
 
-// The required stub's value are:
+// The required stub's properties are (change the values to your own stub):
 const stub = {
 	user: {
+		id: 1,
 		username: 'valid@example.com', // Valid username in your own stub data.
 		password: '123456' // Valid password in your own stub data.
 	},
+	newUserPassword: 'd32def32feq', // Add the password that will be used to test new users
 	fipUser: { // this user should be different from the one above.
 		id: '1N7fr2yt', // ID of the user in the identity provider plaftform
 		fipName: 'facebook', // Identity provider's name
 		userId: 2 // ID of the user on your platform
-	},
-	newUserPassword: 'd32def32feq' // Add the password that will be used to test new users
+	}
 }
 
 testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
@@ -1056,10 +1126,10 @@ const config = {
 	}
 }
 
-// The required stub's value are:
+// The required stub's properties are (change the values to your own stub):
 const stub = {
 	client: { 
-		id: 'good_client', 
+		id: 'client_with_at_least_one_user_and_no_auth_methods',
 		secret: '98765', 
 		aud: 'https://private-api@mycompany.com',
 		user: { 
@@ -1094,7 +1164,13 @@ const stub = {
 		}
 	},
 	altClient: { 
-		id: 'existing_client_with_no_access_to_my_user', 
+		id: 'another_client_with_no_auth_methods', 
+		secret: '3751245'
+	},
+	privateClient: { 
+		// this client must have its 'auth_methods' set to ['client_secret_basic'], ['client_secret_post'] or 
+		// ['client_secret_basic', 'client_secret_post']
+		id: 'yet_another_client_with_auth_methods', 
 		secret: '3751245'
 	}
 }
@@ -1151,7 +1227,7 @@ const config = {
 	}
 }
 
-// The required stub's value are:
+// The required stub's properties are (change the values to your own stub):
 const stub = {
 	user: {
 		username: 'valid@example.com', // Valid username in your own stub data.

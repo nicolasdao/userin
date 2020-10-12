@@ -1,3 +1,4 @@
+const { assert } = require('chai')
 const fipLoginSignupTest = require('./fiploginsignup')
 const introspectTest = require('./introspect')
 const tokenTest = require('./token')
@@ -37,10 +38,20 @@ const toggleTestMode = () => process.env.TEST_MODE = true
  */
 const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	toggleTestMode()
+	const testSuiteName = 'loginsignup'
 	const modes = ['loginsignup']
 	const loginSignupConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
+
+	describe('Validating the \'loginsignup\' test suite arguments', () => {
+		it('Should provide a valid stub', () => {
+			assert.isOk(stub.user, '01 - Missing required \'user\' stub object.')
+			assert.isOk(stub.user.username, '02 - Missing required \'user.username\' stub.')
+			assert.isOk(stub.user.password, '03 - Missing required \'user.password\' stub.')
+			assert.isOk(stub.newUserPassword, '04 - Missing required \'newUserPassword\' stub.')
+		})
+	})
 
 	// 1. Tests that the strategy is instantiable
 	describe('loginsignup Strategy instance', () => {
@@ -81,36 +92,31 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
 	})
 
 	// 3. Creates strategy and userIn instances. If it fails, abort the test.
-	let strategy, userIn
+	let userIn
 	try {
-		strategy = new Strategy(loginSignupConfig)
 		userIn = new UserIn({
 			Strategy,
 			modes,
 			config
 		})
 	} catch (err) {
-		strategy  = (() => null)(err)
-		userIn = null
+		userIn  = (() => null)(err)
 	}
 
-	if (!strategy || !userIn)
+	if (!userIn)
 		return
 
 	const { user, newUserPassword } = stub
 	const { skip, only, showResults } = options
+	
+	const stdStub = { client: { user } }
 
-	strategyTest({ loginSignupStrategy:strategy }, skipTest('strategy', skip, only), showResults)
-	loginTest({ strategy, user, userIn }, skipTest('login', skip, only), showResults)
-	signupTest({ newUserPassword, strategy, user, userIn }, skipTest('signup', skip, only), showResults)
-	revokeTest({ strategy, user, userIn }, skipTest('revoke', skip, only), showResults)
-	discoveryTest({ testSuiteName: 'loginsignup', userIn }, skipTest('discovery', skip, only), showResults)
-	tokenTest({
-		testSuiteName: 'loginsignup',
-		strategy, 
-		user,
-		userIn
-	}, skipTest('token', skip, only), showResults)
+	strategyTest({ loginSignupStrategy:userIn.strategy }, skipTest('strategy', skip, only), showResults)
+	loginTest({ user, userIn }, skipTest('login', skip, only), showResults)
+	signupTest({ newUserPassword, user, userIn }, skipTest('signup', skip, only), showResults)
+	revokeTest({ testSuiteName, stub:stdStub, userIn }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName, userIn }, skipTest('discovery', skip, only), showResults)
+	tokenTest({ testSuiteName, stub: { client: { user } }, userIn }, skipTest('token', skip, only), showResults)
 }
 
 /**
@@ -129,10 +135,24 @@ const testLoginSignup = (Strategy, config={}, stub={}, options={}) => {
  */
 const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	toggleTestMode()
+	const testSuiteName = 'loginsignupfip'
 	const modes = ['loginsignupfip']
 	const loginSignupConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
+
+	describe('Validating the \'loginsignupfip\' test suite arguments', () => {
+		it('Should provide a valid stub', () => {
+			assert.isOk(stub.user, '01 - Missing required \'user\' stub object.')
+			assert.isOk(stub.user.username, '02 - Missing required \'user.username\' stub.')
+			assert.isOk(stub.user.password, '03 - Missing required \'user.password\' stub.')
+			assert.isOk(stub.newUserPassword, '04 - Missing required \'newUserPassword\' stub.')
+			assert.isOk(stub.fipUser, '05 - Missing required \'fipUser\' stub object.')
+			assert.isOk(stub.fipUser.id, '06 - Missing required \'fipUser.id\' stub.')
+			assert.isOk(stub.fipUser.fipName, '07 - Missing required \'fipUser.fipName\' stub.')
+			assert.isOk(stub.fipUser.userId, '08 - Missing required \'fipUser.userId\' stub.')
+		})
+	})
 
 	// 1. Tests that the strategy is instantiable
 	describe('Concrete loginsignup strategy', () => {
@@ -173,72 +193,88 @@ const testLoginSignupFIP = (Strategy, config={}, stub={}, options={}) => {
 	})
 
 	// 3. Creates strategy and userIn instances. If it fails, abort the test.
-	let strategy, userIn
+	let userIn
 	try {
-		strategy = new Strategy(loginSignupConfig)
 		userIn = new UserIn({
 			Strategy,
 			modes,
 			config
 		})
 	} catch (err) {
-		strategy  = (() => null)(err)
-		userIn = null
+		userIn  = (() => null)(err)
 	}
 
-	if (!strategy || !userIn)
+	if (!userIn)
 		return
 
 	const { user, newUserPassword, fipUser } = stub
 	const { skip, only, showResults } = options
+	
+	const stdStub = { client: { user } }
 
-	strategyTest({ loginSignupFipStrategy:strategy }, skipTest('strategy', skip, only), showResults)
-	loginTest({ strategy, user }, skipTest('login', skip, only), showResults)
-	signupTest({ newUserPassword, strategy, user }, skipTest('signup', skip, only), showResults)
+	strategyTest({ loginSignupFipStrategy:userIn.strategy }, skipTest('strategy', skip, only), showResults)
+	loginTest({ user, userIn }, skipTest('login', skip, only), showResults)
+	signupTest({ newUserPassword, userIn, user }, skipTest('signup', skip, only), showResults)
 	fipLoginSignupTest({
-		strategy,
+		userIn,
 		identityProvider: fipUser.fipName, 
 		identityProviderUserId: fipUser.id, 
 		userId: fipUser.userId,
 	}, skipTest('fiploginsignup', skip, only), showResults)
-	revokeTest({ strategy, user }, skipTest('revoke', skip, only), showResults)
-	discoveryTest({ testSuiteName: 'loginsignupfip', userIn }, skipTest('discovery', skip, only), showResults)
-	tokenTest({
-		testSuiteName: 'loginsignupfip',
-		strategy, 
-		user,
-		userIn
-	}, skipTest('token', skip, only), showResults)
+	revokeTest({ testSuiteName, stub:stdStub, userIn }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName, userIn }, skipTest('discovery', skip, only), showResults)
+	tokenTest({ testSuiteName, stub: { client: { user } }, userIn }, skipTest('token', skip, only), showResults)
 }
 
 /**
  * Unit tests an OpenID UserIn strategy. 
  * 
  * @param  {Class}		Strategy
- * @param  {Object}		config							Strategy's config. Use it in the Strategy's constructor.
+ * @param  {Object}		config									Strategy's config. Use it in the Strategy's constructor.
  * @param  {Object}		stub.client.id
  * @param  {String}		stub.client.secret
+ * @param  {String}		stub.client.aud
  * @param  {Object}		stub.client.user.id
  * @param  {String}		stub.client.user.username
  * @param  {String}		stub.client.user.password
- * @param  {Object}		stub.client.fipUser.id
- * @param  {String}		stub.client.fipUser.fip
+ * @param  {String}		stub.client.user.claimStubs[].scope		e.g., 'profile'
+ * @param  {Object}		stub.client.user.claimStubs[].claims	e.g., { given_name: 'Nic', family_name: 'Dao' }
  * @param  {Object}		stub.altClient.id
  * @param  {String}		stub.altClient.secret
- * @param  {String}		stub.claimStubs[].scope			e.g., 'profile'
- * @param  {Object}		stub.claimStubs[].claims		e.g., { given_name: 'Nic', family_name: 'Dao' }
- * @param  {[String]}	options.skip					Valid values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
- * @param  {[String]}	options.only					Valid values: 'strategy', 'introspect', 'token', 'userinfo'
- * @param  {[String]}	options.showResults				e.g. ['introspect.handler.15,16', 'userinfo.handler.04']
+ * @param  {Object}		stub.privateClient.id
+ * @param  {String}		stub.privateClient.secret	
+
+ * @param  {[String]}	options.skip							Valid values: 'all', 'strategy', 'introspect', 'token', 'userinfo'
+ * @param  {[String]}	options.only							Valid values: 'strategy', 'introspect', 'token', 'userinfo'
+ * @param  {[String]}	options.showResults						e.g. ['introspect.handler.15,16', 'userinfo.handler.04']
  * 
  * @return {Void}
  */
 const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	toggleTestMode()
+	const testSuiteName = 'openid'
 	const modes = ['openid']
 	const openIdConfig = { ...config, modes }
 
 	const logTest = logTestErrors()
+
+	describe('Validating the \'loginsignupfip\' test suite arguments', () => {
+		it('Should provide a valid stub', () => {
+			assert.isOk(stub.client, '01 - Missing required \'user\' stub object.')
+			assert.isOk(stub.client.id, '02 - Missing required \'client.id\' stub.')
+			assert.isOk(stub.client.secret, '03 - Missing required \'client.secret\' stub.')
+			assert.isOk(stub.client.user, '04 - Missing required \'client.user\' stub.')
+			assert.isOk(stub.client.user.id, '05 - Missing required \'client.user.id\' stub.')
+			assert.isOk(stub.client.user.username, '06 - Missing required \'client.user.username\' stub.')
+			assert.isOk(stub.client.user.password, '07 - Missing required \'client.user.password\' stub.')
+			assert.isOk(stub.altClient, '08 - Missing required \'altClient\' stub.')
+			assert.isOk(stub.altClient.id, '09 - Missing required \'altClient.id\' stub.')
+			assert.isOk(stub.altClient.secret, '10 - Missing required \'altClient.secret\' stub.')
+			assert.isOk(stub.privateClient, '11 - Missing required \'privateClient\' stub.')
+			assert.isOk(stub.privateClient.id, '12 - Missing required \'privateClient.id\' stub.')
+			assert.isOk(stub.privateClient.secret, '13 - Missing required \'privateClient.secret\' stub.')
+		})
+	})
 
 	// 1. Tests that the strategy is instantiable
 	describe('Concrete openid strategy', () => {
@@ -279,79 +315,33 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 	})
 
 	// 3. Creates strategy and userIn instances. If it fails, abort the test.
-	let strategy, userIn
+	let userIn
 	try {
-		strategy = new Strategy(openIdConfig)
 		userIn = new UserIn({
 			Strategy,
 			modes,
 			config
 		})
 	} catch (err) {
-		strategy  = (() => null)(err)
-		userIn = null
+		userIn  = (() => null)(err)
 	}
 
-	if (!strategy || !userIn)
+	if (!userIn)
 		return
 
-	const {
-		client: { 
-			id: clientId, 
-			aud,
-			secret: clientSecret, 
-			user: { 
-				id:userId, 
-				username, 
-				password,
-				claimStubs
-			}
-		},
-		altClient: { 
-			id:altClientId, 
-			secret:altClientSecret 
-		}
-	} = stub
-
 	const { skip, only, showResults } = options
-	const user = { 
-		id:userId,
-		username, 
-		password
-	}
 
 	// 3. Runs all the tests
-	strategyTest({ openIdStrategy:strategy }, skipTest('strategy', skip, only), showResults)
+	strategyTest({ openIdStrategy:userIn.strategy }, skipTest('strategy', skip, only), showResults)
 
-	introspectTest({ 
-		clientId, 
-		clientSecret, 
-		altClientId,
-		altClientSecret,
-		strategy, 
-		user,
-		aud
-	}, skipTest('introspect', skip, only), showResults)
+	introspectTest({ userIn, stub }, skipTest('introspect', skip, only), showResults)
 
-	tokenTest({
-		testSuiteName: 'openid',
-		clientId, 
-		clientSecret, 
-		altClientId, 
-		strategy, 
-		user,
-		userIn
-	}, skipTest('token', skip, only), showResults)
+	tokenTest({ testSuiteName, stub, userIn }, skipTest('token', skip, only), showResults)
 
-	userinfoTest({
-		clientId, 
-		strategy, 
-		user,
-		claimStubs
-	}, skipTest('userinfo', skip, only), showResults)
+	userinfoTest({ stub, userIn }, skipTest('userinfo', skip, only), showResults)
 
-	revokeTest({ clientId, altClientId, strategy, user }, skipTest('revoke', skip, only), showResults)
-	discoveryTest({ testSuiteName: 'openid', userIn }, skipTest('discovery', skip, only), showResults)
+	revokeTest({ testSuiteName, userIn, stub }, skipTest('revoke', skip, only), showResults)
+	discoveryTest({ testSuiteName, userIn }, skipTest('discovery', skip, only), showResults)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

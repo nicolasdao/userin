@@ -34,14 +34,14 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, scopes, state })
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'`)
 
 	// B. Gets the client's scopes and audiences
-	const [serviceAccountErrors, serviceAccount] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
-	if (serviceAccountErrors)
-		throw wrapErrors(errorMsg, serviceAccountErrors)
+	const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+	if (clientErrors)
+		throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...clientErrors])
 	
 	// C. Verifies the details are correct
-	if (!serviceAccount)
+	if (!client)
 		throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
-	const { audiences, scopes:clientScopes } = serviceAccount 
+	const { audiences, scopes:clientScopes } = client 
 	const [scopeErrors] = oauth2Params.verify.scopes({ scopes, clientScopes })
 	if (scopeErrors)
 		throw wrapErrors(errorMsg, scopeErrors)

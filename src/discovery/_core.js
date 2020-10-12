@@ -114,10 +114,6 @@ const getOpenIdDiscoveryData = (eventHandlerStore, context={}) => catchErrors((a
 	const isLoginSignup = isLoginSignupFip || modes.indexOf('loginsignup') >= 0
 	const isOpenIdReady = testIfOpenIdIsReady(eventHandlerStore)
 	const isAuthCodeFlowReady = supportsAuthCodeFlow(eventHandlerStore)
-
-	const [configErrors, config={}] = await eventHandlerStore.get_config.exec()
-	if (configErrors)
-		throw wrapErrors(errorMsg, configErrors)
 	
 	const discovery = {
 		issuer: baseUrl ? getInfo(baseUrl).origin : null,

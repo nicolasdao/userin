@@ -10,6 +10,7 @@ const { oauth2Params } = require('../_utils')
  *
  * @param {Object}		eventHandlerStore
  * @param {String}		client_id	
+ * @param {String}		client_secret
  * @param {String}		code	
  * @param {String}		state
  * @param {String}		code_verifier				Used for PKCE
@@ -22,7 +23,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, code_verifier, redirect_uri }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'authorization_code\''
 	// A. Validates input
 	if (!eventHandlerStore.get_authorization_code_claims)
@@ -63,6 +64,17 @@ const exec = (eventHandlerStore={}, { client_id, code, state, code_verifier, red
 			throw wrapErrors(errorMsg, clientErrors)
 		if (!client)
 			throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+
+		if (oauth2Params.check.client.isPrivate(client)) {
+			if (!client_secret)
+				throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+
+			const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+			if (clientErrors)
+				throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...clientErrors])
+			if (!client)
+				throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+		}
 
 		clientScopes.push(...(client.scopes||[]))
 		clientAudiences.push(...(client.audiences||[]))

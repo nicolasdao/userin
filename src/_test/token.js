@@ -24,7 +24,7 @@ setUpScopeAssertion(assert)
 /**
  * Runs the test suites.
  * 
- * @param  {UserIn}		data.strategy
+ * @param  {UserIn}		data.userIn
  * @param  {String}		data.user.password
  * @param  {String}		data.user.password
  * @param  {Boolean}	skip			
@@ -32,16 +32,10 @@ setUpScopeAssertion(assert)
  * @return {Void}
  */
 module.exports = function runTest (data, skip, showResults) {
-	const { 
-		testSuiteName='',
-		clientId:client_id, 
-		clientSecret:client_secret, 
-		altClientId, 
-		strategy, 
-		user: { id: user_id, username, password },
-		userIn
-	} = data
+	const { testSuiteName, userIn, stub: { client={}, altClient={}, privateClient={} } } = data || {}
+	client.user = client.user || {}
 
+	const strategy = userIn.strategy
 	const registerAllHandlers = eventHandlerStore => {
 		const registerEventHandler = eventRegister(eventHandlerStore)
 		registerEventHandler(strategy)
@@ -65,10 +59,9 @@ module.exports = function runTest (data, skip, showResults) {
 	const fn = skip ? describe.skip : describe
 	const logTest = logTestErrors()
 
-	const getValidRefreshToken = (eventHandlerStore, scopes, client_id, client_secret) => co(function *() {
+	const getRefreshToken = (eventHandlerStore, scopes, client_id, user_id) => co(function *() {
 		const [errors, codeResult] = yield eventHandlerStore.generate_openid_refresh_token.exec({
 			client_id,
-			client_secret,
 			user_id, 
 			scopes
 		})
@@ -76,18 +69,53 @@ module.exports = function runTest (data, skip, showResults) {
 		if (errors)
 			throw mergeErrors(errors)
 		
-		const { token:refresh_token } = codeResult
+		const { token } = codeResult
+		return token
+	})
 
-		return refresh_token
+	const redirect_uri = 'https://userin.com'
+
+	const getAuthorizationCode = (eventHandlerStore, scopes, client_id, user_id) => co(function *() {
+		const [errors, codeResult] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+			client_id,
+			user_id, 
+			scopes,
+			redirect_uri
+		})
+
+		if (errors)
+			throw mergeErrors(errors)
+		
+		const { token } = codeResult
+		return token
 	})
 
 	fn(`token[${testSuiteName}]`, () => {
+		describe('validate stub', () => {
+			it('01 - Should define some specific loginsignup and loginsignupfip stub values', () => {
+				assert.isOk(client.user.id, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.id'`)
+				assert.isOk(client.user.username, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.username'`)
+				assert.isOk(client.user.password, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.password'`)
+			})
+			if (isOpenIdMode)
+				it('02 - Should define some specific openid stub values', () => {
+					assert.isOk(client.id, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.id'`)
+					assert.isOk(client.secret, `02 - revoke Test suite in ${testSuiteName} mode require stub 'client.secret'`)
+					assert.isOk(altClient.id, `03 - revoke Test suite in ${testSuiteName} mode require stub 'altClient.id'`)
+					assert.isOk(privateClient.id, `04 - revoke Test suite in ${testSuiteName} mode require stub 'privateClient.id'`)
+					assert.isOk(privateClient.secret, `05 - revoke Test suite in ${testSuiteName} mode require stub 'privateClient.secret'`)
+					assert.isOk(privateClient.user.id, `06 - revoke Test suite in ${testSuiteName} mode require stub 'privateClient.user.id'`)
+					assert.isOk(privateClient.user.username, `06 - revoke Test suite in ${testSuiteName} mode require stub 'privateClient.user.username'`)
+					assert.isOk(privateClient.user.password, `06 - revoke Test suite in ${testSuiteName} mode require stub 'privateClient.user.password'`)
+				})
+		})
+
 		if (isOpenIdMode || isLoginSignupFipMode) {
 			describe('grantTypeAuthorizationCode', () => {
 				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}].grantTypeAuthorizationCode`)
 				
-				const stubbedClient = { client_id, client_secret:client_secret }
-				const stubbedUser = { user_id }
+				const stubbedClient = { client_id: client.id, client_secret:client.secret }
+				const stubbedUser = { user_id:client.user.id }
 				const stubbedPayload = { 
 					...stubbedClient, 
 					...stubbedUser, 
@@ -95,7 +123,7 @@ module.exports = function runTest (data, skip, showResults) {
 					redirect_uri: redirectUri
 				}
 
-				it('01 - Should fail when the \'get_authorization_code_claims\' event handler is not defined.', done => {
+				it('01 - Should fail when the \'get_authorization_code_claims\' event handler is not defined', done => {
 					const showResult = showIds('01')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -112,7 +140,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('02 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				it('02 - Should fail when the \'generate_access_token\' event handler is not defined', done => {
 					const showResult = showIds('02')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -130,7 +158,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('03 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				it('03 - Should fail when the \'get_config\' event handler is not defined', done => {
 					const showResult = showIds('03')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -149,7 +177,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('04 - Should fail when the code is missing.', done => {
+				it('04 - Should fail when the code is missing', done => {
 					const showResult = showIds('04')
 					const logE = logTest(done)
 
@@ -179,7 +207,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('05 - Should fail when the redirect_uri is not passed with the code.', done => {
+				it('05 - Should fail when the redirect_uri is not passed with the code', done => {
 					const showResult = showIds('05')
 					const logE = logTest(done)
 
@@ -208,7 +236,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('06 - Should fail when the redirect_uri is passed with the code but it does not exactly match the redirect_uri used to get the code.', done => {
+				it('06 - Should fail when the redirect_uri is passed with the code but it does not exactly match the redirect_uri used to get the code', done => {
 					const showResult = showIds('06')
 					const logE = logTest(done)
 
@@ -237,7 +265,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('07 - Should fail when the code is incorrect.', done => {
+				it('07 - Should fail when the code is incorrect', done => {
 					const showResult = showIds('07')
 					const logE = logTest(done)
 
@@ -257,7 +285,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 
 				if (isOpenIdMode) {
-					it('08 - Should fail when the \'get_client\' event handler is not defined.', done => {
+					it('08 - Should fail when the \'get_client\' event handler is not defined', done => {
 						const showResult = showIds('08')
 						const logE = logTest(done)
 						const eventHandlerStore = {}
@@ -289,7 +317,7 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('09 - Should fail when the client_id is missing.', done => {
+					it('09 - Should fail when the client_id is missing', done => {
 						const showResult = showIds('09')
 						const logE = logTest(done)
 
@@ -320,7 +348,7 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('10 - Should fail when the client_id is incorrect.', done => {
+					it('10 - Should fail when the client_id is incorrect', done => {
 						const showResult = showIds('10')
 						const logE = logTest(done)
 
@@ -351,7 +379,7 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('11 - Should fail when the client_id exists and the code is correct but the client_id not the one associated with the code.', done => {
+					it('11 - Should fail when the client_id exists and the code is correct but the client_id not the one associated with the code', done => {
 						const showResult = showIds('11')
 						const logE = logTest(done)
 
@@ -371,7 +399,7 @@ module.exports = function runTest (data, skip, showResults) {
 							const [errors] = yield grantTypeAuthorizationCode.exec(eventHandlerStore, { 
 								...stubbedPayload, 
 								code:codeResults.token, 
-								client_id:altClientId 
+								client_id:altClient.id 
 							})
 							
 							logE.push(errors)
@@ -382,7 +410,7 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('12 - Should fail when a valid code and client_id are passed, but the code\'scopes contain \'openid\' and the \'generate_id_token\' event handler is missing.', done => {
+					it('12 - Should fail when a valid code and client_id are passed, but the code\'scopes contain \'openid\' and the \'generate_id_token\' event handler is missing', done => {
 						const showResult = showIds('12')
 						const logE = logTest(done)
 
@@ -413,7 +441,7 @@ module.exports = function runTest (data, skip, showResults) {
 					})
 				}
 
-				it('13 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'offline_access\' and the \'generate_refresh_token\' event handler is missing.', done => {
+				it('13 - Should fail when a valid a valid code and client_id are passed, but the code\'scopes contain \'offline_access\' and the \'generate_refresh_token\' event handler is missing', done => {
 					const showResult = showIds('13')
 					const logE = logTest(done)
 
@@ -442,7 +470,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('14 - Should fail when the code has expired.', done => {
+				it('14 - Should fail when the code has expired', done => {
 					const showResult = showIds('14')
 					const logE = logTest(done)
 
@@ -475,7 +503,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('15 - Should return an access_token when the code is valid.', done => {
+				it('15 - Should return an access_token when the code is valid', done => {
 					const showResult = showIds('15')
 					const logE = logTest(done)
 
@@ -507,7 +535,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 
 				if (isOpenIdMode) {
-					it('16 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'.', done => {
+					it('16 - Should return an access_token and a valid id_token when the code is valid and the scopes include \'openid\'', done => {
 						const showResult = showIds('16')
 						const logE = logTest(done)
 
@@ -538,9 +566,9 @@ module.exports = function runTest (data, skip, showResults) {
 							const claims = jwt.decode(result.id_token)
 							assert.isOk(claims, '11')
 							assert.equal(claims.iss, strategy.config.iss, '12')
-							assert.equal(claims.sub, user_id, '13')
+							assert.equal(claims.sub, client.user.id, '13')
 							assert.isOk(claims.aud != undefined, '14')
-							assert.equal(claims.client_id, client_id, '15')
+							assert.equal(claims.client_id, client.id, '15')
 							assert.scopes(claims.scope, ['openid'], 15)
 							assert.isOk(claims.exp != undefined, '18')
 							assert.isOk(claims.iat != undefined, '19')
@@ -553,7 +581,7 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('17 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'.', done => {
+					it('17 - Should return an access_token, an id_token and a refresh_token when the code is valid and the scopes include \'openid\' and \'offline_access\'', done => {
 						const showResult = showIds('17')
 						const logE = logTest(done)
 
@@ -590,7 +618,7 @@ module.exports = function runTest (data, skip, showResults) {
 					})
 				}
 
-				it('18 - Should fail when a code_challenge is passed without the code_challenge_method.', done => {
+				it('18 - Should fail when a code_challenge is passed without the code_challenge_method', done => {
 					const showResult = showIds('18')
 					const logE = logTest(done)
 
@@ -611,7 +639,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('19 - Should fail when a code_challenge is passed with a non-supported code_challenge_method.', done => {
+				it('19 - Should fail when a code_challenge is passed with a non-supported code_challenge_method', done => {
 					const showResult = showIds('19')
 					const logE = logTest(done)
 
@@ -633,7 +661,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('20 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided.', done => {
+				it('20 - Should fail even though the code is valid when a code_challenge is required and no code_verifier is provided', done => {
 					const showResult = showIds('20')
 					const logE = logTest(done)
 
@@ -665,7 +693,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('21 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect.', done => {
+				it('21 - Should fail even though the code is valid when a code_challenge is required and the code_verifier is incorrect', done => {
 					const showResult = showIds('21')
 					const logE = logTest(done)
 
@@ -698,7 +726,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('22 - Should fail even though the code is valid when a code_challenge is required and the code_challenge is not using the correct method (plain vs S256).', done => {
+				it('22 - Should fail even though the code is valid when a code_challenge is required and the code_challenge is not using the correct method (plain vs S256)', done => {
 					const showResult = showIds('22')
 					const logE = logTest(done)
 
@@ -731,7 +759,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('23 - Should return an access_token when both the code and the S256 code_verifier are valid.', done => {
+				it('23 - Should return an access_token when both the code and the S256 code_verifier are valid', done => {
 					const showResult = showIds('23')
 					const logE = logTest(done)
 
@@ -769,7 +797,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('24 - Should return an access_token when both the code and the plain code_verifier are valid.', done => {
+				it('24 - Should return an access_token when both the code and the plain code_verifier are valid', done => {
 					const showResult = showIds('24')
 					const logE = logTest(done)
 
@@ -809,7 +837,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 
 				if (isOpenIdMode)
-					it('25 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request.', done => {
+					it('25 - Should return a valid id_token with a nonce claim when the code is valid and the scopes include \'openid\' and a nonce was passed in the authorization request', done => {
 						const showResult = showIds('25')
 						const logE = logTest(done)
 
@@ -843,9 +871,9 @@ module.exports = function runTest (data, skip, showResults) {
 							const claims = jwt.decode(result.id_token)
 							assert.isOk(claims, '11')
 							assert.equal(claims.iss, strategy.config.iss, '12')
-							assert.equal(claims.sub, user_id, '13')
+							assert.equal(claims.sub, client.user.id, '13')
 							assert.isOk(claims.aud != undefined, '14')
-							assert.equal(claims.client_id, client_id, '15')
+							assert.equal(claims.client_id, client.id, '15')
 							assert.scopes(claims.scope, ['openid'], 15)
 							assert.isOk(claims.exp != undefined, '18')
 							assert.isOk(claims.iat != undefined, '19')
@@ -861,7 +889,7 @@ module.exports = function runTest (data, skip, showResults) {
 					})
 
 
-				it('26 - Should return an access_token and a refresh_token when the code is valid and the scopes include \'offline_access\'.', done => {
+				it('26 - Should return an access_token and a refresh_token when the code is valid and the scopes include \'offline_access\'', done => {
 					const showResult = showIds('17')
 					const logE = logTest(done)
 
@@ -902,9 +930,9 @@ module.exports = function runTest (data, skip, showResults) {
 			describe('grantTypeClientCredentials', () => {
 				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}].grantTypeClientCredentials`)
 				
-				const stubbedClient = { client_id:client_id, client_secret:client_secret, scopes:['profile'] }
+				const stubbedClient = { client_id:client.id, client_secret:client.secret, scopes:['profile'] }
 
-				it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				it('01 - Should fail when the \'get_client\' event handler is not defined', done => {
 					const showResult = showIds('01')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -918,7 +946,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('02 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				it('02 - Should fail when the \'generate_access_token\' event handler is not defined', done => {
 					const showResult = showIds('02')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -934,7 +962,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('03 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				it('03 - Should fail when the \'get_config\' event handler is not defined', done => {
 					const showResult = showIds('03')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -951,7 +979,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('04 - Should return an access_token when the credentials are valid.', done => {
+				it('04 - Should return an access_token when the credentials are valid', done => {
 					const showResult = showIds('04')
 					const logE = logTest(done)
 
@@ -974,7 +1002,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('05 - Should fail when the client_id is missing.', done => {
+				it('05 - Should fail when the client_id is missing', done => {
 					const showResult = showIds('05')
 					const logE = logTest(done)
 
@@ -995,7 +1023,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('06 - Should fail when the client_secret is missing.', done => {
+				it('06 - Should fail when the client_secret is missing', done => {
 					const showResult = showIds('06')
 					const logE = logTest(done)
 
@@ -1016,7 +1044,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('07 - Should fail when the scopes are not allowed.', done => {
+				it('07 - Should fail when the scopes are not allowed', done => {
 					const showResult = showIds('07')
 					const logE = logTest(done)
 
@@ -1037,7 +1065,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('08 - Should fail when the client_id is incorrect.', done => {
+				it('08 - Should fail when the client_id is incorrect', done => {
 					const showResult = showIds('08')
 					const logE = logTest(done)
 
@@ -1058,7 +1086,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('09 - Should fail when the client_secret is incorrect.', done => {
+				it('09 - Should fail when the client_secret is incorrect', done => {
 					const showResult = showIds('09')
 					const logE = logTest(done)
 
@@ -1073,13 +1101,14 @@ module.exports = function runTest (data, skip, showResults) {
 							
 						logE.push(errors)
 						assert.isOk(errors, '01')
-						assert.isOk(errors.some(e => e.message && e.message.indexOf('Unauthorized access') >= 0), '02')
+						console.log(errors)
+						assert.isOk(errors.some(e => e.message && e.message.indexOf('client_id not found') >= 0), '02')
 
 						if (showResult) console.log(errors)
 						done()
 					}))
 				})
-				it('10 - Should not return an id_token when the credentials are valid even when the \'openid\' scope is provided.', done => {
+				it('10 - Should not return an id_token when the credentials are valid even when the \'openid\' scope is provided', done => {
 					const showResult = showIds('10')
 					const logE = logTest(done)
 
@@ -1105,7 +1134,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('11 - Should not return a refresh_token when the credentials are valid even when the \'offline_access\' scope is provided.', done => {
+				it('11 - Should not return a refresh_token when the credentials are valid even when the \'offline_access\' scope is provided', done => {
 					const showResult = showIds('11')
 					const logE = logTest(done)
 
@@ -1139,15 +1168,12 @@ module.exports = function runTest (data, skip, showResults) {
 				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}].grantTypePassword`)
 				
 				const stubbedUser = { 
-					client_id:client_id, 
-					user:{ 
-						username,
-						password
-					}, 
+					client_id:client.id, 
+					user: client.user, 
 					scopes:[]
 				}
 
-				it('01 - Should fail when the \'get_client\' event handler is not defined.', done => {
+				it('01 - Should fail when the \'get_client\' event handler is not defined', done => {
 					const showResult = showIds('01')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1161,7 +1187,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('02 - Should fail when the \'get_end_user\' event handler is not defined.', done => {
+				it('02 - Should fail when the \'get_end_user\' event handler is not defined', done => {
 					const showResult = showIds('02')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1177,7 +1203,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('03 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+				it('03 - Should fail when the \'generate_access_token\' event handler is not defined', done => {
 					const showResult = showIds('03')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1194,7 +1220,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('04 - Should fail when the scopes include \'openid\' and the \'generate_id_token\' event handler is not defined.', done => {
+				it('04 - Should fail when the scopes include \'openid\' and the \'generate_id_token\' event handler is not defined', done => {
 					const showResult = showIds('04')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1215,7 +1241,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('05 - Should not fail because of the missing \'generate_id_token\' event handler when the scopes DOES NOT include \'openid\'.', done => {
+				it('05 - Should not fail because of the missing \'generate_id_token\' event handler when the scopes DOES NOT include \'openid\'', done => {
 					const showResult = showIds('05')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1235,7 +1261,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('06 - Should fail when the \'get_config\' event handler is not defined.', done => {
+				it('06 - Should fail when the \'get_config\' event handler is not defined', done => {
 					const showResult = showIds('06')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1253,7 +1279,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('07 - Should return an access_token when the username and password are valid.', done => {
+				it('07 - Should return an access_token when the username and password are valid', done => {
 					const showResult = showIds('07')
 					const logE = logTest(done)
 
@@ -1276,7 +1302,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('08 - Should return an access_token and a valid id_token when the username and password are valid and the scopes contain \'openid\'.', done => {
+				it('08 - Should return an access_token and a valid id_token when the username and password are valid and the scopes contain \'openid\'', done => {
 					const showResult = showIds('08')
 					const logE = logTest(done)
 
@@ -1300,9 +1326,9 @@ module.exports = function runTest (data, skip, showResults) {
 
 						const claims = jwt.decode(result.id_token)
 						assert.isOk(claims, '11')
-						assert.equal(claims.sub, user_id, '12')
+						assert.equal(claims.sub, client.user.id, '12')
 						assert.isOk(claims.aud != undefined, '13')
-						assert.equal(claims.client_id, client_id, '14')
+						assert.equal(claims.client_id, client.id, '14')
 						assert.scopes(claims.scope, ['openid'], 15)
 						assert.isOk(claims.exp != undefined, '17')
 						assert.isOk(claims.iat != undefined, '18')
@@ -1315,7 +1341,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('09 - Should not return a refresh_token when the username and password are valid and the scopes contain \'offline_access\'.', done => {
+				it('09 - Should not return a refresh_token when the username and password are valid and the scopes contain \'offline_access\'', done => {
 					const showResult = showIds('09')
 					const logE = logTest(done)
 
@@ -1339,9 +1365,9 @@ module.exports = function runTest (data, skip, showResults) {
 
 						const claims = jwt.decode(result.id_token)
 						assert.isOk(claims, '11')
-						assert.equal(claims.sub, user_id, '12')
+						assert.equal(claims.sub, client.user.id, '12')
 						assert.isOk(claims.aud != undefined, '13')
-						assert.equal(claims.client_id, client_id, '14')
+						assert.equal(claims.client_id, client.id, '14')
 						assert.isOk(claims.exp != undefined, '16')
 						assert.isOk(claims.iat != undefined, '17')
 
@@ -1352,7 +1378,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('10 - Should fail when the client_id is missing.', done => {
+				it('10 - Should fail when the client_id is missing', done => {
 					const showResult = showIds('10')
 					const logE = logTest(done)
 
@@ -1375,7 +1401,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('11 - Should fail when the user is missing.', done => {
+				it('11 - Should fail when the user is missing', done => {
 					const showResult = showIds('11')
 					const logE = logTest(done)
 
@@ -1398,7 +1424,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('12 - Should fail when the user.username is missing.', done => {
+				it('12 - Should fail when the user.username is missing', done => {
 					const showResult = showIds('12')
 					const logE = logTest(done)
 
@@ -1424,7 +1450,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('13 - Should fail when the user.password is missing.', done => {
+				it('13 - Should fail when the user.password is missing', done => {
 					const showResult = showIds('13')
 					const logE = logTest(done)
 
@@ -1450,7 +1476,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('14 - Should fail when the username and password are incorrect.', done => {
+				it('14 - Should fail when the username and password are incorrect', done => {
 					const showResult = showIds('14')
 					const logE = logTest(done)
 
@@ -1476,7 +1502,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('15 - Should fail when scopes are not allowed.', done => {
+				it('15 - Should fail when scopes are not allowed', done => {
 					const showResult = showIds('15')
 					const logE = logTest(done)
 
@@ -1498,7 +1524,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('16 - Should fail when the client_id and client_secret are from an unauthorized account.', done => {
+				it('16 - Should fail when the client_id and client_secret are from an unauthorized account', done => {
 					const showResult = showIds('16')
 					const logE = logTest(done)
 
@@ -1508,7 +1534,7 @@ module.exports = function runTest (data, skip, showResults) {
 					logE.run(co(function *() {
 						const [errors] = yield grantTypePassword.exec(eventHandlerStore, {
 							...stubbedUser,
-							client_id: altClientId
+							client_id: altClient.id
 						})
 							
 						logE.push(errors)
@@ -1526,10 +1552,10 @@ module.exports = function runTest (data, skip, showResults) {
 			const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}].grantTypeRefreshToken`)
 			
 			const stubbedPayload = { 
-				client_id
+				client_id:client.id
 			}
 
-			it('01 - Should fail when the \'get_refresh_token_claims\' event handler is not defined.', done => {
+			it('01 - Should fail when the \'get_refresh_token_claims\' event handler is not defined', done => {
 				const showResult = showIds('01')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
@@ -1543,7 +1569,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('02 - Should fail when the \'generate_access_token\' event handler is not defined.', done => {
+			it('02 - Should fail when the \'generate_access_token\' event handler is not defined', done => {
 				const showResult = showIds('02')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
@@ -1560,7 +1586,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('03 - Should fail when the \'get_config\' event handler is not defined.', done => {
+			it('03 - Should fail when the \'get_config\' event handler is not defined', done => {
 				const showResult = showIds('03')
 				const logE = logTest(done)
 				const eventHandlerStore = {}
@@ -1578,7 +1604,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})	
-			it('04 - Should fail when the refresh_token is missing.', done => {
+			it('04 - Should fail when the refresh_token is missing', done => {
 				const showResult = showIds('04')
 				const logE = logTest(done)
 
@@ -1599,7 +1625,7 @@ module.exports = function runTest (data, skip, showResults) {
 					done()
 				}))
 			})
-			it('05 - Should fail when the refresh_token is incorrect.', done => {
+			it('05 - Should fail when the refresh_token is incorrect', done => {
 				const showResult = showIds('05')
 				const logE = logTest(done)
 
@@ -1623,7 +1649,7 @@ module.exports = function runTest (data, skip, showResults) {
 			})
 
 			if (isOpenIdMode) {
-				it('06 - Should fail when the \'get_client\' event handler is not defined and the refresh_token is associated with a client_id.', done => {
+				it('06 - Should fail when the \'get_client\' event handler is not defined and the refresh_token is associated with a client_id', done => {
 					const showResult = showIds('06')
 					const logE = logTest(done)
 					const eventHandlerStore = {}
@@ -1631,7 +1657,7 @@ module.exports = function runTest (data, skip, showResults) {
 					eventHandlerStore.get_client = null
 					
 					logE.run(co(function *() {
-						const refresh_token = yield getValidRefreshToken(eventHandlerStore, ['offline_access'], client_id)
+						const refresh_token = yield getRefreshToken(eventHandlerStore, ['offline_access'], client.id, client.user.id)
 						const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 							...stubbedPayload,
 							refresh_token
@@ -1644,7 +1670,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('07 - Should fail when the client_id is missing.', done => {
+				it('07 - Should fail when the client_id is missing', done => {
 					const showResult = showIds('07')
 					const logE = logTest(done)
 
@@ -1652,7 +1678,7 @@ module.exports = function runTest (data, skip, showResults) {
 					registerAllHandlers(eventHandlerStore)
 
 					logE.run(co(function *() {
-						const refresh_token = yield getValidRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client_id, client_secret)
+						const refresh_token = yield getRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client.id, client.user.id)
 						const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 							...stubbedPayload,
 							refresh_token,
@@ -1668,7 +1694,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('08 - Should fail when the client_id is valid, the refresh_token is also valid, but the client_id is not the one associated with the refresh_token.', done => {
+				it('08 - Should fail when the client_id is valid, the refresh_token is also valid, but the client_id is not the one associated with the refresh_token', done => {
 					const showResult = showIds('08')
 					const logE = logTest(done)
 
@@ -1676,11 +1702,11 @@ module.exports = function runTest (data, skip, showResults) {
 					registerAllHandlers(eventHandlerStore)
 
 					logE.run(co(function *() {
-						const refresh_token = yield getValidRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client_id, client_secret)
+						const refresh_token = yield getRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client.id, client.user.id)
 						const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 							...stubbedPayload,
 							refresh_token,
-							client_id:altClientId
+							client_id:altClient.id
 						})
 							
 						logE.push(errors)
@@ -1692,7 +1718,7 @@ module.exports = function runTest (data, skip, showResults) {
 						done()
 					}))
 				})
-				it('09 - Should fail when the refresh_token is associated with a \'openid\' scope, but the  \'generate_id_token\' event handler is missing.', done => {
+				it('09 - Should fail when the refresh_token is associated with a \'openid\' scope, but the  \'generate_id_token\' event handler is missing', done => {
 					const showResult = showIds('09')
 					const logE = logTest(done)
 
@@ -1703,7 +1729,7 @@ module.exports = function runTest (data, skip, showResults) {
 					eventHandlerStore.generate_id_token = null
 
 					logE.run(co(function *() {
-						const refresh_token = yield getValidRefreshToken(codeEventHandlerStore, ['offline_access', 'openid'], client_id, client_secret)
+						const refresh_token = yield getRefreshToken(codeEventHandlerStore, ['offline_access', 'openid'], client.id, client.user.id)
 						const [errors] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 							...stubbedPayload,
 							refresh_token
@@ -1720,7 +1746,7 @@ module.exports = function runTest (data, skip, showResults) {
 				})
 			}
 
-			it('10 - Should return an access_token when a valid refresh_token is provided.', done => {
+			it('10 - Should return an access_token when a valid refresh_token is provided', done => {
 				const showResult = showIds('10')
 				const logE = logTest(done)
 
@@ -1728,7 +1754,7 @@ module.exports = function runTest (data, skip, showResults) {
 				registerAllHandlers(eventHandlerStore)
 
 				logE.run(co(function *() {
-					const refresh_token = yield getValidRefreshToken(eventHandlerStore, ['offline_access'])
+					const refresh_token = yield getRefreshToken(eventHandlerStore, ['offline_access'], null, client.user.id)
 					const [errors, result] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 						...stubbedPayload,
 						refresh_token
@@ -1751,7 +1777,7 @@ module.exports = function runTest (data, skip, showResults) {
 			})
 
 			if (isOpenIdMode)
-				it('11 - Should return an access_token and a valid id_token when a valid refresh_token is provided and the scopes contain \'openid\'.', done => {
+				it('11 - Should return an access_token and a valid id_token when a valid refresh_token is provided and the scopes contain \'openid\'', done => {
 					const showResult = showIds('11')
 					const logE = logTest(done)
 
@@ -1759,7 +1785,7 @@ module.exports = function runTest (data, skip, showResults) {
 					registerAllHandlers(eventHandlerStore)
 
 					logE.run(co(function *() {
-						const refresh_token = yield getValidRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client_id, client_secret)
+						const refresh_token = yield getRefreshToken(eventHandlerStore, ['offline_access', 'openid'], client.id, client.user.id)
 						const [errors, result] = yield grantTypeRefreshToken.exec(eventHandlerStore, { 
 							...stubbedPayload,
 							refresh_token
@@ -1776,9 +1802,9 @@ module.exports = function runTest (data, skip, showResults) {
 
 						const claims = jwt.decode(result.id_token)
 						assert.isOk(claims, '09')
-						assert.equal(claims.sub, user_id, '10')
+						assert.equal(claims.sub, client.user.id, '10')
 						assert.isOk(claims.aud != undefined, '11')
-						assert.equal(claims.client_id, client_id, '12')
+						assert.equal(claims.client_id, client.id, '12')
 						assert.scopes(claims.scope, ['openid', 'offline_access'], 13)
 						assert.isOk(claims.exp != undefined, '16')
 						assert.isOk(claims.iat != undefined, '17')
@@ -1796,7 +1822,7 @@ module.exports = function runTest (data, skip, showResults) {
 		describe('/token', () => {	
 			const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}]/token`)		
 
-			it('01 - Should fail when no grant_type is provided.', done => {
+			it('01 - Should fail when no grant_type is provided', done => {
 				const showResult = showIds('01')
 				const logE = logTest(done)
 
@@ -1821,7 +1847,7 @@ module.exports = function runTest (data, skip, showResults) {
 			describe('grant_type:refresh_token', () => {
 				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}]/token.grant_type:refresh_token`)	
 
-				it('01 - Should fail when grant_type is \'refresh_token\' and no refresh_token is provided.', done => {
+				it('01 - Should fail when no refresh_token is provided', done => {
 					const showResult = showIds('01')
 					const logE = logTest(done)
 
@@ -1845,8 +1871,8 @@ module.exports = function runTest (data, skip, showResults) {
 					}))
 				})
 
-				it('02 - Should fail when when grant_type is \'refresh_token\' and an invalid refresh_token is provided.', done => {
-					const showResult = showIds('01')
+				it('02 - Should fail when when an invalid refresh_token is provided', done => {
+					const showResult = showIds('02')
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
@@ -1873,12 +1899,12 @@ module.exports = function runTest (data, skip, showResults) {
 				if (isLoginSignupMode || isLoginSignupFipMode) {
 					const mode = isLoginSignupMode ? 'loginsignup' : 'loginsignupfip'
 
-					it(`03 - Should return an access_token when grant_type is 'refresh_token' and a valid refresh_token is provided with no 'client_id' in '${mode}' mode.`, done => {
-						const showResult = showIds('01')
+					it(`03 - Should return an access_token when a valid refresh_token is provided with no 'client_id' in '${mode}' mode.`, done => {
+						const showResult = showIds('03')
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getValidRefreshToken(userIn.eventHandlerStore,[])
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore, [], null, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -1901,13 +1927,12 @@ module.exports = function runTest (data, skip, showResults) {
 				}
 
 				if (isOpenIdMode) {
-					it('03 - Should fail when client_id is missing and grant_type is \'refresh_token\' and a valid refresh_token associated with a client_id is provided.', done => {
-						const showResult = showIds('01')
+					it('03 - Should fail when client_id is missing and a valid refresh_token associated with a client_id is provided', done => {
+						const showResult = showIds('03')
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							assert.isOk(client_id, '01 - To test this assertion, a client_id must be provided.')
-							const refresh_token = yield getValidRefreshToken(userIn.eventHandlerStore,[], client_id)
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -1927,19 +1952,18 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('04 - Should fail when the client_id is invalid and grant_type is \'refresh_token\' and a valid refresh_token associated with a client_id is provided.', done => {
-						const showResult = showIds('01')
+					it('04 - Should fail when the client_id is invalid and a valid refresh_token associated with a client_id is provided', done => {
+						const showResult = showIds('04')
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							assert.isOk(client_id, '01 - To test this assertion, a client_id must be provided.')
-							assert.isOk(altClientId, '02 - To test this assertion, a altClientId must be provided.')
-							const refresh_token = yield getValidRefreshToken(userIn.eventHandlerStore,[], client_id)
+							assert.isOk(altClient.id, '02 - To test this assertion, a altClientId must be provided.')
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
 								refresh_token,
-								client_id: altClientId
+								client_id: altClient.id
 							})
 
 							if (showResult) console.log(body)
@@ -1955,18 +1979,97 @@ module.exports = function runTest (data, skip, showResults) {
 							done()
 						}))
 					})
-					it('05 - Should return an access_token when grant_type is \'refresh_token\' and a valid refresh_token associated with a client_id is provided with a valid \'client_id\'.', done => {
-						const showResult = showIds('01')
+					it('05 - Should return an access_token when a valid refresh_token associated with a client_id is provided with a valid \'client_id\'', done => {
+						const showResult = showIds('05')
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							assert.isOk(client_id, '01 - To test this assertion, a client_id must be provided.')
-							const refresh_token = yield getValidRefreshToken(userIn.eventHandlerStore,[], client_id)
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
 								refresh_token,
-								client_id
+								client_id:client.id
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token, '02')
+							assert.equal(body.expires_in, userIn.config.tokenExpiry.access_token, '03')					
+
+							server.close()
+							done()
+						}))
+					})
+					it('06 - Should fail when the client_secret is missing and the grant_type is \'refresh_token\', a valid access_token and client_id are provided and the client\'s auth_methods contains \'client_secret_post\'', done => {
+						const showResult = showIds('01')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'refresh_token',
+								refresh_token,
+								client_id:privateClient.id
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.isOk(body.error, 'invalid_request','02')
+							assert.include(body.error_description, 'Missing required \'client_secret\'', '03')					
+
+							server.close()
+							done()
+						}))
+					})
+					it('07 - Should fail when an invalid client_secret is provided and when a valid refresh_token, client_id and client_secret are provided and the client\'s auth_methods contains \'client_secret_post\'', done => {
+						const showResult = showIds('07')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'refresh_token',
+								refresh_token,
+								client_id:privateClient.id,
+								client_secret: privateClient.secret + '123'
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 401, '01')
+							assert.equal(body.error, 'invalid_client','02')
+							assert.include(body.error_description, 'client_id not found', '03')					
+
+							server.close()
+							done()
+						}))
+					})
+					it('08 - Should return an access_token when a valid refresh_token, client_id and client_secret are provided and the client\'s auth_methods contains \'client_secret_post\'', done => {
+						const showResult = showIds('08')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'refresh_token',
+								refresh_token,
+								client_id:privateClient.id,
+								client_secret: privateClient.secret
 							})
 
 							if (showResult) console.log(body)
@@ -1985,6 +2088,434 @@ module.exports = function runTest (data, skip, showResults) {
 				}
 			})
 			
+			describe('grant_type:authorize_code', () => {
+				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}]/token.grant_type:authorize_code`)	
+
+				if (isLoginSignupFipMode || isOpenIdMode) {
+					it('01 - Should fail when the code is missing', done => {
+						const showResult = showIds('01')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code'
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, '\'code\' is required', '03')					
+
+							server.close()
+							done()
+						}))
+					})
+					it('02 - Should fail when the redirect_uri is missing', done => {
+						const showResult = showIds('02')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], null, client.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, 'Missing required \'redirect_uri\'', '03')					
+
+							server.close()
+							done()
+						}))
+					})
+				}
+
+				if (isLoginSignupFipMode) {
+					it('03 - Should return an access_token when no client_id is provided and a valid code and redirect_uri are provided when the code is not associated with a client_id', done => {
+						const showResult = showIds('03')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], null, client.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token,'02')
+
+							server.close()
+							done()
+						}))
+					})
+				}
+
+				if (isOpenIdMode) {
+					it('03 - Should fail when the client_id is missing and a valid code and redirect_uri are provided when the code is associated with a client_id', done => {
+						const showResult = showIds('03')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, ' Missing required \'client_id\'','02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('04 - Should return an access_token when a valid code, redirect_uri and client_id are provided when the code is associated with a client_id', done => {
+						const showResult = showIds('04')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri,
+								client_id: client.id
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token, '02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('05 - Should fail when the client_secret is missing when a valid code, redirect_uri and client_id are provided when the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('05')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri,
+								client_id: privateClient.id
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, 'Missing required \'client_secret\'','03')
+
+							server.close()
+							done()
+						}))
+					})
+					it('06 - Should fail when the client_secret is invalid when a valid code, redirect_uri and client_id are provided when the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('06')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri,
+								client_id: privateClient.id,
+								client_secret: privateClient.secret + '123'
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 401, '01')
+							assert.equal(body.error, 'invalid_client','02')
+							assert.include(body.error_description, 'client_id not found','03')
+
+							server.close()
+							done()
+						}))
+					})
+					it('07 - Should return an access_token when a valid code, redirect_uri, client_id and client_secret are provided when the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('07')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'authorization_code',
+								code,
+								redirect_uri,
+								client_id: privateClient.id,
+								client_secret: privateClient.secret
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token,'02')
+
+							server.close()
+							done()
+						}))
+					})
+				}
+			})
+			
+			describe('grant_type:password', () => {
+				const showIds = createShowTestResultFn(showResults, `token[${testSuiteName}]/token.grant_type:password`)	
+
+				if (isOpenIdMode) {
+					it('01 - Should fail when the client_id is missing', done => {
+						const showResult = showIds('01')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password'
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, '\'client_id\' is required','02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('02 - Should fail when the username is missing', done => {
+						const showResult = showIds('02')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: client.id
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, 'When grant_type is \'password\' both \'username\' and \'password\' are required','02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('03 - Should fail when the password is missing', done => {
+						const showResult = showIds('03')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: client.id,
+								username: client.user.username
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request','02')
+							assert.include(body.error_description, 'When grant_type is \'password\' both \'username\' and \'password\' are required','02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('04 - Should fail when the username and password are incorrect', done => {
+						const showResult = showIds('04')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: client.id,
+								username: client.user.username,
+								password: client.user.password + '123'
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 401, '01')
+							assert.equal(body.error, 'invalid_credentials','02')
+							assert.include(body.error_description, 'Incorrect username or password','02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('05 - Should return an access_token when a valid client_id, and valid credentials are provided', done => {
+						const showResult = showIds('05')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: client.id,
+								username: client.user.username,
+								password: client.user.password
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token, '02')
+
+							server.close()
+							done()
+						}))
+					})
+					it('06 - Should fail when client_secret is missing and a valid client_id, and valid credentials are provided but the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('06')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: privateClient.id,
+								username: privateClient.user.username,
+								password: privateClient.user.password
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 400, '01')
+							assert.equal(body.error, 'invalid_request', '02')
+							assert.include(body.error_description, 'Missing required \'client_secret\'', '03')
+
+							server.close()
+							done()
+						}))
+					})
+					it('07 - Should fail when client_secret is invalid and a valid client_id, and valid credentials are provided but the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('07')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: privateClient.id,
+								client_secret: privateClient.secret + '123',
+								username: privateClient.user.username,
+								password: privateClient.user.password,
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 401, '01')
+							assert.equal(body.error, 'invalid_client', '02')
+							assert.include(body.error_description, 'client_id not found', '03')
+
+							server.close()
+							done()
+						}))
+					})
+					it('08 - Should return an access_token when a valid client_id, client_secret, credentials are provided and the client\'s auth_methods contain \'client_secret_post\'', done => {
+						const showResult = showIds('08')
+						const logE = logTest(done)
+
+						logE.run(co(function *() {
+							const { server, app } = yield getUserInServer(userIn)
+							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
+								grant_type: 'password',
+								client_id: privateClient.id,
+								client_secret: privateClient.secret,
+								username: privateClient.user.username,
+								password: privateClient.user.password,
+							})
+
+							if (showResult) console.log(body)
+
+							if (status != 200)
+								logE.push(new Error(body.error_description || body.error))
+
+							assert.equal(status, 200, '01')
+							assert.isOk(body.access_token, '02')
+
+							server.close()
+							done()
+						}))
+					})
+				}
+			})
 		})
 	})
 }

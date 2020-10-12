@@ -7,7 +7,7 @@ const { logTestErrors, createShowTestResultFn } = require('./_core')
 /**
  * Runs the test suites.
  * 
- * @param  {UserIn}		data.strategy
+ * @param  {UserIn}		data.userIn
  * @param  {String}		data.user.password
  * @param  {String}		data.user.password
  * @param  {Boolean}	skip			
@@ -17,9 +17,10 @@ const { logTestErrors, createShowTestResultFn } = require('./_core')
 module.exports = function runTest (data, skip, showResults) {
 	const {
 		user,
-		strategy
+		userIn
 	} = data
 
+	const strategy = userIn.strategy
 	const registerAllHandlers = eventHandlerStore => {
 		const registerEventHandler = eventRegister(eventHandlerStore)
 		registerEventHandler(strategy)

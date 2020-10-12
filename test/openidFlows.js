@@ -10,7 +10,7 @@
 
 const { testSuite } = require('../src')
 const { OpenIdStrategy } = require('./mock/strategy')
-const { GOOD_CLIENT, BAD_CLIENT, END_USER } = require('./mock/stub')
+const { GOOD_CLIENT, BAD_CLIENT, END_USER, PRIVATE_CLIENT, PRIVATE_USER } = require('./mock/stub')
 const repos = require('./mock/repos')
 const tokenHelper = require('./mock/token')
 
@@ -69,6 +69,15 @@ const stub = {
 	altClient: { 
 		id: BAD_CLIENT.client_id, 
 		secret: BAD_CLIENT.client_secret
+	},
+	privateClient: {
+		id: PRIVATE_CLIENT.client_id,
+		secret: PRIVATE_CLIENT.client_secret,
+		user: {
+			id: PRIVATE_USER.id,
+			username: PRIVATE_USER.email,
+			password: PRIVATE_USER.password
+		}
 	}
 }
 

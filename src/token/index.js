@@ -79,7 +79,7 @@ const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co
 		? { ...extraData, username, password } 
 		: { username, password } 
 
-	const baseConfig = { client_id, scopes, state, modes }
+	const baseConfig = { client_id, client_secret, scopes, state, modes }
 
 	// 2. Decices which flow to use
 	const fn = 

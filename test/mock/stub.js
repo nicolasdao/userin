@@ -44,14 +44,24 @@ const GOOD_CLIENT = {
 	client_id:'app123', 
 	client_secret:98765, 
 	scopes:SCOPES, 
-	audiences:AUDIENCES
+	audiences:AUDIENCES,
+	auth_methods: null
 }
 
 const BAD_CLIENT = {
 	client_id:'badapp123', 
 	client_secret:468269832, 
 	scopes:['profile'], 
-	audiences:AUDIENCES
+	audiences:AUDIENCES,
+	auth_methods: null
+}
+
+const PRIVATE_CLIENT = {
+	client_id:'app456', 
+	client_secret:98765, 
+	scopes:SCOPES, 
+	audiences:AUDIENCES,
+	auth_methods: ['client_secret_post']
 }
 
 const END_USER = {
@@ -79,21 +89,37 @@ const FIP_USER = {
 	phone_number_verified: false
 }
 
+const PRIVATE_USER = {
+	id:1141,
+	given_name:'Ben',
+	family_name:'Butcher',
+	zoneinfo: 'Australia/Sydney',
+	email:'ben@cloudlessconsulting.com',
+	email_verified:true,
+	address:'Some other street in Sydney',
+	phone: '+611234567218',
+	phone_number_verified: false,
+	password: 1239124456
+}
+
 const FIP_USER_TO_STRATEGY = {
 	user_id:FIP_USER.id,
 	strategy:'facebook',
 	strategy_user_id:76
 }
 
-const CLIENT_STORE = [GOOD_CLIENT, BAD_CLIENT]
-const USER_STORE = [END_USER, FIP_USER]
+const CLIENT_STORE = [GOOD_CLIENT, BAD_CLIENT, PRIVATE_CLIENT]
+const USER_STORE = [END_USER, FIP_USER, PRIVATE_USER]
 const USER_TO_FIP_STORE = [FIP_USER_TO_STRATEGY]
 const USER_TO_CLIENT_STORE = [{
-	user_id: USER_STORE[0].id,
-	client_id: CLIENT_STORE[0].client_id
-},{
-	user_id: USER_STORE[1].id,
-	client_id: CLIENT_STORE[0].client_id
+	user_id: END_USER.id,
+	client_id: GOOD_CLIENT.client_id
+}, {
+	user_id: FIP_USER.id,
+	client_id: GOOD_CLIENT.client_id
+}, {
+	user_id: PRIVATE_USER.id,
+	client_id: PRIVATE_CLIENT.client_id
 }]
 
 const REFRESH_TOKEN_STORE = []
@@ -104,8 +130,10 @@ module.exports = {
 	AUDIENCES,
 	GOOD_CLIENT,
 	BAD_CLIENT,
+	PRIVATE_CLIENT,
 	END_USER,
 	FIP_USER,
+	PRIVATE_USER,
 	FIP_USER_TO_STRATEGY,
 	CLIENT_STORE,
 	USER_STORE,

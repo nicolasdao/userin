@@ -9,6 +9,7 @@ const { oauth2Params } = require('../_utils')
  * @param {String}		authPortal.api				URL to the custom Auth API
  * @param {Object}		authPortal.headers		
  * @param {String}		client_id	
+ * @param {String}		client_secret	
  * @param {String}		refresh_token	
  * @param {String}		state
  * 
@@ -19,7 +20,7 @@ const { oauth2Params } = require('../_utils')
  * @yield {String}		output[1].id_token
  * @yield {String}		output[1].scope
  */
-const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchErrors(co(function *() {
+const exec = (eventHandlerStore, { client_id, client_secret, refresh_token, state }) => catchErrors(co(function *() {
 	const errorMsg = 'Failed to acquire tokens for grant_type \'refresh_token\''
 	// A. Validates input
 	if (!eventHandlerStore.get_refresh_token_claims)
@@ -57,6 +58,17 @@ const exec = (eventHandlerStore, { client_id, refresh_token, state }) => catchEr
 			throw wrapErrors(errorMsg, clientErrors)
 		if (!client)
 			throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+
+		if (oauth2Params.check.client.isPrivate(client)) {
+			if (!client_secret)
+				throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+
+			const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+			if (clientErrors)
+				throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...clientErrors])
+			if (!client)
+				throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+		}
 
 		clientScopes.push(...(client.scopes||[]))
 		clientAudiences.push(...(client.audiences||[]))

@@ -34,7 +34,7 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
  * @return {Void}		output[1]
  */
 const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co(function *() {
-	const { client_id, token } = payload
+	const { client_id, client_secret, token } = payload
 	const { authorization } = context
 
 	if (TRACE_ON)
@@ -47,17 +47,17 @@ const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co
 	if (!eventHandlerStore.delete_refresh_token)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing 'delete_refresh_token' handler.`)
 
-	if (!token)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
 	if (!authorization)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'authorization'.`)
-	if (typeof(authorization) != 'string')
-		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must be a string (current: ${typeof(authorization)}).`)
-
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'authorization' header.`)
+	
 	const [,access_token] = authorization.match(/^[bB]earer\s+(.*?)$/) || []
-
 	if (!access_token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must contain a bearer access_token.`)
+
+	if (!token)
+		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
+	if (typeof(authorization) != 'string')
+		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'authorization' header. The 'authorization' header must be a string (current: ${typeof(authorization)}).`)
 	
 	// B. Extract claims from access_token
 	const [claimsErrors, claims] = yield eventHandlerStore.get_access_token_claims.exec({ token:access_token })
@@ -72,7 +72,14 @@ const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co
 	if (claimsExpiredErrors)
 		throw new userInError.InvalidTokenError(`${errorMsg}. access_token has expired.`)
 
-	const checkClientId = client_id || claims.client_id
+	const [refreshTokenClaimsErrors, refreshTokenClaims] = yield eventHandlerStore.get_refresh_token_claims.exec({ token })
+	if (refreshTokenClaimsErrors)
+		throw wrapErrors(errorMsg, refreshTokenClaimsErrors)
+
+	if (!refreshTokenClaims)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Token not found.`)
+
+	const checkClientId = claims.client_id || refreshTokenClaims.client_id
 
 	if (checkClientId) {
 		if (!eventHandlerStore.get_client)
@@ -80,33 +87,44 @@ const handler = (payload={}, eventHandlerStore={}, context={}) => catchErrors(co
 		if (!client_id)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
 		if (claims.client_id != client_id)
-			throw new userInError.InvalidRequestError(`${errorMsg}. Invalid 'client_id'.`)
+			throw new userInError.InvalidClientError(`${errorMsg}. Invalid 'client_id'.`)
+		if (refreshTokenClaims.client_id != client_id)
+			throw new userInError.InvalidClientError(`${errorMsg}. Invalid 'client_id'.`)
+	
+		const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id })
+		if (clientErrors)
+			throw wrapErrors(errorMsg, clientErrors)
+
+		if (!client)
+			throw new userInError.InvalidClientError(`${errorMsg}. client_id not found.`)
+
+		if (oauth2Params.check.client.isPrivate(client)) {
+			if (!client_secret)
+				throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+
+			const [clientErrors, client] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+			if (clientErrors)
+				throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...clientErrors])
+			if (!client)
+				throw new userInError.InvalidClientError(`${errorMsg}. 'client_id' not found.`)
+		}
 	}
 
-	// D. Gets the refresh_token claims
-	const [[serviceAccountErrors, serviceAccount], [refreshTokenClaimsErrors, refreshTokenClaims]] = yield [
-		checkClientId ? eventHandlerStore.get_client.exec({ client_id }) : Promise.resolve([null,{}]),
-		eventHandlerStore.get_refresh_token_claims.exec({ token })
-	]
+	// F. Check that if the access_token belongs to a user, that refresh_token belong to that same user
+	if (claims.sub && claims.sub != refreshTokenClaims.sub)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Unauthorized access.`)
 	
-	if (serviceAccountErrors || refreshTokenClaimsErrors)
-		throw wrapErrors(errorMsg, serviceAccountErrors || refreshTokenClaimsErrors)
+	// D. Gets the refresh_token claims
+	const tokenHasExpired = refreshTokenClaims.exp && !isNaN(refreshTokenClaims.exp*1) && Date.now() > refreshTokenClaims.exp*1000
+	if (tokenHasExpired)
+		return {}
 
-	// If the refresh_token is expired or does not exist or the client does not exist anymore, 
-	// then the revokation is automatically considered successfull
-	if (!refreshTokenClaims || !serviceAccount || (refreshTokenClaims.exp && !isNaN(refreshTokenClaims.exp*1) && Date.now() > refreshTokenClaims.exp*1000))
-		return
-
-	// E. Validates refresh_token claims
-	if (checkClientId && refreshTokenClaims.client_id != client_id)
-		throw new userInError.InvalidClientError(`${errorMsg}. Invalid 'client_id'.`)
-
-	// F. Deletes the refresh_token
+	// G. Deletes the refresh_token
 	const [tokenDeletedErrors] = yield eventHandlerStore.delete_refresh_token.exec({ token })
 	if (tokenDeletedErrors)
 		throw wrapErrors(errorMsg, tokenDeletedErrors)
 
-	return
+	return {}
 }))
 
 module.exports = {

@@ -20,7 +20,7 @@ setUpScopeAssertion(assert)
 /**
  * Runs the test suites.
  * 
- * @param  {UserIn}		data.strategy
+ * @param  {UserIn}		data.userIn
  * @param  {String}		data.user.password
  * @param  {String}		data.user.password
  * @param  {Boolean}	skip			
@@ -35,8 +35,9 @@ module.exports = function runTest (data, skip, showResults) {
 		userId, 
 		altClientId, 
 		openIdMode,
-		strategy } = data
+		userIn } = data
 
+	const strategy = userIn.strategy
 	const usecase = openIdMode ? 'openid' : 'non-openid' 
 
 	const registerAllHandlers = eventHandlerStore => {

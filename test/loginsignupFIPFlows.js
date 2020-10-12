@@ -29,6 +29,7 @@ const config = {
 
 const stub = {
 	user: {
+		id: END_USER.id,
 		username: END_USER.email,
 		password: END_USER.password
 	},

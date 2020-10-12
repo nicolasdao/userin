@@ -1,6 +1,7 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors } } = require('puffy')
 const { error:userInError } = require('userin-core')
+const { oauth2Params } = require('../_utils')
 
 const endpoint = 'introspect' 
 
@@ -56,13 +57,13 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 
 	if (!client_id)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
-	if (!client_secret)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+	// if (!client_secret)
+	// 	throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
 	if (!token)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'token'.`)
 
 	const [[clientErrors, client], [claimErrors, claims]] = yield [
-		eventHandlerStore.get_client.exec({ client_id, client_secret }),
+		eventHandlerStore.get_client.exec({ client_id }),
 		eventHandlerStore[tokenClaimsEventName].exec({ token })
 	]
 	
@@ -70,7 +71,17 @@ const handler = (payload={}, eventHandlerStore={}) => catchErrors(co(function *(
 		throw wrapErrors(errorMsg, clientErrors)
 	
 	if (claimErrors || !client)
-		return { active:false }
+		return { active: false }
+
+	if (oauth2Params.check.client.isPrivate(client)) {
+		if (!client_secret)
+			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_secret'.`)
+		const [doubleChechClientErrors, doubleCheckClient] = yield eventHandlerStore.get_client.exec({ client_id, client_secret })
+		if (doubleChechClientErrors) 
+			throw wrapErrors(errorMsg, [new userInError.InvalidClientError('client_id not found'), ...doubleChechClientErrors])
+		if (!doubleCheckClient)
+			return { active: false }
+	}
 
 	if (!claims)
 		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid ${token_type_hint}`)

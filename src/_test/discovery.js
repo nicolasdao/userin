@@ -6,7 +6,6 @@ const { assert } = chai
 /**
  * Runs the test suites.
  * 
- * @param  {Strategy}	data.strategy
  * @param  {UserIn}		data.userIn
  * @param  {String}		data.user.password
  * @param  {String}		data.user.password

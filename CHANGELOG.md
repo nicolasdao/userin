@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/nicolasdao/userin/compare/v1.13.1...v1.14.0) (2020-10-12)
+
+
+### Features
+
+* Add support for toggling when the client_secret is required or not based on the client's auth_methods property + add unit tests ([9b17734](https://github.com/nicolasdao/userin/commit/9b17734cc7557809fc51efbacc9b088f83ea1477))
+
 ### [1.13.1](https://github.com/nicolasdao/userin/compare/v1.13.0...v1.13.1) (2020-10-10)
 
 

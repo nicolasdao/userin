@@ -91,7 +91,7 @@ module.exports = function runTest (data, skip, showResults) {
 	})
 
 	fn(`token[${testSuiteName}]`, () => {
-		describe('validate stub', () => {
+		describe('stub_validation', () => {
 			it('01 - Should define some specific loginsignup and loginsignupfip stub values', () => {
 				assert.isOk(client.user.id, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.id'`)
 				assert.isOk(client.user.username, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.username'`)
@@ -1101,7 +1101,6 @@ module.exports = function runTest (data, skip, showResults) {
 							
 						logE.push(errors)
 						assert.isOk(errors, '01')
-						console.log(errors)
 						assert.isOk(errors.some(e => e.message && e.message.indexOf('client_id not found') >= 0), '02')
 
 						if (showResult) console.log(errors)

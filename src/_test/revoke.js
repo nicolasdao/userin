@@ -61,7 +61,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 	})
 
 	fn(`revoke[${testSuiteName}]`, () => {
-		describe('validate stub', () => {
+		describe('stub_validation', () => {
 			it('01 - Should define some specific loginsignup and loginsignupfip stub values', () => {
 				assert.isOk(client.user.id, `01 - revoke Test suite in ${testSuiteName} mode require stub 'client.user.id'`)
 			})

@@ -67,18 +67,18 @@ UserIn is designed to expose web APIs that support two different flow types:
 >	- [Using an OpenID discovery endpoint](#using-an-openid-discovery-endpoint)
 > * [Implementation guidelines](#implementation-guidelines)
 >	- [Creating a UserIn Strategy class](#creating-a-userin-strategy-class)
->		- [Unit testing](#unit-testing)
->			- [Testing a UserIn Strategy class](#testing-a-userin-strategy-class)
->			- [`testSuite` API](#testsuite-api)
->				- [`testLoginSignup` function](#testloginsignup-function)
->				- [`testLoginSignupFIP` function](#testloginsignupfip-function)
->				- [`testOpenId` function](#testopenid-function)
->				- [`testAll` function](#testall-function)
->			- [Dependency injection](#dependency-injection)
->		- [Integration testing](#integration-testing)
->			- [Exporting the API to Postman](#exporting-the-api-to-postman)
->				- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
->				- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
+>	- [Unit testing](#unit-testing)
+>		- [Testing a UserIn Strategy class](#testing-a-userin-strategy-class)
+>		- [`testSuite` API](#testsuite-api)
+>			- [`testLoginSignup` function](#testloginsignup-function)
+>			- [`testLoginSignupFIP` function](#testloginsignupfip-function)
+>			- [`testOpenId` function](#testopenid-function)
+>			- [`testAll` function](#testall-function)
+>		- [Dependency injection](#dependency-injection)
+>	- [Integration testing](#integration-testing)
+>		- [Exporting the API to Postman](#exporting-the-api-to-postman)
+>			- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
+>			- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
 >	- [Authorization code flow implementation](#authorization-code-flow-implementation)
 > * [Flexible flows](#flexible-flows)
 > * [Contributing - Developer notes](#contributing---developer-notes)
@@ -384,7 +384,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /.well-known/configuration
 
-- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+- Required modes: `none`. This endpoint is always available.
 - OAuth 2.0 compliant: No. 
 - Description: Gets a JSON object describing where all the other endpoints are located and what type of configuration is supported.
 - HTTP method: `GET`
@@ -396,7 +396,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /token
 
-- Required modes: `none`. This endpoint is always available regardless of which modes is selected.
+- Required modes: `none`. This endpoint is always available.
 - OAuth 2.0 compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
 - Description: Exchanges credentials for tokens.
 - HTTP method: `POST`
@@ -1010,9 +1010,12 @@ userIn.use({
 
 
 # Implementation guidelines
+
+Because OAuth 2.0 flows are not stateless we recommend to implement your UserIn strategy using [dependency injection](#dependency-injection). This will greatly help with unit testing. 
+
 ## Creating a UserIn Strategy class
-### Unit testing
-#### Testing a UserIn Strategy class
+## Unit testing
+### Testing a UserIn Strategy class
 UserIn ships with a suite of Mocha unit tests. To test your own strategy:
 
 1. Install mocha and chai:
@@ -1056,9 +1059,9 @@ testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 npm test
 ```
 
-#### `testSuite` API
+### `testSuite` API
 
-The `testSuite` API exposes four different test suite, one for each mode + one that combines all the modes, that use the same signature:
+The `testSuite` API exposes four different test suite, one for each mode + one that combines all the modes. Each test suite uses the same signature:
 1. [`testLoginSignup` function](#testloginsignup-function) 
 2. [`testLoginSignupFIP` function](#testloginsignupfip-function) 
 3. [`testOpenId` function](#testopenid-function) 
@@ -1074,7 +1077,7 @@ The signature is `(YourStrategyClass: UserInStrategy, config: Object, stub: Obje
 	- `options.only: [String]`: Array of test to run.
 	- `options.showResults: [String]`: Array of test assertions. When this array is specified, more details about the assertion outcome are displayed. Example: `showResults:['login.handler.09,10', 'signup.handler.01']`
 
-##### `testLoginSignup` function
+#### `testLoginSignup` function
 
 Runs the following tests:
 - `strategy`
@@ -1117,7 +1120,7 @@ const stub = {
 testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 ```
 
-##### `testLoginSignupFIP` function
+#### `testLoginSignupFIP` function
 
 Runs the following tests:
 - `strategy`
@@ -1165,13 +1168,16 @@ const stub = {
 testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
 ```
 
-##### `testOpenId` function
+#### `testOpenId` function
 
 Runs the following tests:
 - `strategy`
 - `introspect`
 - `token`
 - `userinfo`
+- `revoke`
+- `discovery`
+- `authorize`
 
 ```js
 const { testSuite } = require('userin')
@@ -1251,11 +1257,11 @@ const stub = {
 testSuite.testOpenId(YourStrategyClass, config, stub, options)
 ```
 
-##### `testAll` function
+#### `testAll` function
 
 This test function tests all the previous three tests at once. Use it if you have created a UserIn Strategy class that imlements all the [event handlers](#events-and-event-handlers). The signature is the same as for the other tests. Merge all the stubs from the previous tests into a single stub object.
 
-#### Dependency injection
+### Dependency injection
 
 The test suite supports inverson of control via dependency injection. All the event handlers supports the same signature: 
 
@@ -1346,14 +1352,14 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 
 This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
 
-### Integration testing
-#### Exporting the API to Postman
+## Integration testing
+### Exporting the API to Postman
 
 UserIn can publish its API documentation using Postman Collection v2.1. There are two ways to export a Postman collection:
 1. [Publish a new web endpoint at `{{YOUR_DOMAIN}}/v1/postman/collection.json`](#publishing-a-postman-collection-as-a-web-link) and use that link in Postman to import that collection.
 2. [Export the collection in a local file](#export-a-postman-collection-in-a-local-file) and then import that file in Postman.
 
-##### Publishing a Postman collection as a web link
+#### Publishing a Postman collection as a web link
 
 Use this API:
 
@@ -1401,7 +1407,7 @@ app.use(userIn)
 app.listen(3330, () => console.log('UserIn listening on https://localhost:3330'))
 ```
 
-##### Export a Postman collection in a local file
+#### Export a Postman collection in a local file
 
 Once the UserIn instance has been created and configured, use the `Postman` utility as follow:
 

@@ -5,6 +5,7 @@ const { verifyStrategy, Strategy, getSupportedModes } = require('userin-core')
 const introspectApi = require('./introspect')
 const discoveryApi = require('./discovery')
 const tokenApi = require('./token')
+const { consentPageRequestHandler, consentPageResponseHandler } = require('./authorize')
 const userinfoApi = require('./userinfo')
 const revokeApi = require('./revoke')
 const jwksUriApi = require('./jwks_uri')
@@ -181,6 +182,8 @@ class UserIn extends express.Router {
 			createOauth2HttpHandler('openidconfiguration_endpoint', 'get', discoveryApi.openid, { formatJSON:true })
 			if (eventHandlerStore.get_jwks)
 				createOauth2HttpHandler('jwks_uri', 'get', jwksUriApi, { formatJSON:true })
+			createOauth2HttpHandler('authorize_endpoint', 'get', consentPageRequestHandler)
+			createOauth2HttpHandler('authorizeconsent_endpoint', 'get', consentPageResponseHandler)
 		} 
 
 		if (loginSignupModeOn) {

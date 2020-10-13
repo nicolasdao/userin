@@ -129,7 +129,8 @@ OpenIdMockStrategy.prototype.get_client = (root, { client_id, client_secret }, c
 	return {
 		audiences: client.audiences || [],
 		scopes: client.scopes || [],
-		auth_methods: client.auth_methods || []
+		auth_methods: client.auth_methods || [],
+		redirect_uris: client.redirect_uris || []
 	}
 }
 

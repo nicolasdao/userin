@@ -7,6 +7,7 @@ const revokeTest = require('./revoke')
 const loginTest = require('./login')
 const signupTest = require('./signup')
 const discoveryTest = require('./discovery')
+const authorizeTest = require('./authorize')
 const strategyTest = require('./Strategy')
 const { logTestErrors } = require('./_core')
 const UserIn = require('../UserIn.js')
@@ -342,6 +343,7 @@ const testOpenId = (Strategy, config={}, stub={}, options={}) => {
 
 	revokeTest({ testSuiteName, userIn, stub }, skipTest('revoke', skip, only), showResults)
 	discoveryTest({ testSuiteName, userIn }, skipTest('discovery', skip, only), showResults)
+	authorizeTest({ userIn, stub }, skipTest('authorize', skip, only), showResults)
 }
 
 const testAll = (Strategy, config={}, stub={}, options={}) => {

@@ -45,7 +45,8 @@ const GOOD_CLIENT = {
 	client_secret:98765, 
 	scopes:SCOPES, 
 	audiences:AUDIENCES,
-	auth_methods: null
+	auth_methods: null,
+	redirect_uris: ['https://mysaferedirect.com/goforit/mate']
 }
 
 const BAD_CLIENT = {

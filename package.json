@@ -36,7 +36,7 @@
     "puffy": "^1.4.0",
     "raw-body": "^2.4.1",
     "simple-template-utils": "0.0.6",
-    "userin-core": "^1.13.0"
+    "userin-core": "^1.14.0"
   },
   "devDependencies": {
     "dotenv": "^8.2.0",

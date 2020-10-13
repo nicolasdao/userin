@@ -1,7 +1,6 @@
 const { co } = require('core-async')
 const { error: { catchErrors, wrapErrors }, url:urlHelp } = require('puffy')
 const { error:userInError } = require('userin-core')
-const { oauth2Params } = require('../_utils')
 const { validateConsentPageInput } = require('./_core')
 
 const endpoint = 'authorizeconsent' 
@@ -56,30 +55,36 @@ const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(fu
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'consentcode'.`)
 
 	// B. Exchanges the consentcode for a user_id and the code that was sent in the original request.
-	const [consentDataErrors, consentData={}] = oauth2Params.convert.get_auth_consent_claims.exec({ token:consentcode })
+	const [consentDataErrors, consentData] = yield eventHandlerStore.get_auth_consent_claims.exec({ token:consentcode })
 	if (consentDataErrors)
-		throw wrapErrors(errorMsg, consentDataErrors)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid consentcode`, consentDataErrors)
+
+	if (!consentData)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid consentcode.`)
 
 	const { user_id, username, code, exp } = consentData
 
 	if (!user_id)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'user_id'. The consentcode failed to be retrieve data containing a user_id property.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Missing required 'user_id'. The consentcode failed to be retrieve data containing a user_id property.`)
 	if (!username)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'username'. The consentcode failed to be retrieve data containing a username property.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Missing required 'username'. The consentcode failed to be retrieve data containing a username property.`)
 	if (!code)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'code'. The consentcode failed to be retrieve data containing a code property.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Missing required 'code'. The consentcode failed to be retrieve data containing a code property.`)
 	if (!exp)
-		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'exp'. The consentcode failed to be retrieve data containing a exp property.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Missing required 'exp'. The consentcode failed to be retrieve data containing a exp property.`)
 	if (isNaN(exp*1))
-		throw new userInError.InvalidRequestError(`${errorMsg}. Invalid number. The 'exp' property is not a number.`)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid number. The 'exp' property is not a number.`)
 
 	if (Date.now() > exp*1000)
 		throw new userInError.InvalidTokenError(`${errorMsg}. consentcode is expired.`)
 
 	// C. Exchanges the code for its original claims
-	const [codeDataErrors, codeData={}] = yield eventHandlerStore.get_auth_request_claims.exec({ token:code })
+	const [codeDataErrors, codeData] = yield eventHandlerStore.get_auth_request_claims.exec({ token:code })
 	if (codeDataErrors)
 		throw wrapErrors(errorMsg, codeDataErrors)
+
+	if (!codeData)
+		throw new userInError.InvalidTokenError(`${errorMsg}. Invalid auth request code.`)
 
 	const { client_id, response_type, scope, state, redirect_uri, code_challenge, code_challenge_method, nonce } = codeData
 

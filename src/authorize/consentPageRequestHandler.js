@@ -41,9 +41,9 @@ const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(fu
 	const { client_id, response_type, scope, state, redirect_uri, code_challenge, code_challenge_method, nonce } = payload
 
 	if (TRACE_ON)
-		console.log(`INFO - Request to authorize client_id ${client_id}`)
+		console.log('INFO - Request to authorize client_id')
 
-	const errorMsg = `Failed to authorize client_id ${client_id}`
+	const errorMsg = 'Failed to authorize client_id'
 	// A. Validates input
 	const [validationErrors, validation] = yield validateConsentPageInput(eventHandlerStore, { client_id, response_type, scope, redirect_uri, code_challenge, code_challenge_method })
 	if (validationErrors)

@@ -142,33 +142,35 @@ module.exports = function runTest (data, skip, showResults) {
 						assert.equal(body.jwks_uri, `${baseUrl}/oauth2/${version}/certs`,'10')
 						assert.equal(body.openidconfiguration_endpoint, `${baseUrl}/oauth2/${version}/.well-known/openid-configuration`,'11')
 						assert.equal(body.userinfo_endpoint, `${baseUrl}/oauth2/${version}/userinfo`,'12')
+						assert.equal(body.authorize_endpoint, `${baseUrl}/oauth2/${version}/authorize`,'13')
+						assert.equal(body.authorizeconsent_endpoint, `${baseUrl}/oauth2/${version}/authorizeconsent`,'14')
 
-						assert.isOk(body.grant_types_supported, '13')
-						assert.equal(body.grant_types_supported.length, 4 ,'14')
-						assert.equal(body.grant_types_supported[0], 'password' ,'15')
-						assert.equal(body.grant_types_supported[1], 'refresh_token' ,'16')
-						assert.equal(body.grant_types_supported[2], 'authorization_code' ,'17')
-						assert.equal(body.grant_types_supported[3], 'client_credentials' ,'18')
-						assert.isOk(body.code_challenge_methods_supported, '19')
-						assert.equal(body.code_challenge_methods_supported.length, 2 ,'20')
-						assert.equal(body.code_challenge_methods_supported[0], 'plain' ,'21')
-						assert.equal(body.code_challenge_methods_supported[1], 'S256' ,'22')
-						assert.isOk(body.response_types_supported, '23')
-						assert.equal(body.response_types_supported.length, 7 ,'24')
-						assert.equal(body.response_types_supported[0], 'code' ,'25')
-						assert.equal(body.response_types_supported[1], 'token' ,'26')
-						assert.equal(body.response_types_supported[2], 'id_token' ,'27')
-						assert.equal(body.response_types_supported[3], 'code token' ,'28')
-						assert.equal(body.response_types_supported[4], 'code id_token' ,'29')
-						assert.equal(body.response_types_supported[5], 'token id_token' ,'30')
-						assert.equal(body.response_types_supported[6], 'code token id_token' ,'31')
-						assert.isOk(body.token_endpoint_auth_methods_supported, '32')
-						assert.equal(body.token_endpoint_auth_methods_supported.length, 1 ,'33')
-						assert.equal(body.token_endpoint_auth_methods_supported[0], 'client_secret_post' ,'34')
-						assert.isOk(body.claims_supported, '35')
-						assert.isOk(body.claims_supported.length,'36')
-						assert.isOk(body.scopes_supported, '37')
-						assert.isOk(body.scopes_supported.length,'38')
+						assert.isOk(body.grant_types_supported, '15')
+						assert.equal(body.grant_types_supported.length, 4 ,'16')
+						assert.equal(body.grant_types_supported[0], 'password' ,'17')
+						assert.equal(body.grant_types_supported[1], 'refresh_token' ,'18')
+						assert.equal(body.grant_types_supported[2], 'authorization_code' ,'19')
+						assert.equal(body.grant_types_supported[3], 'client_credentials' ,'20')
+						assert.isOk(body.code_challenge_methods_supported, '21')
+						assert.equal(body.code_challenge_methods_supported.length, 2 ,'22')
+						assert.equal(body.code_challenge_methods_supported[0], 'plain' ,'23')
+						assert.equal(body.code_challenge_methods_supported[1], 'S256' ,'24')
+						assert.isOk(body.response_types_supported, '25')
+						assert.equal(body.response_types_supported.length, 7 ,'26')
+						assert.equal(body.response_types_supported[0], 'code' ,'27')
+						assert.equal(body.response_types_supported[1], 'token' ,'28')
+						assert.equal(body.response_types_supported[2], 'id_token' ,'29')
+						assert.equal(body.response_types_supported[3], 'code token' ,'30')
+						assert.equal(body.response_types_supported[4], 'code id_token' ,'31')
+						assert.equal(body.response_types_supported[5], 'token id_token' ,'32')
+						assert.equal(body.response_types_supported[6], 'code token id_token' ,'33')
+						assert.isOk(body.token_endpoint_auth_methods_supported, '34')
+						assert.equal(body.token_endpoint_auth_methods_supported.length, 1 ,'35')
+						assert.equal(body.token_endpoint_auth_methods_supported[0], 'client_secret_post' ,'36')
+						assert.isOk(body.claims_supported, '37')
+						assert.isOk(body.claims_supported.length,'38')
+						assert.isOk(body.scopes_supported, '38')
+						assert.isOk(body.scopes_supported.length,'40')
 
 						const validDiscovery = [
 							'issuer',
@@ -187,10 +189,12 @@ module.exports = function runTest (data, skip, showResults) {
 							'introspection_endpoint',
 							'jwks_uri',
 							'openidconfiguration_endpoint',
-							'userinfo_endpoint'
+							'userinfo_endpoint',
+							'authorize_endpoint',
+							'authorizeconsent_endpoint'
 						]
 						const invalidKeys = Object.keys(body).filter(x => validDiscovery.indexOf(x) < 0).join(', ')
-						assert.equal(invalidKeys, '', '39')
+						assert.equal(invalidKeys, '', '41')
 
 						server.close()
 						done()

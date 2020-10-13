@@ -29,8 +29,13 @@ const validateConsentPageInput = (eventHandlerStore, { client_id, response_type,
 
 	if (!client_id)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'client_id'.`)
+	
 	if (!response_type)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'response_type'.`)
+	const [responseTypeErrors, responseTypes] = oauth2Params.convert.responseTypeToTypes(response_type)
+	if (responseTypeErrors)
+		throw wrapErrors(errorMsg, responseTypeErrors)
+
 	if (!redirect_uri)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
 	if (!validate.url(redirect_uri))
@@ -39,11 +44,6 @@ const validateConsentPageInput = (eventHandlerStore, { client_id, response_type,
 	const [codeChallengeErrors] = oauth2Params.verify.codeChallenge({ code_challenge, code_challenge_method })
 	if (codeChallengeErrors)
 		throw wrapErrors(errorMsg, codeChallengeErrors)
-
-	const [responseTypeErrors, responseTypes] = oauth2Params.convert.responseTypeToTypes(response_type)
-	if (responseTypeErrors)
-		throw wrapErrors(errorMsg, responseTypeErrors)
-
 
 	// B. Get the client's details and validate the request based on those details.
 	const [clientErrors, client] = await eventHandlerStore.get_client.exec({ client_id })

@@ -92,11 +92,16 @@ UserIn is designed to expose web APIs that support two different flow types:
 > * [Annex](#annex)
 >	- [Jargon and concepts](#jargon-and-concepts)
 >		- [Grant types](#grant-types)
+>	- [Registering an application with an Identity Provider](#registering-an-application-with-an-identity-provider)
+>		- [Facebook](#facebook)
+>		- [Google](#google)
+>		- [LinkedIn](#linkedin)
+>		- [GitHub](#github)
 > * [References](#references)
 
 # Getting started
 
-Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods (based on how many UserIn features must be supported). UserIn removes the burden of implementing business logic in those methods so developer focus only on simple CRUD implementations.
+Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods based on how many UserIn features must be supported. UserIn removes the burden of implementing OAuth 2.0 logic in those methods so developer focus only on simple CRUD implementations.
 
 Install UserIn:
 
@@ -104,7 +109,7 @@ Install UserIn:
 npm i userin
 ```
 
-If you need to support authentication using Facebook, install the Facebook passport:
+If you need to support authentication using Facebook, install the Facebook passport (more about other providers in the [Setting up an identity provider](#setting-up-an-identity-provider) section):
 
 ```
 npm i passport-facebook
@@ -194,6 +199,8 @@ const userin = new UserIn({
 	}
 })
 
+// This code implies a app was registered with Facebook. For more details about this
+// topis, please refer to the "Setting up an identity provider" section. 
 userIn.use(Facebook, {
 	scopes: ['public_profile'],
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
@@ -209,20 +216,19 @@ userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(context)
 })
 
-Postman.export({
-	userIn,
-	name: 'userin-my-app',
-	path: './postman-collection.json'
-})
+// Exposes an extra 'v1/'
+userIn.use(new Postman('userin-my-app'))
 
 app.use(userIn)
 
 app.listen(3330)
 ```
 
+The list of exposed endpoints is detailed under the section. That list is also discoverable via the following endpoints:
 All the endpoints that the UserIn middleware exposes are discoverable at the following two endpoints:
-- __`GET`__ http://localhost:3330/v1/.well-known/configuration: This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID OAuth2 endpoints.
-- __`GET`__ http://localhost:3330/oauth2/v1/.well-known/openid-configuration: This is the OpenID discovery endpoint. That endpoint is the one that your third-parties are supposed to use.
+- __`GET`__ [http://localhost:3330/v1/.well-known/configuration](http://localhost:3330/v1/.well-known/configuration): This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID/OAuth 2.0 endpoints.
+- __`GET`__ [http://localhost:3330/oauth2/v1/.well-known/openid-configuration](http://localhost:3330/oauth2/v1/.well-known/openid-configuration): This is the OpenID discovery endpoint. It only exposes OpenID/Oauth 2.0 endpoints. That endpoint is the one that your third-parties are supposed to use.
+- __`GET`__ : [http://localhost:3330/v1/postman/collection.json](http://localhost:3330/v1/postman/collection.json): This endpoint is optional. It exposes a Postman collection 2.0 that helps to create a new Postman collection. Postman is used to test the UserIn API and run various integration tests. To expose it, Postman must be explicitely configured. That what the line `userIn.use(new Postman('userin-my-app'))` does. More about Postman in the [Exporting the API to Postman](#exporting-the-api-to-postman) section.
 
 # Auth modes
 
@@ -933,9 +939,15 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 # Setting up an identity provider
 
-UserIn supports both [Passport strategies](http://www.passportjs.org/) and native OpenID providers via their `.well-known/openid-configuration` discovery endpoint (e.g., https://accounts.google.com/.well-known/openid-configuration). 
+UserIn supports both [Passport strategies](http://www.passportjs.org/) and native OpenID providers via their `.well-known/openid-configuration` discovery endpoint (e.g., https://accounts.google.com/.well-known/openid-configuration). In both cases, an app must be registered with each identity provider. The [annex](#annex) of this document details the steps to set this up for some of the most popular provider in the [Registering an application with an Identity Provider](#registering-an-application-with-an-identity-provider) section.
 
 ## Using Passport
+
+Example of npm Passport packages:
+- Facebook: `npm i passport-facebook`
+- Google: `npm i passport-google-oauth20`
+- GitHub: `npm i passport-github`
+- LinkedIn: `npm i passport-linkedin-oauth2`
 
 The next example uses Facebook:
 
@@ -974,6 +986,8 @@ userIn.use(Facebook, {
 >	- The rest of the configuration is the same as what is described on the Passport package documentation. 
 
 ## Using an OpenID discovery endpoint
+
+To this day (Oct. 2020), Google is the only major player to have adopted OpenID. The others have implemented specialized version of OAuth 2.0 (Facebook has rolled out their own implementation of OpenID Connect called Facebook Connect). 
 
 ```js
 const { UserIn } = require('userin')
@@ -1577,6 +1591,105 @@ Grant types are labels used in the `/token` API to determine how the provided cr
 - `refresh_token`
 - `device_code` (not supported yet by UserIn)
 
+## Registering an application with an Identity Provider
+### Facebook
+#### Goal 
+
+* Acquire an __*Client ID*__ and an __*Client Secret*__.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### Facebook App set up steps
+
+1. Browse to [https://developers.facebook.com/](https://developers.facebook.com/).
+2. In the top menu, expand __*My Apps*__, click on the __*Add New App*__ link and fill up the form. Once submitted, you'll be redirected to your new app dashboard page.
+3. Optionally, create a test version of your new app (recommended) to ease testing during the development stage. In the top left corner, click on the app name to expand the menu. At the bottom of that menu, click on the __*Create Test App*__ button.
+4. Get the __Client ID__ and the __Client Secret__. The Client ID can be found easily at the top of each page. The Client Secret is under __*Settings/Basic*__ section in the left menu. 
+5. Add valid OAuth redirect URI:
+	1. In the left menu, expand the __*Facebook Login*__ tab and click on __*Settings*__. 
+	2. Add your authorized redirect URI under __*Valid OAuth Redirect URIs*__.
+
+> IMPORTANT NOTE: 
+> Facebook only allows HTTPS redirect URIs. This can make local development on localhost challenging. We recommend to use the [ngrok](https://ngrok.com/) to overcome this limitation. This utility offers a free plan that allows to expose your localhost to the web and uses HTTPS. 
+
+#### Troubleshooting - Can't Load URL: The domain of this URL isn't included in the app's domains
+
+This error happens when you've stopped testing in dev mode (i.e., using localhost) and you've either forgot to proceed to step 5 above.
+
+<img src="https://user-images.githubusercontent.com/3425269/89261172-f72faf00-d670-11ea-8fec-3078b07491dd.png" width="400px">
+
+The error message above should appear at the following URL: https://www.facebook.com/v3.2/dialog/oauth?response_type=code&redirect_uri=LONG_ENCODED_URL&scope=public_profile
+
+To fix this issue:
+- Copy the `LONG_ENCODED_URL`.
+- Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
+- Use that decoded URL in step 5 above.
+
+### Google
+#### Goal 
+
+* Acquire an __*Client ID*__ and an __*Client Secret*__.
+* Configure a __*Consent Screen*__. That screen acts as a disclaimer to inform the user of the implication of using Google as an IdP to sign-in to your App.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### Google App set up steps
+
+1. Sign in to your Google Cloud console at [https://console.cloud.google.com](https://console.cloud.google.com).
+2. Choose the project tied to your app, or create a new one.
+3. Once your project is created/selected, expand the left menu and select __*APIs & Services / Credentials*__
+4. In the _Credentials_ page, select the _Credentials_ tab, click on the __*Create credentials*__ button and select __*OAuth Client ID*__. Fill up the form:
+	1. _Name_: This is not really important and will not be displayed to your user. You can leave the default.
+	2. _Authorized JavaScript origins_: This is optional but highly recommended before going live.
+	3. _Authorized redirect URIs_: This is required.
+5. After completing the step above, a confirmation screen pops up. Copy the __*client ID*__ (i.e., the Client ID) and the __*client secret*__ (i.e., the Client Secret). 
+6. In the _Credentials_ page, select the _OAuth consent screen_ tab. Fill up the form depending on your requirements. Make sure you update the __*Application name*__ to your App name so that your App users see that name in the consent screen. You can also add your brand in the consent screen by uploading your App logo. Don't forget to click the __*Save*__ button at the bottom to apply your changes.
+
+### LinkedIn
+#### Goal 
+
+* Acquire an __*Client ID*__ and an __*Client Secret*__.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### LinkedIn App set up steps
+
+1. Sign in to your LinkedIn account and then browse to [https://www.linkedin.com/developers/apps](https://www.linkedin.com/developers/apps) to either create a new App or access any existing ones. For the sake of this tutorial, the next steps only focus on creating a new App.
+2. In the top right corner of the __*My Apps*__ page, click on the __*Create app*__ button.
+3. Fill up the form and then click the __*Create app*__ button at the bottom.
+4. Once the the App is created, you are redirected to the App's page. In that page, select the __*Auth*__ tab and copy the __*Client ID*__ (i.e., the Client ID) and the __*Client secret*__ (i.e., the Client Secret). 
+5. Still in the __*Auth*__ tab, under the __*OAuth 2.0 settings*__ section, enter the redirect URI.
+
+#### Troubleshooting - LinkedIn - Bummer, something went wrong
+
+This error happens when you've either forgot to proceed to step 5 above or made a mistake in that step.
+
+<img src="https://user-images.githubusercontent.com/3425269/89270120-3c0e1280-d67e-11ea-8545-a8b1664b70fc.png" width="400px">
+
+The error message above should appear at the following URL: https://www.linkedin.com/oauth/v2/authorization?response_type=LONG_ENCODED_URLcode&redirect_uri=&scope=r_liteprofile%20r_emailaddress%20w_member_social&client_id=123456
+
+To fix this issue:
+- Copy the `LONG_ENCODED_URL`.
+- Decode it (e.g., in Javascript: `decodeURIComponent(LONG_ENCODED_URL)`).
+- Use that decoded URL in step 5.
+
+### GitHub
+#### Goal 
+
+* Acquire an __*Client ID*__ and an __*Client Secret*__.
+* Configure __*Redirect URIs*__ (more info about redirect URIs under section [Concepts & Jargon](#concepts--jargon) / [Redirect URI](#redirect-uri)). 
+
+#### GitHub App set up steps
+
+1. Sign in to your Github account and then browse to [https://github.com/settings/apps](https://github.com/settings/apps) to either create a new App or access any existing ones. For the sake of this tutorial, the next steps only focus on creating a new App.
+2. In the top right corner of the __*GitHub Apps*__ page, click on the __*New GitHub App*__ button.
+3. Fill up the form and then click the __*Create GitHub App*__ button at the bottom. The most important field to fill is the __*User authorization callback URL*__. Enter the redirect URI.
+
+> WARNING: Up until August 2020, there is a bug in the GitHub consent page if the redirect uri is not configured properly. If it is not, UserIn won't be able to request the consent page. It will look like the browser is blocked spinning forever, waiting for a response.
+> NOTE: The App creation form forces you to enter a _Homepage URL_ and a _Webhook URL_. If you don't have any, that's not important. Just enter random URIs (e.g., Homepage URL: [https://leavemealone.com](https://leavemealone.com) Webhook URL: [https://leavemealone.com](https://leavemealone.com))
+
+4. Once the the App is created, you are redirected to the App's page. In that page, copy the __*Client ID*__ (i.e., the Client ID) and the __*Client secret*__ (i.e., the Client Secret). 
+
+#### Troubleshooting - GitHub consent page is not reachable. Browser stays stuck after request consent page
+
+Up until August 2020, this seems to be a GitHub bug. The expected behavior is to reach an error page with a diagnostic and some recommendations. Instead, the browser stays stuck soinning forever. As of August 2020, this issue is most likely due to a misconfigured redirect URI in your GitHub app. Please refer to step 3 above.
 
 # References
 

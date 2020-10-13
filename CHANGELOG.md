@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.15.0](https://github.com/nicolasdao/userin/compare/v1.14.0...v1.15.0) (2020-10-13)
+
+
+### Features
+
+* Add support for the '/authorize' endpoint ([4d22aed](https://github.com/nicolasdao/userin/commit/4d22aed16c82e4d2c6829bbe727caae3e66536ca))
+
 ## [1.14.0](https://github.com/nicolasdao/userin/compare/v1.13.1...v1.14.0) (2020-10-12)
 
 

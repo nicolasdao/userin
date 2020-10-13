@@ -19,12 +19,11 @@ const options = { skip:'' }
 
 const config = {
 	baseUrl: 'https://www.userin.com',
-	openid: {
-		tokenExpiry: {
-			id_token: 3600,
-			access_token: 3600,
-			code: 30
-		}
+	consentPage: 'https://www.userin.com/consent-page',
+	tokenExpiry: {
+		id_token: 3600,
+		access_token: 3600,
+		code: 30
 	},
 	repos,
 	tokenHelper

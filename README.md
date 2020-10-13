@@ -1,17 +1,21 @@
 # UserIn 2.0 &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0. workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by ID, insert token's claims object) using the backend storage of their choice.
+UserIn is an NodeJS Express middleware to build Authorization Servers that support OAuth 2.0 workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the OpenID Connect specification. With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by username and password, insert token's claims object) using the backend storage of their choice.
 
 To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) that allows to export a `collection.json` to [Postman](https://www.postman.com/).  
 
 UserIn is designed to expose web APIs that support two different flow types:
+- Non-OAuth 2.0 flows. These are the ones that start with your platform's login/signup form.
 - OAuth 2.0/OpenID Connect flows. These are the ones that often(1) start with your platform's consent page so that your users can leverage some or all of your plaftorm's API via an authorized third-party.
-- Non-OAuth 2.0 flows. These are the ones start with your platform's login/signup form.
 
 > (1) Other OAuth 2.0 authorization flows that do not require a consent page are the `password`, `client_credentials` grant type flows. Those flows are generally used for programmatic access. 
 
 # Table of contents
 
 > * [Getting started](#getting-started)
+> * [Auth modes](#auth-modes)
+>	- [`loginsignup`](#loginsignup-mode)
+>	- [`loginsignupfip`](#loginsignupfip-mode)
+>	- [`openid`](#openid-mode)
 > * [Endpoints](#endpoints)
 >	- [/.well-known/configuration](#well-knownconfiguration)
 >	- [/login](#login)
@@ -19,15 +23,12 @@ UserIn is designed to expose web APIs that support two different flow types:
 >	- [/token](#token)
 >	- [/revoke](#revoke)
 >	- [/.well-known/openid-configuration](#well-knownopenid-configuration)
+>	- [/authorize](#authorize)
+>	- [/authorizeconsent](#authorizeconsent)
 >	- [/introspect](#introspect)
 >	- [/userinfo](#userinfo)
 >	- [/certs](#certs)
 >	- [/<IdP>/authorize](#idpauthorize)
-> * [Setting up an identity provider](#setting-up-an-identity-provider)
-> * [Auth modes](#auth-modes)
->	- [`loginsignup`](#loginsignup-mode)
->	- [`loginsignupfip`](#loginsignupfip-mode)
->	- [`openid`](#openid-mode)
 > * [Events and event handlers](#events-and-event-handlers)
 >	- [Events overview](#events-overview)
 >	- [Event APIs](#event-apis)
@@ -37,8 +38,12 @@ UserIn is designed to expose web APIs that support two different flow types:
 >		- [`generate_authorization_code`](#generate_authorization_code)
 >		- [`generate_id_token`](#generate_id_token)
 >		- [`generate_refresh_token`](#generate_refresh_token)
+>		- [`generate_auth_request_code`](#generate_auth_request_code)
+>		- [`generate_auth_consent_code`](#generate_auth_consent_code)
 >		- [`get_access_token_claims`](#get_access_token_claims)
 >		- [`get_authorization_code_claims`](#get_authorization_code_claims)
+>		- [`get_auth_request_claims`](#get_auth_request_claims)
+>		- [`get_auth_consent_claims`](#get_auth_consent_claims)
 >		- [`get_client`](#get_client)
 >		- [`get_config`](#get_config)
 >		- [`get_end_user`](#get_end_user)
@@ -51,24 +56,30 @@ UserIn is designed to expose web APIs that support two different flow types:
 >		- [`get_scopes_supported`](#get_scopes_supported)
 >		- [`get_grant_types_supported`](#get_grant_types_supported)
 >		- [`delete_refresh_token`](#delete_refresh_token)
+>		- [`link_client_to_user`](#link_client_to_user)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
 >	- [`access_token` requirements](#access_token-requirements)
 >	- [`refresh_token` requirements](#refresh_token-requirements)
 >	- [Authorization `code` requirements](#authorization-code-requirements)
-> * [Creating a UserIn Strategy class](#creating-a-userin-strategy-class)
->	- [Unit testing](#unit-testing)
->		- [Testing a UserIn Strategy class](#testing-a-userin-strategy-class)
->		- [`testSuite` API](#testsuite-api)
->			- [`testLoginSignup` function](#testloginsignup-function)
->			- [`testLoginSignupFIP` function](#testloginsignupfip-function)
->			- [`testOpenId` function](#testopenid-function)
->			- [`testAll` function](#testall-function)
->		- [Dependency injection](#dependency-injection)
->	- [Integration testing](#integration-testing)
->		- [Exporting the API to Postman](#exporting-the-api-to-postman)
->			- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
->			- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
+> * [Setting up an identity provider](#setting-up-an-identity-provider)
+>	- [Using Passport](#using-passport)
+>	- [Using an OpenID discovery endpoint](#using-an-openid-discovery-endpoint)
+> * [Implementation guidelines](#implementation-guidelines)
+>	- [Creating a UserIn Strategy class](#creating-a-userin-strategy-class)
+>		- [Unit testing](#unit-testing)
+>			- [Testing a UserIn Strategy class](#testing-a-userin-strategy-class)
+>			- [`testSuite` API](#testsuite-api)
+>				- [`testLoginSignup` function](#testloginsignup-function)
+>				- [`testLoginSignupFIP` function](#testloginsignupfip-function)
+>				- [`testOpenId` function](#testopenid-function)
+>				- [`testAll` function](#testall-function)
+>			- [Dependency injection](#dependency-injection)
+>		- [Integration testing](#integration-testing)
+>			- [Exporting the API to Postman](#exporting-the-api-to-postman)
+>				- [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link)
+>				- [Export a Postman collection in a local file](#export-a-postman-collection-in-a-local-file)
+>	- [Authorization code flow implementation](#authorization-code-flow-implementation)
 > * [Flexible flows](#flexible-flows)
 > * [Contributing - Developer notes](#contributing---developer-notes)
 >	- [Contribution guidelines](#contribution-guidelines)
@@ -85,7 +96,7 @@ UserIn is designed to expose web APIs that support two different flow types:
 
 # Getting started
 
-Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods (based on how many UserIn features must be supported). UserIn removes the burden of implementing business logic in those methods so developer focus only on simple CRUD implementation.
+Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods (based on how many UserIn features must be supported). UserIn removes the burden of implementing business logic in those methods so developer focus only on simple CRUD implementations.
 
 Install UserIn:
 
@@ -133,8 +144,8 @@ class YourStrategy extends Strategy {
 
 		// openid mode
 		// ===================
-		// 		Add those eight methods to the following eight if you need to support all the OpenID Connect
-		// 		APIs which would allow third-parties to use your APIs:
+		// 		Add those thirteen methods to the following eight if you need to support all the OpenID Connect
+		// 		APIs which allow third-parties to use your APIs:
 		// 			1. 'generate_access_token',
 		// 			2. 'generate_authorization_code',
 		// 			3. 'generate_refresh_token',
@@ -146,9 +157,14 @@ class YourStrategy extends Strategy {
 		this.get_identity_claims = (root, { user_id, scopes }, context) => { /* Implement your logic here */ }
 		this.get_client = (root, { client_id, client_secret }, context) => { /* Implement your logic here */ }
 		this.get_id_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.get_auth_request_claims = (root, { token }, context) => { /* Implement your logic here */ }
+		this.get_auth_consent_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.generate_id_token = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.generate_auth_request_code = (root, { claims }, context) => { /* Implement your logic here */ }
+		this.generate_auth_consent_code = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_claims_supported = (root) => { /* Implement your logic here */ }
 		this.get_scopes_supported = (root) => { /* Implement your logic here */ }
+		this.link_client_to_user = (root) => { /* Implement your logic here */ }
 		// Those two OpenID event handlers are optional. If they are not implemented, the UserIn middleware uses default
 		// values instead:
 		// 	For 'get_jwks' UserIn uses an empty array.
@@ -169,12 +185,11 @@ const userin = new UserIn({
 	modes:['loginsignup', 'loginsignupfip', 'openid'], // You have to define at least one of those three values.
 	config: {
 		baseUrl: 'http://localhost:3330',
-		openid: {
-			tokenExpiry: {
-				access_token: 3600,
-				id_token: 3600,
-				code: 30
-			}
+		consentPage: 'https://your-domain.com/consent-page', 	// only required when modes contains 'openid'.
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600, 					// only required when modes contains 'openid'.
+			code: 30 							// only required when modes contains 'loginsignupfip' or 'openid'.
 		}
 	}
 })
@@ -209,40 +224,168 @@ All the endpoints that the UserIn middleware exposes are discoverable at the fol
 - __`GET`__ http://localhost:3330/v1/.well-known/configuration: This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID OAuth2 endpoints.
 - __`GET`__ http://localhost:3330/oauth2/v1/.well-known/openid-configuration: This is the OpenID discovery endpoint. That endpoint is the one that your third-parties are supposed to use.
 
+# Auth modes
+
+The idea behind those modes is to add new non-OAuth 2.0 web APIs to complement the OAuth 2.0 specification. Indeed, the challenges that OAuth 2.0 aim to fix are not related to secure your apps using your own web APIs. OAuth 2.0 is designed to let third-parties to use your APIs on behalf of your users. But as a software engineer, you often need to perform both (usually starting with the first challenge to secure your APIs to power your apps). UserIn's aim is to offer an implementation strategy that is progressive. A usual progression would be:
+1. Allow your users to login or create a new account using username and password. UserIn calls this the `loginsignup` mode. 
+2. Add support for login or create new account with Identity Providers (e.g., Facebook, Google). UserIn calls this the `loginsignupfip` mode. 
+3. Allow third-parties to use your API. UserIn calls this the `openid` mode. 
+
+> Notice that until you reach the third step, you actually do not need OAuth 2.0 or OpenID.
+
+UserIn supports multiple flows grouped in three modes which can be combined together:
+1. [`loginsignup`](#loginsignup-mode): This is the simplest group of flows to implement. It only supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
+2. [`loginsignupfip`](#loginsignupfip-mode): Supports login and signup with username/password and Federated Identity Providers (e.g., Facebook, Google). Generates short-lived access_token, short-lived authorization code, and optionally long-lived refresh_token upon successfull authentication. This mode is a superset of the `loginsignup` mode. Use it to let your users login and signup to your platform using a username and password as well as one or many FIPs. 
+3. [`openid`](#openid-mode): Supports login (no signup) using any the OpenID Connect flows (Authorization code, Implicit, Credentials and Password). Generates short-lived access_token, short-lived authorization code, short-lived id_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let others systems access your platform. OpenID Connect and OAuth 2.0 powers the following use cases:
+	- Access to your platform by a third-party directly. This flow is called the `Credentials flow`.
+	- Access to your platform by a third-party on behalf of one of your user. In that case, the user has given consent to that third-party system to access some resources on your platform (this consent was given via a redirection to a consent page hosted on your platform). There are two OpenID flows that can achieve this: `Authorization code flow` (recommended) and the `Implicit flow` (deprecated). 
+	- Access to you platform by one of your user using their client_id, username and password (optionally their client_secret if your plaftorm is private). This OpenID flow is called the `password flow`. 
+
+> NOTE: It is interesting to notice that OpenID Connect and OAuth 2.0 are not designed to let your users directly(1) log in or sign up. That's why UserIn supports the [`loginsignup` mode](#loginsignup-mode) and the [`loginsignupfip` mode](#loginsignupfip-mode) (though the later is a bit of a hybrid as it connects with FIPs which usually implement OAuth 2.0). If you're engineering a web API that only needs to power your web app, you only need the first or second mode. OAuth 2.0 and OpenID Connect are useful when your API needs to be accessed by third-parties. The good thing about UserIn is that its implementation lets you upgrade at any time without re-engineering everything from the ground up.
+
+> (1) By _directly_ we mean going straight to your middleware/backend without any redirections to let your lambda users log in or create an account using their credentials. Technically, the OAuth 2.0 `password` and `client_credentials` grant types allow a user to acquire tokens in exchange of credentials via the `/token` API, but those flows are not designed to create new accounts. This is not also in their spirit to support log in. When it comes to identity, the idea behind OpenID is to allow third-parties to request identity information so that they can use them in the way they see fit, including for example, using a custom API to login their users.
+
+## `loginsignup` mode
+### `loginsignup` strategy requirements
+
+- Constructor required fields:
+	- `baseUrl`
+	- `tokenExpiry.access_token`
+	> Example:
+	> ```js
+	> const strategy = new YourStrategy({ 
+	>	baseUrl: 'https://your-authorization-server-domain.com',
+	>	modes:['loginsignup'], // this is optional as the default value is ['loginsignup']
+	> 	tokenExpiry: {
+	> 		access_token: 3600
+	> 	}
+	> })
+	> ```
+- Requires five event handlers:
+	1. `create_end_user`
+	2. `get_end_user`
+	3. `generate_access_token`
+	4. `generate_refresh_token`
+	5. `get_refresh_token_claims`
+	6. `get_access_token_claims`
+	7. `delete_refresh_token`
+
+## `loginsignupfip` mode
+### `loginsignupfip` strategy requirements
+
+This mode is a superset of _loginsignup_.
+
+- Constructor required fields:
+	- `baseUrl`
+	- `modes`: Must contain `'loginsignupfip'`.
+	- `tokenExpiry.access_token`
+	- `tokenExpiry.code`
+	> Example:
+	> ```js
+	> const strategy = new YourStrategy({ 
+	>	baseUrl: 'https://your-authorization-server-domain.com',
+	>	modes:['loginsignupfip'],
+	> 	tokenExpiry: {
+	> 		access_token: 3600,
+	> 		code: 30
+	> 	}
+	> })
+	> ```
+- Requires eleven event handlers:
+	1. `create_end_user` (same as _loginsignup_)
+	2. `get_end_user` (same as _loginsignup_)
+	3. `generate_access_token` (same as _loginsignup_)
+	4. `generate_refresh_token` (same as _loginsignup_)
+	5. `get_refresh_token_claims` (same as _loginsignup_)
+	6. `get_access_token_claims` (same as _loginsignup_)
+	7. `delete_refresh_token` (same as _loginsignup_)
+	8. `create_fip_user`
+	9. `get_fip_user`
+	10. `generate_authorization_code`
+	11. `get_authorization_code_claims`
+
+## `openid` mode
+### `openid` strategy requirements
+
+- Constructor required fields:
+	- `baseUrl`
+	- `consentPage`
+	- `modes`: Must contain `'openid'`.
+	- `tokenExpiry.id_token`
+	- `tokenExpiry.access_token`
+	- `tokenExpiry.code`
+	> Example:
+	> ```js
+	> const strategy = new YourStrategy({ 
+	>	baseUrl: 'https://your-authorization-server-domain.com',
+	>	consentPage: 'https://your-app-login-for-3rd-party.com',
+	>	modes:['openid'],
+	> 	tokenExpiry: {
+	> 		id_token: 3600,
+	> 		access_token: 3600,
+	> 		code: 30
+	> 	}
+	> })
+	> ```
+- Requires twenty one event handlers:
+	1. `get_end_user` (same as _loginsignup_ and _loginsignupfip_)
+	2. `generate_access_token` (same as _loginsignup_ and _loginsignupfip_)
+	3. `generate_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
+	4. `get_refresh_token_claims` (same as _loginsignup_ and _loginsignupfip_)
+	5. `get_access_token_claims` (same as _loginsignup_ and _loginsignupfip_)
+	6. `delete_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
+	7. `generate_authorization_code` (same as _loginsignupfip_)
+	8. `get_authorization_code_claims` (same as _loginsignupfip_)
+	9. `generate_id_token`
+	10. `generate_auth_request_code`
+	11. `generate_auth_consent_code`
+	12. `get_id_token_claims`
+	13. `get_identity_claims`
+	14. `get_client`
+	15. `get_jwks`
+	16. `get_claims_supported`
+	17. `get_scopes_supported`
+	18. `get_grant_types_supported`
+	19. `get_auth_request_claims`
+	20. `get_auth_consent_claims`
+	21. `link_client_to_user`
+
 # Endpoints
 
 The number of endpoints exposed by UserIn depends on its modes. UserIn supports three modes which can be combined together:
 1. `loginsignup`: Non-OAuth 2.0 compliant set of APIs that powers an Authorization Server that can exchange your user's username and password with an access_token, and a refresh_token. Those tokens allow your Apps to safely access your platform's API.
 2. `loginsignupfip`: Same as the `loginsignup` mode with the extra ability to use an identity provider (e.g., Facebook) to access the tokens.
-3. `openid`: OAuth 2.0. and OpenID Connect compliant set of APIs that powers an Authorization Server that support multiple flows to exchange your user's username and password with various tokens. The difference between this mode and the previous two is that your user is making that exchange request within the context of a third-party system which is uniquely identify by its `client_id`. That third-party system must be registered on your platform before your user can use your APIs within that context. Contrary to the first two modes, OAuth 2.0 make it possible to restrict which APIs can be used by combining the `client_id` with `scopes`. OAuth 2.0 and OpenID are not designed to support creating accounts, which explain why UserIn supports the first two modes above. The purpose of OAuth 2.0 is to let third-party systems registered on your platform with specific scopes to leverage some or all of your APIs to enhance the experience of a subset of their users that also have an account on your platform.
+3. `openid`: OAuth 2.0 and OpenID Connect compliant set of APIs that powers an Authorization Server that support multiple flows to exchange your user's username and password with various tokens. The difference between this mode and the previous two is that your user is making that exchange request within the context of a third-party system which is uniquely identify by its `client_id`. That third-party system must be registered on your platform before your user can use your APIs within that context. Contrary to the first two modes, OAuth 2.0 make it possible to restrict which APIs can be used by combining the `client_id` with `scopes`. OAuth 2.0 and OpenID are not designed to support creating accounts, which explain why UserIn supports the first two modes above. The purpose of OAuth 2.0 is to let third-party systems registered on your platform with specific scopes to leverage some or all of your APIs to enhance the experience of a subset of their users that also have an account on your platform.
 
 By default, UserIn exposes the following web APIs:
 
 | Pathname | Mode | Method | Type | Description |
 |:---------|:-----|:-------|:-----|:------------|
-| `/v1/.well-known/configuration` | `All` | __`GET`__ 	| Not OAuth 2.0. | Discovery metadata JSON about all web API. |
-| `/v1/postman/collection.json` | `All` | __`GET`__ 	| Not OAuth 2.0. | Postman collection 2.0 definition to create a Postman client. This endpoint is not toggled by default. To toggle it, please refer to the [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link) section. |
-| `/v1/login` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user log in. |
-| `/v1/signup` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0. | Lets user sign up. |
-| `/oauth2/v1/token` | `All` | __`POST`__ 	| OAuth 2.0. | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
-| `/oauth2/v1/revoke` | `All` | __`POST`__ 	| OAuth 2.0. | Revokes a refresh_token. |
-| `/oauth2/v1/.well-known/openid-configuration` | `openid` | __`GET`__ 	| OAuth 2.0. | Discovery metadata JSON about OpenID web API only. |
-| `/oauth2/v1/introspect` | `openid` | __`POST`__ 	| OAuth 2.0. | Intraspects a token (e.g., access_token, refresh_token, id_token). |
-| `/oauth2/v1/userinfo` | `openid` | __`GET`__ 	| OAuth 2.0. | Returns user's profile based on the claims associated with the access_token. |
-| `/oauth2/v1/certs` | `openid` | __`GET`__ 	| OAuth 2.0. | Array of public JWK keys used to verify id_tokens. |
+| `/v1/.well-known/configuration` | `All` | __`GET`__ 	| Not OAuth 2.0 | Discovery metadata JSON about all web API. |
+| `/v1/postman/collection.json` | `All` | __`GET`__ 	| Not OAuth 2.0 | Postman collection 2.0 definition to create a Postman client. This endpoint is not toggled by default. To toggle it, please refer to the [Publishing a Postman collection as a web link](#publishing-a-postman-collection-as-a-web-link) section. |
+| `/v1/login` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0 | Lets user log in. |
+| `/v1/signup` | `loginsignup` & `loginsignupfip` | __`POST`__ 	| Not OAuth 2.0 | Lets user sign up. |
+| `/oauth2/v1/token` | `All` | __`POST`__ 	| OAuth 2.0 | Gets one or many tokens (e.g., access_token, refresh_token, id_token). |
+| `/oauth2/v1/revoke` | `All` | __`POST`__ 	| OAuth 2.0 | Revokes a refresh_token. |
+| `/oauth2/v1/.well-known/openid-configuration` | `openid` | __`GET`__ 	| OAuth 2.0 | Discovery metadata JSON about OpenID web API only. |
+| `/oauth2/v1/authorize` | `openid` | __`GET`__ | OAuth 2.0 | Redirects to your platform's consent page to prompt user to authorize a third-party to access their resources. |
+| `/oauth2/v1/authorizeconsent` | `openid` | __`GET`__ | Non-OAuth 2.0 | Processes the consent page's response. Though this is technically not part of the OAuth 2.0 specification, this API is what allows UserIn to implement the full OAuth 2.0 Authorization Code flow. That's why this API is still labelled as OAuth 2.0. |
+| `/oauth2/v1/introspect` | `openid` | __`POST`__ 	| OAuth 2.0 | Introspects a token (e.g., access_token, refresh_token, id_token). |
+| `/oauth2/v1/userinfo` | `openid` | __`GET`__ 	| OAuth 2.0 | Returns user's profile based on the claims associated with the access_token. |
+| `/oauth2/v1/certs` | `openid` | __`GET`__ 	| OAuth 2.0 | Array of public JWK keys used to verify id_tokens. |
 
 Additionally, for each identity provider installed on UserIn, the following new endpoint is added (this example uses Facebook):
 
 | Pathname | Mode | Method | Type | Description |
 |:---------|:-----|:-------|:-----|:------------|
-| `/v1/facebook/authorize` | `loginsignupfip` | __`GET`__ 	| Not OAuth 2.0. | Redirects to Facebook consent page. |
+| `/v1/facebook/authorize` | `loginsignupfip` | __`GET`__ 	| Not OAuth 2.0 | Redirects to Facebook consent page. |
 
 To learn more about setting up identity providers, please refer to the [next section](#setting-up-an-identity-provider). 
 
 ## /.well-known/configuration
 
 - Required modes: `none`. This endpoint is always available regardless of which modes is selected.
-- OAuth 2.0. compliant: No. 
+- OAuth 2.0 compliant: No. 
 - Description: Gets a JSON object describing where all the other endpoints are located and what type of configuration is supported.
 - HTTP method: `GET`
 - Parameters: `none`
@@ -254,7 +397,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 ## /token
 
 - Required modes: `none`. This endpoint is always available regardless of which modes is selected.
-- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- OAuth 2.0 compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
 - Description: Exchanges credentials for tokens.
 - HTTP method: `POST`
 - Parameters: Depends on the grant type and the API private configuration.
@@ -311,7 +454,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 ## /revoke
 
 - Required modes: `openid`
-- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- OAuth 2.0 compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
 - Description: Revokes a `refresh_token`. In theory, this method should also allow to revoke an `access_token`, but in practice this is not always possible. Usually, the access_token is self-signed, which means the only way to revoke it is to wait until it expires and prevent the refresh_token to be used to issue a new one, which is similar to revoke the refresh_token. This is why UserIn does not support revoking access_tokens.
 - HTTP method: `POST`
 - Header:
@@ -324,15 +467,41 @@ To learn more about setting up identity providers, please refer to the [next sec
 ## /.well-known/openid-configuration
 
 - Required modes: `openid`
-- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- OAuth 2.0 compliant: Yes
 - Description: Gets a JSON object describing where all the other OpenID endpoints are located and what type of OpenID configuration is supported.
 - HTTP method: `GET`
 - Parameters: `none`
 
+## /authorize
+
+- Required modes: `openid`
+- OAuth 2.0 compliant: Yes
+- Description: Redirects to your platform's consent page to prompt user to authorize a third-party to access their resources.
+- HTTP method: `GET`
+- Query parameters: 
+	- `client_id` [required]: `<TOKEN VALUE>`
+	- `response_type` [required]: Valid values are: `code`, `id_token`, `token`, `code id_token`, `code token`, `id_token token` or `code id_token token`
+	- `redirect_uri` [required]: 
+	- `scope` [optional]: 
+	- `state` [optional]:
+
+## /authorizeconsent
+
+- Required modes: `openid`
+- OAuth 2.0 compliant: No
+- Description: Processes the consent page's response. Though this is technically not part of the OAuth 2.0 specification, this API is what allows UserIn to implement the full OAuth 2.0 Authorization Code flow. That's why this API is still labelled as OAuth 2.0. 
+- HTTP method: `GET`
+- Query parameters: 
+	- `client_id` [required]: `<TOKEN VALUE>`
+	- `response_type` [required]: Valid values are: `code`, `id_token`, `token`, `code id_token`, `code token`, `id_token token` or `code id_token token`
+	- `redirect_uri` [required]: 
+	- `scope` [optional]: 
+	- `state` [optional]:
+
 ## /introspect
 
 - Required modes: `openid`
-- OAuth 2.0. compliant: Yes, but also support non-standard usage when the `client_id` is not required to support login/signup flows where a third-party is not involved.
+- OAuth 2.0 compliant: Yes
 - Description: Returns basic details about a token (e.g., active or not, expiry date, creation date, scopes). 
 - HTTP method: `POST`
 - Body parameters: 
@@ -344,7 +513,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 ## /userinfo
 
 - Required modes: `openid`
-- OAuth 2.0. compliant: Yes
+- OAuth 2.0 compliant: Yes
 - Description: Returns details about a user. The level of details depends on the scopes associated with the access_token.
 - HTTP method: `GET`
 - Header:
@@ -354,224 +523,37 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /<IdP>/authorize
 
-# Setting up an identity provider
-
-UserIn supports both [Passport strategies](http://www.passportjs.org/) and native OpenID providers via their `.well-known/openid-configuration` discovery endpoint (e.g., https://accounts.google.com/.well-known/openid-configuration). 
-
-## Using Passport
-
-The next example uses Facebook:
-
-```js
-const { UserIn } = require('userin')
-const Facebook = require('passport-facebook')
-const YourStrategy = require('./src/YourStrategy.js')
-
-const userin = new UserIn({
-	Strategy: YourStrategy,
-	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
-	config: {
-		baseUrl: 'http://localhost:3330',
-		openid: {
-			tokenExpiry: {
-				access_token: 3600,
-				id_token: 3600,
-				code: 30
-			}
-		}
-	}
-})
-
-userIn.use(Facebook, {
-	clientID: '12234',
-	clientSecret: '54332432',
-	scopes: ['public_profile'],
-	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
-})
-```
-
-> NOTES:
->	- Both the `clientID` and `clientSecret` could have been omitted when the following two environment variables are set:
->		- `FACEBOOK_CLIENT_ID`
->		- `FACEBOOK_CLIENT_SECRET`
->		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the Passport's name in uppercase.
->	- The rest of the configuration is the same as what is described on the Passport package documentation. 
-
-## Using an OpenID discovery endpoint
-
-```js
-const { UserIn } = require('userin')
-const YourStrategy = require('./src/YourStrategy.js')
-
-const userin = new UserIn({
-	Strategy: YourStrategy,
-	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
-	config: {
-		baseUrl: 'http://localhost:3330',
-		openid: {
-			tokenExpiry: {
-				access_token: 3600,
-				id_token: 3600,
-				code: 30
-			}
-		}
-	}
-})
-
-userIn.use({
-	name:'google',
-	client_id: '12234',
-	client_secret: '54332432',
-	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
-	scopes:['profile', 'email']
-})
-```
-
-> NOTES:
->	- Both the `client_id` and `client_secret` could have been omitted when the following two environment variables are set:
->		- `GOOGLE_CLIENT_ID`
->		- `GOOGLE_CLIENT_SECRET`
->		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the `name` value.
-
-# Auth modes
-
-UserIn supports multiple flows grouped in three modes which can be combined together:
-1. [`loginsignup`](#loginsignup-mode): This is the simplest group of flows to implement. It only supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
-2. [`loginsignupfip`](#loginsignupfip-mode): Supports login and signup with username/password and Federated Identity Providers (e.g., Facebook, Google). Generates short-lived access_token, short-lived authorization code, and optionally long-lived refresh_token upon successfull authentication. This mode is a superset of the `loginsignup` mode. Use it to let your users login and signup to your platform using a username and password as well as one or many FIPs. 
-3. [`openid`](#openid-mode): Supports login (no signup) using any the OpenID Connect flows (Authorization code, Implicit, Credentials and Password). Generates short-lived access_token, short-lived authorization code, short-lived id_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let others systems access your platform. OpenID Connect and OAuth 2.0 powers the following use cases:
-	- Access to your platform by a third-party directly. This flow is called the `Credentials flow`.
-	- Access to your platform by a third-party on behalf of one of your user. In that case, the user has given consent to that third-party system to access some resources on your platform (this consent was given via a redirection to a consent page hosted on your platform). There are two OpenID flows that can achieve this: `Authorization code flow` (recommended) and the `Implicit flow` (deprecated). 
-	- Access to you platform by one of your user using their client_id, username and password (optionally their client_secret if your plaftorm is private). This OpenID flow is called the `password flow`. 
-
-> NOTE: It is interesting to notice that OpenID Connect and OAuth 2.0. are not designed to let your users directly(1) log in or sign up. That's why UserIn supports the [`loginsignup` mode](#loginsignup-mode) and the [`loginsignupfip` mode](#loginsignupfip-mode) (though the later is a bit of a hybrid as it connects with FIPs which usually implement OAuth 2.0). If you're engineering a web API that only needs to power your web app, you only need the first or second mode. When your API needs to be accessed by third-parties, that's when OpenID Connect becomes useful. The good thing about UserIn is that its implementation lets you upgrade at any time without re-engineering everything from the ground up.
-
-> (1) By _directly_ we mean going straight to your middleware/backend without any redirections to let your lambda users log in or create an account using their credentials. Technically, the `password` and `client_credentials` grant types allow a user to acquire tokens in exchange of credentials via the OAuth2 `/token` API, but those flows are not designed to create new accounts. This is not also in their spirit to support log in. When it comes to identity, the idea behind OpenID is to allow third-parties to request identity information so that they can use them in the way they see fit, including for example, using a custom API to login their users.
-
-## `loginsignup` mode
-### `loginsignup` strategy requirements
-
-- Constructor required fields:
-	- `baseUrl`
-	- `tokenExpiry.access_token`
-	> Example:
-	> ```js
-	> const strategy = new YourStrategy({ 
-	>	modes:['loginsignup'], // this is optional as the default value is ['loginsignup']
-	> 	tokenExpiry: {
-	> 		access_token: 3600
-	> 	}
-	> })
-	> ```
-- Requires five event handlers:
-	1. `create_end_user`
-	2. `get_end_user`
-	3. `generate_access_token`
-	4. `generate_refresh_token`
-	5. `get_refresh_token_claims`
-	6. `get_access_token_claims`
-	7. `delete_refresh_token`
-
-## `loginsignupfip` mode
-### `loginsignupfip` strategy requirements
-
-This mode is a superset of _loginsignup_.
-
-- Constructor required fields:
-	- `baseUrl`
-	- `modes`: Must contain `'loginsignupfip'`.
-	- `tokenExpiry.access_token`
-	- `tokenExpiry.code`
-	> Example:
-	> ```js
-	> const strategy = new YourStrategy({ 
-	>	modes:['loginsignupfip'],
-	> 	tokenExpiry: {
-	> 		access_token: 3600,
-	> 		code: 30
-	> 	}
-	> })
-	> ```
-- Requires eleven event handlers:
-	1. `create_end_user` (same as _loginsignup_)
-	2. `get_end_user` (same as _loginsignup_)
-	3. `generate_access_token` (same as _loginsignup_)
-	4. `generate_refresh_token` (same as _loginsignup_)
-	5. `get_refresh_token_claims` (same as _loginsignup_)
-	6. `get_access_token_claims` (same as _loginsignup_)
-	7. `delete_refresh_token` (same as _loginsignup_)
-	8. `create_fip_user`
-	9. `get_fip_user`
-	10. `generate_authorization_code`
-	11. `get_authorization_code_claims`
-
-## `openid` mode
-### `openid` strategy requirements
-
-- Constructor required fields:
-	- `baseUrl`
-	- `modes`: Must contain `'openid'`.
-	- `openid.iss`
-	- `openid.tokenExpiry.id_token`
-	- `openid.tokenExpiry.access_token`
-	- `openid.tokenExpiry.code`
-	> Example:
-	> ```js
-	> const strategy = new YourStrategy({ 
-	>	modes:['openid'],
-	>	openid: {
-	> 		iss: 'https://your-authorization-server-domain.com',
-	> 		tokenExpiry: {
-	> 			id_token: 3600,
-	> 			access_token: 3600,
-	> 			code: 30
-	> 		}
-	> 	}
-	> })
-	> ```
-- Requires sixteen event handlers:
-	1. `get_end_user` (same as _loginsignup_ and _loginsignupfip_)
-	2. `generate_access_token` (same as _loginsignup_ and _loginsignupfip_)
-	3. `generate_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
-	4. `get_refresh_token_claims` (same as _loginsignup_ and _loginsignupfip_)
-	5. `get_access_token_claims` (same as _loginsignup_ and _loginsignupfip_)
-	6. `delete_refresh_token` (same as _loginsignup_ and _loginsignupfip_)
-	7. `generate_authorization_code` (same as _loginsignupfip_)
-	8. `get_authorization_code_claims` (same as _loginsignupfip_)
-	9. `generate_id_token`
-	10. `get_id_token_claims`
-	11. `get_identity_claims`
-	12. `get_client`
-	13. `get_jwks`
-	14. `get_claims_supported`
-	15. `get_scopes_supported`
-	16. `get_grant_types_supported`
-
 # Events and event handlers
 ## Events overview
 
 UserIn behaviors are managed via events and event handlers. Out-of-the-box, UserIn does not define any handlers to respond to those events. As a software engineer, this is your job to implement those event handlers in adequation with your business logic. The following list represents all the events that can be triggered during an authentication or authorization flow, but worry not, you are not forced to implement them all. You only have to implement the event handlers based on the [type of authentication and authorization flow you wish to support](#auth-modes).
 
-1. `create_end_user`
-2. `create_fip_user`
-3. `get_end_user`
-4. `get_fip_user`
-5. `generate_access_token`
-6. `generate_authorization_code`
-7. `generate_id_token`
-8. `generate_refresh_token`
-9. `get_access_token_claims`
-10. `get_authorization_code_claims`
-11. `get_id_token_claims`
-12. `get_refresh_token_claims`
-13. `get_client`
-14. `get_identity_claims`
-15. `get_jwks`
-16. `get_claims_supported`
-17. `get_scopes_supported`
-18. `get_grant_types_supported`
-19. `delete_refresh_token`
-20. `get_config`: Automatically implemented.
-
+1. [`create_end_user`](#create_end_user)
+2. [`create_fip_user`](#create_fip_user)
+3. [`generate_access_token`](#generate_access_token)
+4. [`generate_authorization_code`](#generate_authorization_code)
+5. [`generate_id_token`](#generate_id_token)
+6. [`generate_refresh_token`](#generate_refresh_token)
+7. [`generate_auth_request_code`](#generate_auth_request_code)
+8. [`generate_auth_consent_code`](#generate_auth_consent_code)
+9. [`get_access_token_claims`](#get_access_token_claims)
+10. [`get_authorization_code_claims`](#get_authorization_code_claims)
+11. [`get_auth_request_claims`](#get_auth_request_claims)
+12. [`get_auth_consent_claims`](#get_auth_consent_claims)
+13. [`get_client`](#get_client)
+14. [`get_config`](#get_config)
+15. [`get_end_user`](#get_end_user)
+16. [`get_fip_user`](#get_fip_user)
+17. [`get_id_token_claims`](#get_id_token_claims)
+18. [`get_identity_claims`](#get_identity_claims)
+19. [`get_refresh_token_claims`](#get_refresh_token_claims)
+20. [`get_jwks`](#get_jwks)
+21. [`get_claims_supported`](#get_claims_supported)
+22. [`get_scopes_supported`](#get_scopes_supported)
+23. [`get_grant_types_supported`](#get_grant_types_supported)
+24. [`delete_refresh_token`](#delete_refresh_token)
+25. [`link_client_to_user`](#link_client_to_user)
+26. `get_config`: Automatically implemented.
 
 Each of those events trigger a chain of event handlers. By default, only one handler is configured in that chain (the one that you should have implemented in your [UserIn Strategy](#userin-strategy)). UserIn exposes an `on` API that allows to add more handlers for each event as shown in this example:
 
@@ -728,9 +710,17 @@ const handler = async (root, { claims, state }, { repos }) => {
 module.exports = handler
 ```
 
+### `generate_auth_request_code`
+
+### `generate_auth_consent_code`
+
 ### `get_access_token_claims`
 
 ### `get_authorization_code_claims`
+
+### `get_auth_request_claims`
+
+### `get_auth_consent_claims`
 
 ### `get_client`
 
@@ -746,6 +736,7 @@ module.exports = handler
  * @return {[String]}	output.audiences		Client's audiences.	
  * @return {[String]}	output.scopes			Client's scopes.	
  * @return {[String]}	output.auth_methods		Client's auth_methods.	
+ * @return {[String]}	output.redirect_uris	Client's allowed redirect URIs
  */
 const handler = (root, { client_id, client_secret }, context) => {
 	const client = context.repos.client.find(x => x.client_id == client_id)
@@ -759,7 +750,8 @@ const handler = (root, { client_id, client_secret }, context) => {
 	return {
 		audiences: client.audiences || [],
 		scopes: client.scopes || [],
-		auth_methods: client.auth_methods || []
+		auth_methods: client.auth_methods || [],
+		redirect_uris: client.redirect_uris || []
 	}
 }
 ```
@@ -804,7 +796,7 @@ const { error: { wrapErrors } } = require('puffy')
 const services = require('../services')
 
 /**
- * Gets the user ID and optionnaly its associated client_ids if the 'openid' mode must be supported.
+ * Gets the user ID and optionnaly its associated client_ids if the 'openid' is supported.
  * If the username does not exist, a null value must be returned. However, the 'password' is optional. 
  * If the 'password' is provided, it must be verified. If the verification fails, an error of type 
  * InvalidCredentialsError must be thrown (const { error:{ InvalidCredentialsError } } = require('userin'))
@@ -825,7 +817,7 @@ const handler = async (root, { user, client_id, state }, { repos }) => {
 	// Note: The following assertions have already been checked by UserIn so this function 
 	// does not need to check these again:
 	// 	- 'user' is truthy. 
-	// 	- 'username' is truthy
+	// 	- 'user.username' is truthy
 	// 
 	// This function is expected to behave as follow:
 	// 	- If the 'username' does not exist, a null value must be returned. 
@@ -925,6 +917,8 @@ module.exports = handler
 
 ### `delete_refresh_token`
 
+### `link_client_to_user`
+
 # OpenID Connect tokens & authorization code requirements
 
 If you're implementing a UserIn strategy that supports the [`openid` mode](#openid-mode), then you must generate your tokens and authorization code following strict requirements.
@@ -937,9 +931,88 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 ## Authorization `code` requirements
 
-# Creating a UserIn Strategy class
-## Unit testing
-### Testing a UserIn Strategy class
+# Setting up an identity provider
+
+UserIn supports both [Passport strategies](http://www.passportjs.org/) and native OpenID providers via their `.well-known/openid-configuration` discovery endpoint (e.g., https://accounts.google.com/.well-known/openid-configuration). 
+
+## Using Passport
+
+The next example uses Facebook:
+
+```js
+const { UserIn } = require('userin')
+const Facebook = require('passport-facebook')
+const YourStrategy = require('./src/YourStrategy.js')
+
+const userin = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		consentPage: 'https://your-domain.com/consent-page', 	// only required when modes contains 'openid'.
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600, 					// only required when modes contains 'openid'.
+			code: 30 							// only required when modes contains 'loginsignupfip' or 'openid'.
+		}
+	}
+})
+
+userIn.use(Facebook, {
+	clientID: '12234',
+	clientSecret: '54332432',
+	scopes: ['public_profile'],
+	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
+})
+```
+
+> NOTES:
+>	- Both the `clientID` and `clientSecret` could have been omitted when the following two environment variables are set:
+>		- `FACEBOOK_CLIENT_ID`
+>		- `FACEBOOK_CLIENT_SECRET`
+>		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the Passport's name in uppercase.
+>	- The rest of the configuration is the same as what is described on the Passport package documentation. 
+
+## Using an OpenID discovery endpoint
+
+```js
+const { UserIn } = require('userin')
+const YourStrategy = require('./src/YourStrategy.js')
+
+const userin = new UserIn({
+	Strategy: YourStrategy,
+	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		consentPage: 'https://your-domain.com/consent-page', 	// only required when modes contains 'openid'.
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600, 					// only required when modes contains 'openid'.
+			code: 30 							// only required when modes contains 'loginsignupfip' or 'openid'.
+		}
+	}
+})
+
+userIn.use({
+	name:'google',
+	client_id: '12234',
+	client_secret: '54332432',
+	discovery: 'https://accounts.google.com/.well-known/openid-configuration',
+	scopes:['profile', 'email']
+})
+```
+
+> NOTES:
+>	- Both the `client_id` and `client_secret` could have been omitted when the following two environment variables are set:
+>		- `GOOGLE_CLIENT_ID`
+>		- `GOOGLE_CLIENT_SECRET`
+>		The convention to set up environment variables is to prefix `_CLIENT_ID` and `_CLIENT_SECRET` with the `name` value.
+
+
+# Implementation guidelines
+## Creating a UserIn Strategy class
+### Unit testing
+#### Testing a UserIn Strategy class
 UserIn ships with a suite of Mocha unit tests. To test your own strategy:
 
 1. Install mocha and chai:
@@ -983,7 +1056,7 @@ testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 npm test
 ```
 
-### `testSuite` API
+#### `testSuite` API
 
 The `testSuite` API exposes four different test suite, one for each mode + one that combines all the modes, that use the same signature:
 1. [`testLoginSignup` function](#testloginsignup-function) 
@@ -1001,7 +1074,7 @@ The signature is `(YourStrategyClass: UserInStrategy, config: Object, stub: Obje
 	- `options.only: [String]`: Array of test to run.
 	- `options.showResults: [String]`: Array of test assertions. When this array is specified, more details about the assertion outcome are displayed. Example: `showResults:['login.handler.09,10', 'signup.handler.01']`
 
-#### `testLoginSignup` function
+##### `testLoginSignup` function
 
 Runs the following tests:
 - `strategy`
@@ -1044,7 +1117,7 @@ const stub = {
 testSuite.testLoginSignup(YourStrategyClass, config, stub, options)
 ```
 
-#### `testLoginSignupFIP` function
+##### `testLoginSignupFIP` function
 
 Runs the following tests:
 - `strategy`
@@ -1092,7 +1165,7 @@ const stub = {
 testSuite.testLoginSignupFIP(YourStrategyClass, config, stub, options)
 ```
 
-#### `testOpenId` function
+##### `testOpenId` function
 
 Runs the following tests:
 - `strategy`
@@ -1178,11 +1251,11 @@ const stub = {
 testSuite.testOpenId(YourStrategyClass, config, stub, options)
 ```
 
-#### `testAll` function
+##### `testAll` function
 
 This test function tests all the previous three tests at once. Use it if you have created a UserIn Strategy class that imlements all the [event handlers](#events-and-event-handlers). The signature is the same as for the other tests. Merge all the stubs from the previous tests into a single stub object.
 
-### Dependency injection
+#### Dependency injection
 
 The test suite supports inverson of control via dependency injection. All the event handlers supports the same signature: 
 
@@ -1273,14 +1346,14 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 
 This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
 
-## Integration testing
-### Exporting the API to Postman
+### Integration testing
+#### Exporting the API to Postman
 
 UserIn can publish its API documentation using Postman Collection v2.1. There are two ways to export a Postman collection:
 1. [Publish a new web endpoint at `{{YOUR_DOMAIN}}/v1/postman/collection.json`](#publishing-a-postman-collection-as-a-web-link) and use that link in Postman to import that collection.
 2. [Export the collection in a local file](#export-a-postman-collection-in-a-local-file) and then import that file in Postman.
 
-#### Publishing a Postman collection as a web link
+##### Publishing a Postman collection as a web link
 
 Use this API:
 
@@ -1302,12 +1375,11 @@ const userIn = new UserIn({
 	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
 	config: {
 		baseUrl: 'http://localhost:3330',
-		openid: {
-			tokenExpiry: {
-				access_token: 3600,
-				id_token: 3600,
-				code: 30
-			}
+		consentPage: 'https://your-domain.com/consent-page', 	// only required when modes contains 'openid'.
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600, 					// only required when modes contains 'openid'.
+			code: 30 							// only required when modes contains 'loginsignupfip' or 'openid'.
 		}
 	}
 })
@@ -1329,7 +1401,7 @@ app.use(userIn)
 app.listen(3330, () => console.log('UserIn listening on https://localhost:3330'))
 ```
 
-#### Export a Postman collection in a local file
+##### Export a Postman collection in a local file
 
 Once the UserIn instance has been created and configured, use the `Postman` utility as follow:
 
@@ -1355,12 +1427,11 @@ const userIn = new UserIn({
 	modes:['loginsignupfip', 'openid'], // You have to define at least one of those three values.
 	config: {
 		baseUrl: 'http://localhost:3330',
-		openid: {
-			tokenExpiry: {
-				access_token: 3600,
-				id_token: 3600,
-				code: 30
-			}
+		consentPage: 'https://your-domain.com/consent-page', 	// only required when modes contains 'openid'.
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600, 					// only required when modes contains 'openid'.
+			code: 30 							// only required when modes contains 'loginsignupfip' or 'openid'.
 		}
 	}
 })
@@ -1388,9 +1459,36 @@ app.listen(3330, () => console.log('UserIn listening on https://localhost:3330')
 
 When this code is executed, a `postman-collection.json` file is autogenerated. Use Postman to import the collection using this file.
 
+## Authorization code flow implementation
+
+1. User-agent browses to the `/oauth2/v1/authorize` URL passing in the query parameters the following properties:
+	- `client_id` [required]
+	- `response_type` [required]
+	- `redirect_uri` [required] 
+	- `scope` [optional]
+	- `state` [optional]
+	- `code_challenge` [optional]
+	- `code_challenge_method` [optional]
+2. UserIn validates those parameters. Upon successful validation, UserIn:
+	1. Creates an opaque `code` that can be exchanged later for those parameters above.
+	2. Redirects the user-agent to the consent page including the opaque `code` in the query parameters.
+3. The backend behind the consent page (which is outside of UserIn control) authenticates the user (using probably the UserIn `/login` or `signup` web APIs) and prompt the user to confirm access to their resources by the third-party (aka the client_id). Upon agreeing, the consent page backend is expected to behave as follow:
+	1. Creates an new opaque short-lived `consentcode` that UserIn can exchange for a `user_id`, a `username` and the original `code` from step 2.1.
+	2. Redirects the user-agent to the UserIn `/v1/authorizeconsent` endpoint including the `consentcode` in the query parameters.
+4. UserIn:
+	1. Exchanges the `consentcode` for an object contaiing the following properties:
+		- `user_id`
+		- `username`
+		- `code`: That's the original code created in step 2.1.
+		- `exp`: A timestamp representing the number of seconds since epoch. That timestamp represents the expiration date after which this consentcode is not valid anymore.
+	2. Exchanges the `code` for the original parameters from step 1.
+	3. Creates an explicit link between the `client_id` and the `user.id` so that client_id can retrieve tokens without forcing the user to go throught the consent page again.
+	4. Generates the tokens based on the `response_type` value from step 1.
+	5. Redirects the user-agent to the `redirect_uri` URL from step 1 including in the tokens in the query parameters.
+
 # Flexible flows
 
-Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0. flows but do not obey to the strict OAuth 2.0 specification. 
+Flexible flows are those who leverage the UserIn APIs built to support the OAuth 2.0 flows but do not obey to the strict OAuth 2.0 specification. 
 
 Generally speaking, those flows exist to power the non-third-party use cases, i.e., the ones where your API powers your own Apps directly (e.g., signing up with username and password). Those flows do not need any `client_id` (which exist to identity a third-party). UserIn's value proposition is to leverage the existing OAuth 2.0 APIs to support both standard (requires a client_id and maybe a client_secret too) and non-standard flows. To deliver this value, UserIn uses this simple approach. When users are authorized via your platform's consent page (OAuth 2.0 flow), then tokens (including the authorization code) are linked to a client_id. All subsequent flows involving those tokens require a client_id. On the other hand, When users login or signup via your login/signup page (non-OAuth 2.0 flow), then no client_id is associated with the generated tokens, and therefore the client_id is not required.
 
@@ -1406,7 +1504,7 @@ GET https://YOUR_DOMAIN/v1/google/authorize?
     mode=signup
 ```
 
-Notice that this HTTP GET is similar to the OAuth 2.0. `/authorize` request used in the Authorization Code flow except:
+Notice that this HTTP GET is similar to the OAuth 2.0 `/authorize` request used in the Authorization Code flow except:
 - There is no `client_id` because you are serving your own users. Client IDs are generally used to identity a third-party accessing your platform. 
 - The `mode` variable helps to determine whether this request aims to create a new user or to log the user in. The supported values are:
 	- `login` (default)
@@ -1466,7 +1564,7 @@ https://auth0.com/docs/flows/authorization-code-flow-with-proof-key-for-code-exc
 ## Jargon and concepts
 ### Grant types
 
-Grant types are labels used in the `/token` API to determine how the provided credentials must be exchanged with tokens. OAuth 2.0. supports the following grant types:
+Grant types are labels used in the `/token` API to determine how the provided credentials must be exchanged with tokens. OAuth 2.0 supports the following grant types:
 - `password`
 - `client_credentials`
 - `authorization_code`

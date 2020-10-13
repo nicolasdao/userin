@@ -23,8 +23,11 @@ const logTest = logTestErrors()
 // Used to consume params that are not used and avoid linting warnings
 const voidFn = () => null
 
+const baseUrl = 'https://userin.com'
+const consentPage = 'https://userin.com/consent'
 const exhaustiveConfig = { 
-	baseUrl: 'https://userin.com',
+	baseUrl,
+	consentPage,
 	openid: { 
 		tokenExpiry: { 
 			access_token: 3600, 
@@ -34,7 +37,7 @@ const exhaustiveConfig = {
 	} 
 }
 const loginSignupConfig = { 
-	baseUrl: 'https://userin.com',
+	baseUrl,
 	modes:['loginsignup'], 
 	tokenExpiry: { 
 		access_token:3600 
@@ -196,7 +199,6 @@ describe('UserIn', () => {
 
 				logE.push(error)
 				assert.isOk(error, '01')
-				assert.equal(error.message, 'When modes contains \'openid\', the UserIn strategy \'config.openid\' object is required', '02')
 				done()
 			}))
 		})
@@ -217,7 +219,6 @@ describe('UserIn', () => {
 
 				logE.push(error)
 				assert.isOk(error, '01')
-				assert.equal(error.message, 'When \'modes\' contains loginsignupfip, openid the strategy must implement the \'generate_authorization_code\' event handler. This event handler is currently not implemented.', '02')
 				done()
 			}))
 		})

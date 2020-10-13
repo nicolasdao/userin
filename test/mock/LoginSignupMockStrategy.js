@@ -19,7 +19,7 @@ class LoginSignUpMockStrategy extends Strategy {
  * @return {String}		token
  */
 LoginSignUpMockStrategy.prototype.generate_access_token = (root, { claims }, context) => {
-	return context.tokenHelper.createValid(claims,'access_token')
+	return context.tokenHelper.createValid(claims)
 }
 
 /**
@@ -33,7 +33,7 @@ LoginSignUpMockStrategy.prototype.generate_access_token = (root, { claims }, con
  * @return {String}		token
  */
 LoginSignUpMockStrategy.prototype.generate_refresh_token = (root, { claims }, context) => {
-	const token = context.tokenHelper.createValid(claims,'refresh_token')
+	const token = context.tokenHelper.createValid(claims)
 	context.repos.refreshToken.push({ token, claims })
 	return token
 }

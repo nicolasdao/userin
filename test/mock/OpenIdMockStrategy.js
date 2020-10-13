@@ -69,7 +69,7 @@ OpenIdMockStrategy.prototype.get_end_user = LoginSignupFIPMockStrategy.prototype
  * @return {String}		token
  */
 OpenIdMockStrategy.prototype.generate_id_token = (root, { claims }, context) => {
-	return context.tokenHelper.createValid(claims,'id_token')
+	return context.tokenHelper.createValid(claims)
 }
 
 /**
@@ -137,7 +137,7 @@ OpenIdMockStrategy.prototype.get_client = (root, { client_id, client_secret }, c
  * Gets the authorization code's claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		payload.token
+ * @param  {String}		payload.token
  * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
@@ -155,7 +155,7 @@ OpenIdMockStrategy.prototype.get_authorization_code_claims = LoginSignupFIPMockS
  * Gets the refresh_token claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		payload.token
+ * @param  {String}		payload.token
  * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
@@ -184,7 +184,7 @@ OpenIdMockStrategy.prototype.delete_refresh_token = LoginSignupFIPMockStrategy.p
  * Gets an access_token's claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		payload.token
+ * @param  {String}		payload.token
  * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
@@ -202,7 +202,7 @@ OpenIdMockStrategy.prototype.get_access_token_claims = LoginSignupFIPMockStrateg
  * Gets an id_token's claims
  * 
  * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
- * @param  {Object}		payload.token
+ * @param  {String}		payload.token
  * @param  {Object}		context				Strategy's configuration
  * 
  * @return {Object}		claims				This object should always defined the following properties at a minimum.
@@ -315,6 +315,91 @@ OpenIdMockStrategy.prototype.get_jwks = () => {
 	}]
 }
 
+/**
+ * Generates a new auth request code. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+OpenIdMockStrategy.prototype.generate_auth_request_code = (root, { claims }, context) => {
+	return context.tokenHelper.createValid(claims)
+}
+
+/**
+ * Generates a new auth consent code. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+OpenIdMockStrategy.prototype.generate_auth_consent_code = (root, { claims }, context) => {
+	return context.tokenHelper.createValid(claims)
+}
+
+/**
+ * Gets an auth request code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Object}		claims							This object should always defined the following properties at a minimum.
+ * @return {String}		claims.client_id			
+ * @return {String}		claims.response_type	
+ * @return {String}		claims.scope
+ * @return {String}		claims.state
+ * @return {String}		claims.redirect_uri
+ * @return {String}		claims.code_challenge	
+ * @return {String}		claims.code_challenge_method
+ * @return {String}		claims.nonce
+ */
+OpenIdMockStrategy.prototype.get_auth_request_claims = (root, { token }, context) => {
+	const claims = context.tokenHelper.decrypt(token)
+	return claims
+}
+
+/**
+ * Gets an auth consent code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Object}		claims							This object should always defined the following properties at a minimum.
+ * @return {String}		claims.user_id			
+ * @return {String}		claims.username	
+ * @return {String}		claims.code
+ * @return {Number}		claims.exp
+ */
+OpenIdMockStrategy.prototype.get_auth_consent_claims = (root, { token }, context) => {
+	const claims = context.tokenHelper.decrypt(token)
+	return claims
+}
+
+/**
+ * Gets an auth consent code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.user_id
+ * @param  {Object}		payload.client_id
+ * @param  {[String]}	payload.scopes
+ * @param  {String}		payload.state
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Void}		
+ */
+OpenIdMockStrategy.prototype.link_client_to_user = (root, { user_id, client_id }, context) => {
+	const existingClientIds = context.repos.userToClient.filter(x => x.user_id == user_id).map(x => x.client_id)
+	if (existingClientIds.indexOf(client_id) < 0)
+		context.repos.userToClient.push({  user_id, client_id })
+}
 
 module.exports = OpenIdMockStrategy
 

@@ -264,6 +264,78 @@ ExhaustiveMockStrategy.prototype.get_jwks = OpenIdMockStrategy.prototype.get_jwk
  */
 ExhaustiveMockStrategy.prototype.delete_refresh_token = OpenIdMockStrategy.prototype.delete_refresh_token 
 
+/**
+ * Generates a new auth request code. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+ExhaustiveMockStrategy.prototype.generate_auth_request_code = OpenIdMockStrategy.prototype.generate_auth_request_code
+
+/**
+ * Generates a new auth consent code. 
+ * 
+ * @param  {Object} 	root				Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.claims
+ * @param  {String}		payload.state		This optional value is not strictly necessary, but it could help set some context based on your own requirements.
+ * @param  {Object}		context				Strategy's configuration
+ * 
+ * @return {String}		token
+ */
+ExhaustiveMockStrategy.prototype.generate_auth_consent_code = OpenIdMockStrategy.prototype.generate_auth_consent_code
+
+/**
+ * Gets an auth request code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Object}		claims							This object should always defined the following properties at a minimum.
+ * @return {String}		claims.client_id			
+ * @return {String}		claims.response_type	
+ * @return {String}		claims.scope
+ * @return {String}		claims.state
+ * @return {String}		claims.redirect_uri
+ * @return {String}		claims.code_challenge	
+ * @return {String}		claims.code_challenge_method
+ * @return {String}		claims.nonce
+ */
+ExhaustiveMockStrategy.prototype.get_auth_request_claims = OpenIdMockStrategy.prototype.get_auth_request_claims
+
+/**
+ * Gets an auth consent code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {String}		payload.token
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Object}		claims							This object should always defined the following properties at a minimum.
+ * @return {String}		claims.user_id			
+ * @return {String}		claims.username	
+ * @return {String}		claims.code
+ * @return {Number}		claims.exp
+ */
+ExhaustiveMockStrategy.prototype.get_auth_consent_claims = OpenIdMockStrategy.prototype.get_auth_consent_claims
+
+/**
+ * Gets an auth consent code's claims
+ * 
+ * @param  {Object} 	root							Previous handler's response. Occurs when there are multiple handlers defined for the same event. 
+ * @param  {Object}		payload.user_id
+ * @param  {Object}		payload.client_id
+ * @param  {[String]}	payload.scopes
+ * @param  {String}		payload.state
+ * @param  {Object}		context							Strategy's configuration
+ * 
+ * @return {Void}		
+ */
+ExhaustiveMockStrategy.prototype.link_client_to_user = OpenIdMockStrategy.prototype.link_client_to_user
+
 module.exports = ExhaustiveMockStrategy
 
 

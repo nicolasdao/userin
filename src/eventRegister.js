@@ -175,12 +175,10 @@ const addGenerateAuthorizationCodeHandler = eventHandlerStore => {
 		if (basicOIDCclaimsErrors)
 			throw wrapErrors(errorMsg, basicOIDCclaimsErrors)
 
-		if (code_challenge && !code_challenge_method)
-			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge' is specified, 'code_challenge_method' is required.`)
-		if (!code_challenge && code_challenge_method)
-			throw new userInError.InvalidRequestError(`${errorMsg}. When 'code_challenge_method' is specified, 'code_challenge' is required.`)
-		if (code_challenge_method && code_challenge_method != 'S256' && code_challenge_method != 'plain')
-			throw new userInError.InvalidRequestError(`${errorMsg}. code_challenge_method '${code_challenge_method}' is not a supported OpenID standard. Valid values: 'plain' or 'S256'.`)
+		const [codeChallengeErrors] = oauth2Params.verify.codeChallenge({ code_challenge, code_challenge_method })
+		if (codeChallengeErrors)
+			throw wrapErrors(errorMsg, codeChallengeErrors)
+
 		if (!redirect_uri)
 			throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
 

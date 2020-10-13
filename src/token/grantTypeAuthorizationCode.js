@@ -39,7 +39,7 @@ const exec = (eventHandlerStore={}, { client_id, client_secret, code, state, cod
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'`)
 
 	// B. Gets the client's scopes and audiences as well as the code's claims
-	const [codeClaimsErrors, codeClaims] = yield eventHandlerStore.get_authorization_code_claims.exec({ type:'code', token:code, state })
+	const [codeClaimsErrors, codeClaims] = yield eventHandlerStore.get_authorization_code_claims.exec({ token:code, state })
 	if (codeClaimsErrors)
 		throw wrapErrors(errorMsg, codeClaimsErrors)
 

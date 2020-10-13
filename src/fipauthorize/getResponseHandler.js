@@ -53,7 +53,7 @@ module.exports = getUserProfile => (endpoint, strategy, verifyClientId=true) => 
 		if (decodedStateErrors)
 			throw wrapErrors(errorMsg, decodedStateErrors)
 
-		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state, code_challenge, nonce, mode } = decodedState || {}
+		const { client_id, redirect_uri, response_type, orig_redirectUri, scope, state, code_challenge, code_challenge_method, nonce, mode } = decodedState || {}
 
 		// if (!client_id)
 		// 	throw new userInError.InvalidRequestError(_getMissingStateQueryParamError(errorMsg, strategy, 'client_id'))
@@ -80,6 +80,7 @@ module.exports = getUserProfile => (endpoint, strategy, verifyClientId=true) => 
 			scopes: oauth2Params.convert.thingToThings(scope),
 			state,
 			code_challenge,
+			code_challenge_method,
 			nonce,
 			redirect_uri
 		}, eventHandlerStore)

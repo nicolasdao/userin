@@ -175,6 +175,15 @@ const createCodeChallenge = (codeVerifier, method) => {
 
 const isClientPrivate = client => client && client.auth_methods && client.auth_methods.some(m => m == 'client_secret_basic' || m == 'client_secret_post')
 
+const verifyCodeChallenge = ({ code_challenge, code_challenge_method }) => catchErrors(() => {
+	if (code_challenge && !code_challenge_method)
+		throw new userInError.InvalidRequestError('When \'code_challenge\' is specified, \'code_challenge_method\' is required.')
+	if (!code_challenge && code_challenge_method)
+		throw new userInError.InvalidRequestError('When \'code_challenge_method\' is specified, \'code_challenge\' is required.')
+	if (code_challenge_method && code_challenge_method != 'S256' && code_challenge_method != 'plain')
+		throw new userInError.InvalidRequestError(`code_challenge_method '${code_challenge_method}' is not a supported OpenID standard. Valid values: 'plain' or 'S256'.`)
+})
+
 module.exports = {
 	convert: {
 		thingToThings,
@@ -189,7 +198,8 @@ module.exports = {
 		scopes: verifyScopes,
 		audiences: verifyAudiences,
 		claimsExpired: areClaimsExpired,
-		clientId: verifyClientIds
+		clientId: verifyClientIds,
+		codeChallenge: verifyCodeChallenge
 	},
 	check: {
 		client: {

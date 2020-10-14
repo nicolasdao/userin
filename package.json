@@ -1,6 +1,6 @@
 {
   "name": "userin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "UserIn is an Express middleware to build OAuth 2.0 workflows that support integration with the most popular Federated Identity Providers (e.g., Google, Facebook, GitHub). It also complies to the OpenID Connect specification.",
   "main": "src/index.js",
   "repository": {

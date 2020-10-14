@@ -28,7 +28,7 @@ UserIn is designed to expose web APIs that support two different flow types:
 >	- [/introspect](#introspect)
 >	- [/userinfo](#userinfo)
 >	- [/certs](#certs)
->	- [/<IdP>/authorize](#idpauthorize)
+>	- [/SomeIdP/authorize](#idpauthorize)
 > * [Events and event handlers](#events-and-event-handlers)
 >	- [Events overview](#events-overview)
 >	- [Event APIs](#event-apis)
@@ -177,7 +177,7 @@ class YourStrategy extends Strategy {
 		this.get_jwks = (root) => { /* Implement your logic here */ }
 		this.get_grant_types_supported = (root) => { /* Implement your logic here */ }
 
-		// IMPORTANT NOTE: The above event handlers support both synchronous and Promises implementations. Both the 
+		// IMPORTANT NOTE: The above event handlers support both synchronous and asynchronous implementations. Both the 
 		// following are correct:
 		// 		this.generate_access_token = (root, { claims }, context) => { /* Implement your logic here */ }
 		// 		or 
@@ -199,14 +199,15 @@ const userin = new UserIn({
 	}
 })
 
-// This code implies a app was registered with Facebook. For more details about this
-// topis, please refer to the "Setting up an identity provider" section. 
+// [Optional] This code requries that an app is registered with 
+// Facebook first. For more details about this topic, please refer 
+// to the "Setting up an identity provider" section. 
 userIn.use(Facebook, {
 	scopes: ['public_profile'],
 	profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'middle_name', 'last_name']
 })
 
-// Example of how to listen to events and even modify their response. 
+// [Optional] Example of how to listen to events and even modify their response. 
 userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(`'generate_access_token' event fired. Payload:`)
 	console.log(payload)
@@ -216,7 +217,8 @@ userIn.on('generate_access_token', (root, payload, context) => {
 	console.log(context)
 })
 
-// Exposes an extra 'v1/'
+// [Optional] Exposes an extra 'v1/postman/collection.json' endpoint
+// More about this topic in the Integration testing section.
 userIn.use(new Postman('userin-my-app'))
 
 app.use(userIn)
@@ -224,7 +226,7 @@ app.use(userIn)
 app.listen(3330)
 ```
 
-The list of exposed endpoints is detailed under the section. That list is also discoverable via the following endpoints:
+The list of exposed endpoints is detailed under the [Endpoints](#endpoints) section. That list is also discoverable via the following endpoints:
 All the endpoints that the UserIn middleware exposes are discoverable at the following two endpoints:
 - __`GET`__ [http://localhost:3330/v1/.well-known/configuration](http://localhost:3330/v1/.well-known/configuration): This is the non-standard OpenID discovery endpoint. It exposes the exhaustive list of all the UserIn endpoints, including both the OpenID endpoints and the non OpenID/OAuth 2.0 endpoints.
 - __`GET`__ [http://localhost:3330/oauth2/v1/.well-known/openid-configuration](http://localhost:3330/oauth2/v1/.well-known/openid-configuration): This is the OpenID discovery endpoint. It only exposes OpenID/Oauth 2.0 endpoints. That endpoint is the one that your third-parties are supposed to use.
@@ -232,26 +234,17 @@ All the endpoints that the UserIn middleware exposes are discoverable at the fol
 
 # Auth modes
 
-The idea behind those modes is to add new non-OAuth 2.0 web APIs to complement the OAuth 2.0 specification. Indeed, the challenges that OAuth 2.0 aim to fix are not related to secure your apps using your own web APIs. OAuth 2.0 is designed to let third-parties to use your APIs on behalf of your users. But as a software engineer, you often need to perform both (usually starting with the first challenge to secure your APIs to power your apps). UserIn's aim is to offer an implementation strategy that is progressive. A usual progression would be:
-1. Allow your users to login or create a new account using username and password. UserIn calls this the `loginsignup` mode. 
-2. Add support for login or create new account with Identity Providers (e.g., Facebook, Google). UserIn calls this the `loginsignupfip` mode. 
-3. Allow third-parties to use your API. UserIn calls this the `openid` mode. 
+The idea behind those modes is to add new non-OAuth 2.0 web APIs to complement the OAuth 2.0 specification. Indeed, the challenges that OAuth 2.0 aim to fix are not related to securing your apps using your own web APIs. OAuth 2.0 is designed to let third-parties use your APIs on behalf of your users. But as a software engineer, you often need to perform both (usually starting with the first challenge to secure your APIs to power your apps). UserIn's aim is to offer an implementation strategy that is progressive. A usual progression would be:
+1. Allow your users to login or create a new account using username and password. UserIn calls this the [`loginsignup`](#loginsignup-mode) mode. 
+2. Add support for login or create new account with Identity Providers (e.g., Facebook, Google). UserIn calls this the [`loginsignupfip`](#loginsignupfip-mode) mode. 
+3. Allow third-parties to use your API. UserIn calls this the [`openid`](#openid-mode) mode. 
 
 > Notice that until you reach the third step, you actually do not need OAuth 2.0 or OpenID.
 
-UserIn supports multiple flows grouped in three modes which can be combined together:
-1. [`loginsignup`](#loginsignup-mode): This is the simplest group of flows to implement. It only supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
-2. [`loginsignupfip`](#loginsignupfip-mode): Supports login and signup with username/password and Federated Identity Providers (e.g., Facebook, Google). Generates short-lived access_token, short-lived authorization code, and optionally long-lived refresh_token upon successfull authentication. This mode is a superset of the `loginsignup` mode. Use it to let your users login and signup to your platform using a username and password as well as one or many FIPs. 
-3. [`openid`](#openid-mode): Supports login (no signup) using any the OpenID Connect flows (Authorization code, Implicit, Credentials and Password). Generates short-lived access_token, short-lived authorization code, short-lived id_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let others systems access your platform. OpenID Connect and OAuth 2.0 powers the following use cases:
-	- Access to your platform by a third-party directly. This flow is called the `Credentials flow`.
-	- Access to your platform by a third-party on behalf of one of your user. In that case, the user has given consent to that third-party system to access some resources on your platform (this consent was given via a redirection to a consent page hosted on your platform). There are two OpenID flows that can achieve this: `Authorization code flow` (recommended) and the `Implicit flow` (deprecated). 
-	- Access to you platform by one of your user using their client_id, username and password (optionally their client_secret if your plaftorm is private). This OpenID flow is called the `password flow`. 
-
-> NOTE: It is interesting to notice that OpenID Connect and OAuth 2.0 are not designed to let your users directly(1) log in or sign up. That's why UserIn supports the [`loginsignup` mode](#loginsignup-mode) and the [`loginsignupfip` mode](#loginsignupfip-mode) (though the later is a bit of a hybrid as it connects with FIPs which usually implement OAuth 2.0). If you're engineering a web API that only needs to power your web app, you only need the first or second mode. OAuth 2.0 and OpenID Connect are useful when your API needs to be accessed by third-parties. The good thing about UserIn is that its implementation lets you upgrade at any time without re-engineering everything from the ground up.
-
-> (1) By _directly_ we mean going straight to your middleware/backend without any redirections to let your lambda users log in or create an account using their credentials. Technically, the OAuth 2.0 `password` and `client_credentials` grant types allow a user to acquire tokens in exchange of credentials via the `/token` API, but those flows are not designed to create new accounts. This is not also in their spirit to support log in. When it comes to identity, the idea behind OpenID is to allow third-parties to request identity information so that they can use them in the way they see fit, including for example, using a custom API to login their users.
-
 ## `loginsignup` mode
+
+This is the simplest group of flows to implement. It only supports login and signup with username and password. Generates short-lived access_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let your users login and signup to your platform using a username and password only.
+
 ### `loginsignup` strategy requirements
 
 - Constructor required fields:
@@ -277,6 +270,9 @@ UserIn supports multiple flows grouped in three modes which can be combined toge
 	7. `delete_refresh_token`
 
 ## `loginsignupfip` mode
+
+Supports login and signup with username/password and Federated Identity Providers (e.g., Facebook, Google). Generates short-lived access_token, short-lived authorization code, and optionally long-lived refresh_token upon successfull authentication. This mode is a superset of the `loginsignup` mode. Use it to let your users login and signup to your platform using a username and password as well as one or many FIPs. 
+
 ### `loginsignupfip` strategy requirements
 
 This mode is a superset of _loginsignup_.
@@ -311,6 +307,12 @@ This mode is a superset of _loginsignup_.
 	11. `get_authorization_code_claims`
 
 ## `openid` mode
+
+Supports login (no signup) using any the OpenID Connect flows (Authorization code, Implicit, Credentials and Password). Generates short-lived access_token, short-lived authorization code, short-lived id_token, and optionally long-lived refresh_token upon successfull authentication. Use it to let others systems access your platform. OpenID Connect and OAuth 2.0 powers the following use cases:
+	- Access to your platform by a third-party directly. This flow is called the `Credentials flow`.
+	- Access to your platform by a third-party on behalf of one of your user. In that case, the user has given consent to that third-party system to access some resources on your platform (this consent was given via a redirection to a consent page hosted on your platform). There are two OpenID flows that can achieve this: `Authorization code flow` (recommended) and the `Implicit flow` (deprecated). 
+	- Access to you platform by one of your user using their client_id, username and password (optionally their client_secret if your plaftorm is private). This OpenID flow is called the `password flow`. 
+
 ### `openid` strategy requirements
 
 - Constructor required fields:
@@ -398,7 +400,11 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /login
 
+Doc under construction...
+
 ## /signup
+
+Doc under construction...
 
 ## /token
 
@@ -530,7 +536,11 @@ To learn more about setting up identity providers, please refer to the [next sec
 
 ## /certs
 
+Doc under construction...
+
 ## /<IdP>/authorize
+
+Doc under construction...
 
 # Events and event handlers
 ## Events overview
@@ -643,6 +653,8 @@ module.exports = handler
 
 ### `create_fip_user`
 
+Doc under construction...
+
 ### `generate_access_token`
 
 Example of that logic encapsulated in a `generate_access_token.js`:
@@ -681,7 +693,11 @@ module.exports = handler
 
 ### `generate_authorization_code`
 
+Doc under construction...
+
 ### `generate_id_token`
+
+Doc under construction...
 
 ### `generate_refresh_token`
 
@@ -721,15 +737,27 @@ module.exports = handler
 
 ### `generate_auth_request_code`
 
+Doc under construction...
+
 ### `generate_auth_consent_code`
+
+Doc under construction...
 
 ### `get_access_token_claims`
 
+Doc under construction...
+
 ### `get_authorization_code_claims`
+
+Doc under construction...
 
 ### `get_auth_request_claims`
 
+Doc under construction...
+
 ### `get_auth_consent_claims`
+
+Doc under construction...
 
 ### `get_client`
 
@@ -870,9 +898,15 @@ module.exports = handler
 
 ### `get_fip_user`
 
+Doc under construction...
+
 ### `get_id_token_claims`
 
+Doc under construction...
+
 ### `get_identity_claims`
+
+Doc under construction...
 
 ### `get_refresh_token_claims`
 
@@ -918,15 +952,27 @@ module.exports = handler
 
 ### `get_jwks`
 
+Doc under construction...
+
 ### `get_claims_supported`
+
+Doc under construction...
 
 ### `get_scopes_supported`
 
+Doc under construction...
+
 ### `get_grant_types_supported`
+
+Doc under construction...
 
 ### `delete_refresh_token`
 
+Doc under construction...
+
 ### `link_client_to_user`
+
+Doc under construction...
 
 # OpenID Connect tokens & authorization code requirements
 
@@ -934,11 +980,19 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 ## `id_token` requirements
 
+Doc under construction...
+
 ## `access_token` requirements
+
+Doc under construction...
 
 ## `refresh_token` requirements
 
+Doc under construction...
+
 ## Authorization `code` requirements
+
+Doc under construction...
 
 # Setting up an identity provider
 
@@ -1031,6 +1085,9 @@ userIn.use({
 Because OAuth 2.0 flows are not stateless we recommend to implement your UserIn strategy using [dependency injection](#dependency-injection). This will greatly help with unit testing. 
 
 ## Creating a UserIn Strategy class
+
+Doc under construction...
+
 ## Unit testing
 ### Testing a UserIn Strategy class
 UserIn ships with a suite of Mocha unit tests. To test your own strategy:

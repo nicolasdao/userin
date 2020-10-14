@@ -26,7 +26,7 @@ setUpScopeAssertion(assert)
  * @return {Void}
  */
 module.exports = function runTest (data, skip, showResults=[]) {
-	const { userIn, stub:{ client } } = data || {}
+	const { userIn, stub:{ client={}, privateClient={} } } = data || {}
 
 	const { version='v1' } = userIn.config || {}
 
@@ -42,6 +42,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				assert.isOk(client.user, '02 - authorize test suite requires stub \'client.user\'')
 				assert.isOk(client.user.id, '03 - authorize test suite requires stub \'client.user.id\'')
 				assert.isOk(client.user.username, '04 - authorize test suite requires stub \'client.user.username\'')
+				assert.isOk(privateClient.id, '05 - authorize test suite requires stub \'privateClient.id\'')
+				assert.isOk(privateClient.secret, '06 - authorize test suite requires stub \'privateClient.secret\'')
 				
 				if (showResult) console.log(client)
 			})
@@ -50,7 +52,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					logE.push(errors)
 
 					const errorMsg = `Stubbed client ID ${client.id} has no scopes`
@@ -69,7 +71,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					logE.push(errors)
 
 					const errorMsg = `Stubbed client ID ${client.id} should not define any auth_methods`
@@ -86,11 +88,11 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				}))
 			})
 			it('04 - Should use a client that has at least one valid redirect_uri set up in its redirect_uris allowlist', done => {
-				const showResult = showIds('03')
+				const showResult = showIds('04')
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					logE.push(errors)
 
 					const errorMsg = `Stubbed client ID ${client.id} has no redirect_uris`
@@ -101,6 +103,27 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					assert.isAbove(clientData.redirect_uris.length, 0, `04 - ${errorMsg}`)
 					const redirect_uri = clientData.redirect_uris[0]
 					assert.isOk(validate.url(redirect_uri), `05 - Stubbed client ID ${client.id} uses an invalid redirect_uri. ${redirect_uri} is not a valid URL.`)
+
+					if (showResult) console.log(clientData)
+					done()
+				}))
+			})
+			it('05 - Should use a privateClient that has a auth_methods containing \'client_secret_post\' and \'client_secret_basic\'', done => {
+				const showResult = showIds('05')
+				const logE = logTest(done)
+
+				logE.run(co(function *() {
+					const [errors, clientData] = yield userIn.get_client({ client_id:privateClient.id })
+					logE.push(errors)
+
+					const errorMsg = `Stubbed client ID ${privateClient.id} has no auth_methods`
+
+					assert.isNotOk(errors, '01')
+					assert.isOk(clientData, '02')
+					assert.isOk(clientData.auth_methods, `03 - ${errorMsg}`)
+					assert.isAbove(clientData.auth_methods.length, 0, `04 - ${errorMsg}`)
+					assert.include(clientData.auth_methods, 'client_secret_post', `05 - Array auth_methods for stubbed Client ID ${privateClient.id} is missing a 'client_secret_post' value.`)
+					assert.include(clientData.auth_methods, 'client_secret_basic', `06 - Array auth_methods for stubbed Client ID ${privateClient.id} is missing a 'client_secret_basic' value.`)
 
 					if (showResult) console.log(clientData)
 					done()
@@ -258,7 +281,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
@@ -291,13 +314,13 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					done()
 				}))
 			})
-			it('07 - Should redirect to the consent page with a valid code on the query parameters', done => {
+			it('07 - Should redirect to the consent page with a valid code in the query parameters when all the required params are provided except the client_secret when the client is not private', done => {
 				const showResult = showIds('07')
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
 					assert.isOk(userIn.config.consentPage, '01')
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '02')
@@ -322,7 +345,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const { query: { code } } = urlHelp.getInfo(resp.res.headers.location)
 					assert.isOk(code, '06')
 
-					const [codeErrors, codeClaims] = yield userIn.eventHandlerStore.get_auth_request_claims.exec({ token:code })
+					const [codeErrors, codeClaims] = yield userIn.get_auth_request_claims({ token:code })
 
 					logE.push(codeErrors)
 
@@ -341,7 +364,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
@@ -366,7 +389,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 						logE.push(new Error(body.error_description || body.error))
 
 					assert.equal(status, 400, '02')
-					assert.equal(body.error, 'invalid_scope', '03')
+					assert.equal(body.error, 'invalid_request', '03')
 					assert.include(body.error_description, 'Access to scope', '04')					
 					assert.include(body.error_description, 'is not allowed', '05')					
 
@@ -438,7 +461,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({})
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({})
 					logE.push(consentErrors)
 
 					assert.isNotOk(consentErrors, '01')
@@ -471,7 +494,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id
 						}
@@ -508,7 +531,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -546,7 +569,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -585,7 +608,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -625,7 +648,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -665,12 +688,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 
-					const [codeErrors, code] = yield userIn.eventHandlerStore.generate_auth_request_code.exec({
+					const [codeErrors, code] = yield userIn.generate_auth_request_code({
 						claims: {
 							client_id: client.id, 
 							response_type: 'code',  
@@ -681,7 +704,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					logE.push(codeErrors)
 					assert.isNotOk(codeErrors, '02')
 
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -722,12 +745,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 
-					const [codeErrors, code] = yield userIn.eventHandlerStore.generate_auth_request_code.exec({
+					const [codeErrors, code] = yield userIn.generate_auth_request_code({
 						claims: {
 							client_id: client.id, 
 							response_type: 'code token',  
@@ -738,7 +761,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					logE.push(codeErrors)
 					assert.isNotOk(codeErrors, '02')
 
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -779,12 +802,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 
-					const [codeErrors, code] = yield userIn.eventHandlerStore.generate_auth_request_code.exec({
+					const [codeErrors, code] = yield userIn.generate_auth_request_code({
 						claims: {
 							client_id: client.id, 
 							response_type: 'code token id_token',  
@@ -795,7 +818,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					logE.push(codeErrors)
 					assert.isNotOk(codeErrors, '02')
 
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -836,12 +859,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 
-					const [codeErrors, code] = yield userIn.eventHandlerStore.generate_auth_request_code.exec({
+					const [codeErrors, code] = yield userIn.generate_auth_request_code({
 						claims: {
 							client_id: client.id, 
 							response_type: 'code token id_token',  
@@ -853,7 +876,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					logE.push(codeErrors)
 					assert.isNotOk(codeErrors, '02')
 
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,
@@ -894,12 +917,12 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [errors, clientData] = yield userIn.eventHandlerStore.get_client.exec({ client_id:client.id })
+					const [errors, clientData] = yield userIn.get_client({ client_id:client.id })
 					
 					logE.push(errors)
 					assert.isNotOk(errors, '01')
 
-					const [codeErrors, code] = yield userIn.eventHandlerStore.generate_auth_request_code.exec({
+					const [codeErrors, code] = yield userIn.generate_auth_request_code({
 						claims: {
 							client_id: client.id, 
 							response_type: 'code token id_token',  
@@ -912,7 +935,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					logE.push(codeErrors)
 					assert.isNotOk(codeErrors, '02')
 
-					const [consentErrors, consentcode] = yield userIn.eventHandlerStore.generate_auth_consent_code.exec({
+					const [consentErrors, consentcode] = yield userIn.generate_auth_consent_code({
 						claims: {
 							user_id: client.user.id,
 							username: client.user.username,

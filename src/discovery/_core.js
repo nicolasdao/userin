@@ -32,8 +32,8 @@ const OPENID_PROPS = [
 	'token_endpoint',
 	'token_endpoint_auth_methods_supported',
 	'userinfo_endpoint',
-	'authorize_endpoint',
-	'authorizeconsent_endpoint'
+	'authorization_endpoint',
+	'authorizationconsent_endpoint'
 ]
 
 const AUTH_CODE_FLOW_REQUIRED_EVENTS = [...getLoginSignupEvents(), 'generate_authorization_code', 'get_authorization_code_claims']
@@ -52,7 +52,7 @@ const filterProps = (discovery={}, modes=[]) => {
 		}, filteredDiscovery)
 	if (modes.indexOf('loginsignupfip') >= 0) 
 		filteredDiscovery = Object.keys(discovery).reduce((acc,key) => {
-			if (LOGINSIGNUP_FIP_PROPS.indexOf(key) >= 0)
+			if (LOGINSIGNUP_FIP_PROPS.indexOf(key) >= 0 || key.match(/^authorization_(.*?)_endpoint$/))
 				acc[key] = discovery[key]
 			return acc
 		}, filteredDiscovery)
@@ -153,7 +153,7 @@ const getOpenIdDiscoveryData = (eventHandlerStore, context={}) => catchErrors((a
 
 		response_types_supported.add('code', 'token', 'id_token', 'code token', 'code id_token', 'token id_token', 'code token id_token')
 
-		token_endpoint_auth_methods_supported.add('client_secret_post')
+		token_endpoint_auth_methods_supported.add('client_secret_post', 'client_secret_basic')
 
 		claims_supported.add(...OPENID_CLAIMS, ...USERIN_OPENID_CLAIMS)
 
@@ -173,10 +173,10 @@ const getOpenIdDiscoveryData = (eventHandlerStore, context={}) => catchErrors((a
 		discovery.revocation_endpoint = joinUrlParts(baseUrl, endpoints.revocation_endpoint)
 	if (endpoints.postman_endpoint)
 		discovery.postman_endpoint = joinUrlParts(baseUrl, endpoints.postman_endpoint)
-	if (endpoints.authorize_endpoint)
-		discovery.authorize_endpoint = joinUrlParts(baseUrl, endpoints.authorize_endpoint)
-	if (endpoints.authorizeconsent_endpoint)
-		discovery.authorizeconsent_endpoint = joinUrlParts(baseUrl, endpoints.authorizeconsent_endpoint)
+	if (endpoints.authorization_endpoint)
+		discovery.authorization_endpoint = joinUrlParts(baseUrl, endpoints.authorization_endpoint)
+	if (endpoints.authorizationconsent_endpoint)
+		discovery.authorizationconsent_endpoint = joinUrlParts(baseUrl, endpoints.authorizationconsent_endpoint)
 
 	if (eventHandlerStore.get_jwks) {
 		const [errors, keys=[]] = await eventHandlerStore.get_jwks.exec()

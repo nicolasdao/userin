@@ -45,7 +45,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 	const logTest = logTestErrors()
 
 	const getRefreshToken = (eventHandlerStore, client_id, user_id) => co(function *() {
-		const [errors, result] = yield eventHandlerStore.generate_openid_refresh_token.exec({ client_id, user_id })
+		const fn = eventHandlerStore.generate_openid_refresh_token.exec || eventHandlerStore.generate_openid_refresh_token
+		const [errors, result] = yield fn({ client_id, user_id })
 		if (errors)
 			return [errors, null]
 		else
@@ -53,7 +54,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 	})
 
 	const getAuthorizationHeader = (eventHandlerStore, client_id, user_id) => co(function *() {
-		const [errors, result] = yield eventHandlerStore.generate_openid_access_token.exec({ client_id, user_id })
+		const fn = eventHandlerStore.generate_openid_access_token.exec || eventHandlerStore.generate_openid_access_token
+		const [errors, result] = yield fn({ client_id, user_id })
 		if (errors)
 			return [errors, null]
 		else
@@ -599,7 +601,7 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, client.id, client.user.id)
+					const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, client.id, client.user.id)
 					logE.push(authorizationErrors)
 
 					assert.isNotOk(authorizationErrors, '01')
@@ -629,8 +631,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 				const logE = logTest(done)
 
 				logE.run(co(function *() {
-					const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, null, client.user.id)
-					const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, null, client.user.id)
+					const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, null, client.user.id)
+					const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, null, client.user.id)
 					logE.push(authorizationErrors)
 					logE.push(refreshTokenErrors)
 
@@ -678,8 +680,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, client.id, client.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, client.id, client.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, client.id, client.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, client.id, client.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 
@@ -719,8 +721,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, client.id, client.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, client.id, client.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, client.id, client.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, client.id, client.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 
@@ -761,8 +763,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, client.id, client.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, client.id, client.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, client.id, client.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, client.id, client.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 
@@ -812,8 +814,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, privateClient.id, privateClient.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, privateClient.id, privateClient.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 
@@ -856,8 +858,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, privateClient.id, privateClient.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, privateClient.id, privateClient.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 
@@ -901,8 +903,8 @@ module.exports = function runTest (data, skip, showResults=[]) {
 					const logE = logTest(done)
 
 					logE.run(co(function *() {
-						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
-						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn.eventHandlerStore, privateClient.id, privateClient.user.id)
+						const [authorizationErrors, authorization] = yield getAuthorizationHeader(userIn, privateClient.id, privateClient.user.id)
+						const [refreshTokenErrors, refreshToken] = yield getRefreshToken(userIn, privateClient.id, privateClient.user.id)
 						logE.push(authorizationErrors)
 						logE.push(refreshTokenErrors)
 

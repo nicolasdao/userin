@@ -1,4 +1,4 @@
-const { error: { catchErrors, wrapErrors }, validate } = require('puffy')
+const { error: { catchErrors }, validate } = require('puffy')
 const { error:userInError } = require('userin-core')
 const { oauth2Params } = require('../_utils')
 
@@ -6,7 +6,7 @@ const { oauth2Params } = require('../_utils')
  * Validates the consent page inputs and return extra data. 
  * 
  * @param  {Object}		eventHandlerStore		
- * @param  {Object}		input.client_id				
+ * @param  {Object}		input.client_id		
  * @param  {Object}		input.response_type				
  * @param  {Object}		input.scope				
  * @param  {Object}		input.redirect_uri	
@@ -34,7 +34,7 @@ const validateConsentPageInput = (eventHandlerStore, { client_id, response_type,
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'response_type'.`)
 	const [responseTypeErrors, responseTypes] = oauth2Params.convert.responseTypeToTypes(response_type)
 	if (responseTypeErrors)
-		throw wrapErrors(errorMsg, responseTypeErrors)
+		throw new userInError.InvalidRequestError(errorMsg, responseTypeErrors)
 
 	if (!redirect_uri)
 		throw new userInError.InvalidRequestError(`${errorMsg}. Missing required 'redirect_uri'.`)
@@ -43,12 +43,12 @@ const validateConsentPageInput = (eventHandlerStore, { client_id, response_type,
 
 	const [codeChallengeErrors] = oauth2Params.verify.codeChallenge({ code_challenge, code_challenge_method })
 	if (codeChallengeErrors)
-		throw wrapErrors(errorMsg, codeChallengeErrors)
+		throw new userInError.InvalidRequestError(errorMsg, codeChallengeErrors)
 
 	// B. Get the client's details and validate the request based on those details.
 	const [clientErrors, client] = await eventHandlerStore.get_client.exec({ client_id })
 	if (clientErrors)
-		throw wrapErrors(errorMsg, clientErrors)
+		throw new userInError.InvalidRequestError(errorMsg, clientErrors)
 
 	if (!client)
 		throw new userInError.InvalidClientError(`${errorMsg}. client_id not found.`)
@@ -61,11 +61,11 @@ const validateConsentPageInput = (eventHandlerStore, { client_id, response_type,
 	const scopes = oauth2Params.convert.thingToThings(scope)
 	const [scopesErrors] = oauth2Params.verify.scopes({ scopes, clientScopes })
 	if (scopesErrors)
-		throw wrapErrors(errorMsg, scopesErrors)
+		throw new userInError.InvalidRequestError(errorMsg, scopesErrors)
 
 	const [configErrors, config={}] = await eventHandlerStore.get_config.exec()
 	if (configErrors)
-		throw wrapErrors(errorMsg, configErrors)
+		throw new userInError.InvalidRequestError(errorMsg, configErrors)
 
 	if (!config.consentPage)
 		throw new userInError.InternalServerError(`${errorMsg}. Missing required 'consentPage' configuration.`)

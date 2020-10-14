@@ -182,7 +182,12 @@ const getParams = (req, debugFn) => {
 			debug('- There was no body in the request.')
 
 		debug('- Merging the body parameters with the potential query string parameters.')
-		const parameters = Object.assign((bodyParameters || {}), req.query || {})
+		bodyParameters = bodyParameters || {}
+		const query = req.query || {}
+		if (query.client_secret)
+			delete query.client_secret
+
+		const parameters = { ...bodyParameters, ...query }
 
 		return parameters
 	})

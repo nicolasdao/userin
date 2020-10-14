@@ -10,7 +10,8 @@ const TRACE_ON = process.env.LOG_LEVEL == 'trace'
 /**
  * Verifies that a token is valid and returns the claims associated with that token if it is valid. 
  * 												
- * @param {String}		payload.client_id							
+ * @param {String}		payload.client_id	
+ * @param {String}		payload.client_secret							
  * @param {String}		payload.response_type							
  * @param {String}		payload.scope							
  * @param {String}		payload.state	
@@ -54,7 +55,7 @@ const handler = (payload={}, eventHandlerStore={}, context) => catchErrors(co(fu
 
 	// B. Generates an opaque code to safely persist those data so they can be extracted later when they come back
 	// from the consent page.
-	const claims = { client_id, response_type, scope, state, redirect_uri, code_challenge, code_challenge_method, nonce }
+	const claims = { client_id, response_type, scope, state, redirect_uri, code_challenge, code_challenge_method, nonce, iat: Math.floor(Date.now()/1000) }
 	const [codeErrors, code] = yield eventHandlerStore.generate_auth_request_code.exec({ claims })
 	if (codeErrors)
 		throw wrapErrors(errorMsg, codeErrors)		

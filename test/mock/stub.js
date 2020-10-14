@@ -46,7 +46,7 @@ const GOOD_CLIENT = {
 	scopes:SCOPES, 
 	audiences:AUDIENCES,
 	auth_methods: null,
-	redirect_uris: ['https://mysaferedirect.com/goforit/mate']
+	redirect_uris: ['https://mysaferedirect.com/goforit/mate', 'https://oauth.pstmn.io/v1/callback']
 }
 
 const BAD_CLIENT = {
@@ -62,7 +62,7 @@ const PRIVATE_CLIENT = {
 	client_secret:98765, 
 	scopes:SCOPES, 
 	audiences:AUDIENCES,
-	auth_methods: ['client_secret_post']
+	auth_methods: ['client_secret_post', 'client_secret_basic']
 }
 
 const END_USER = {

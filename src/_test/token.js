@@ -60,7 +60,8 @@ module.exports = function runTest (data, skip, showResults) {
 	const logTest = logTestErrors()
 
 	const getRefreshToken = (eventHandlerStore, scopes, client_id, user_id) => co(function *() {
-		const [errors, codeResult] = yield eventHandlerStore.generate_openid_refresh_token.exec({
+		const fn = eventHandlerStore.generate_openid_refresh_token.exec || eventHandlerStore.generate_openid_refresh_token
+		const [errors, codeResult] = yield fn({
 			client_id,
 			user_id, 
 			scopes
@@ -76,7 +77,8 @@ module.exports = function runTest (data, skip, showResults) {
 	const redirect_uri = 'https://userin.com'
 
 	const getAuthorizationCode = (eventHandlerStore, scopes, client_id, user_id) => co(function *() {
-		const [errors, codeResult] = yield eventHandlerStore.generate_openid_authorization_code.exec({
+		const fn = eventHandlerStore.generate_openid_authorization_code.exec || eventHandlerStore.generate_openid_authorization_code
+		const [errors, codeResult] = yield fn({
 			client_id,
 			user_id, 
 			scopes,
@@ -1903,7 +1905,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore, [], null, client.user.id)
+							const refresh_token = yield getRefreshToken(userIn, [], null, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -1931,7 +1933,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -1957,7 +1959,7 @@ module.exports = function runTest (data, skip, showResults) {
 
 						logE.run(co(function *() {
 							assert.isOk(altClient.id, '02 - To test this assertion, a altClientId must be provided.')
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -1983,7 +1985,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -2009,7 +2011,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -2035,7 +2037,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -2062,7 +2064,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const refresh_token = yield getRefreshToken(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const refresh_token = yield getRefreshToken(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'refresh_token',
@@ -2119,7 +2121,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], null, client.user.id)
+							const code = yield getAuthorizationCode(userIn,[], null, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2147,7 +2149,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], null, client.user.id)
+							const code = yield getAuthorizationCode(userIn,[], null, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2175,7 +2177,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const code = yield getAuthorizationCode(userIn,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2201,7 +2203,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], client.id, client.user.id)
+							const code = yield getAuthorizationCode(userIn,[], client.id, client.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2227,7 +2229,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const code = yield getAuthorizationCode(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2254,7 +2256,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const code = yield getAuthorizationCode(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',
@@ -2282,7 +2284,7 @@ module.exports = function runTest (data, skip, showResults) {
 						const logE = logTest(done)
 
 						logE.run(co(function *() {
-							const code = yield getAuthorizationCode(userIn.eventHandlerStore,[], privateClient.id, privateClient.user.id)
+							const code = yield getAuthorizationCode(userIn,[], privateClient.id, privateClient.user.id)
 							const { server, app } = yield getUserInServer(userIn)
 							const { status, body={} } = yield chai.request(app).post(`/oauth2/${version}/token`).send({
 								grant_type: 'authorization_code',

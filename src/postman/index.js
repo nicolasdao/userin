@@ -11,6 +11,7 @@ const signup_endpoint = require('./signup_endpoint')
 const token_endpoint = require('./token_endpoint')
 const userinfo_endpoint = require('./userinfo_endpoint')
 const fipauthorize_endpoint = require('./fipauthorize_endpoint')
+const authorization_endpoint = require('./authorization_endpoint')
 
 const DESCRIPTION = `# UserIn OAuth 2.0. Authorization Server
 `
@@ -127,6 +128,10 @@ const createCollection = (name, baseUrl, discovery={}) => {
 	// [OAuth] - userinfo_endpoint
 	if (discovery.userinfo_endpoint)
 		collection.item.push(userinfo_endpoint.create(discovery.userinfo_endpoint))
+
+	// [OAuth] - authorization_endpoint
+	if (discovery.authorization_endpoint && discovery.token_endpoint)
+		collection.item.push(authorization_endpoint.create(discovery.authorization_endpoint, discovery.token_endpoint))
 
 	// [OpenID] - jwks_uri
 	if (discovery.jwks_uri)

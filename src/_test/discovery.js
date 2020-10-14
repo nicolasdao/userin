@@ -142,8 +142,8 @@ module.exports = function runTest (data, skip, showResults) {
 						assert.equal(body.jwks_uri, `${baseUrl}/oauth2/${version}/certs`,'10')
 						assert.equal(body.openidconfiguration_endpoint, `${baseUrl}/oauth2/${version}/.well-known/openid-configuration`,'11')
 						assert.equal(body.userinfo_endpoint, `${baseUrl}/oauth2/${version}/userinfo`,'12')
-						assert.equal(body.authorize_endpoint, `${baseUrl}/oauth2/${version}/authorize`,'13')
-						assert.equal(body.authorizeconsent_endpoint, `${baseUrl}/oauth2/${version}/authorizeconsent`,'14')
+						assert.equal(body.authorization_endpoint, `${baseUrl}/oauth2/${version}/authorize`,'13')
+						assert.equal(body.authorizationconsent_endpoint, `${baseUrl}/oauth2/${version}/authorizeconsent`,'14')
 
 						assert.isOk(body.grant_types_supported, '15')
 						assert.equal(body.grant_types_supported.length, 4 ,'16')
@@ -165,8 +165,9 @@ module.exports = function runTest (data, skip, showResults) {
 						assert.equal(body.response_types_supported[5], 'token id_token' ,'32')
 						assert.equal(body.response_types_supported[6], 'code token id_token' ,'33')
 						assert.isOk(body.token_endpoint_auth_methods_supported, '34')
-						assert.equal(body.token_endpoint_auth_methods_supported.length, 1 ,'35')
-						assert.equal(body.token_endpoint_auth_methods_supported[0], 'client_secret_post' ,'36')
+						assert.equal(body.token_endpoint_auth_methods_supported.length, 2 ,'35')
+						assert.include(body.token_endpoint_auth_methods_supported, 'client_secret_post' ,'36.A')
+						assert.include(body.token_endpoint_auth_methods_supported, 'client_secret_basic' ,'36.B')
 						assert.isOk(body.claims_supported, '37')
 						assert.isOk(body.claims_supported.length,'38')
 						assert.isOk(body.scopes_supported, '38')
@@ -190,8 +191,8 @@ module.exports = function runTest (data, skip, showResults) {
 							'jwks_uri',
 							'openidconfiguration_endpoint',
 							'userinfo_endpoint',
-							'authorize_endpoint',
-							'authorizeconsent_endpoint'
+							'authorization_endpoint',
+							'authorizationconsent_endpoint'
 						]
 						const invalidKeys = Object.keys(body).filter(x => validDiscovery.indexOf(x) < 0).join(', ')
 						assert.equal(invalidKeys, '', '41')

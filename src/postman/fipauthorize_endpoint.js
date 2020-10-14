@@ -28,7 +28,7 @@ GET https://yourauthserver.com/v1/${fipName}/authorize?
 >	- The \`mode\` is a concept that does not exist in the standard OAuth 2.0. \`/authorize\` API. This optional variable only uses two values:
 >		- \`login\` (default): Indicates that this API should test whether the user can login to the platform after they've successfully authenticated with the identity provider.
 >		- \`signup\`: Indicates that this API should create a new user upon successfully authentication with the identity provider.
->	- The \`offline_access\` in the \`scope\` variable is an OAuth 2.0. convention to indicate that the \`code\` should be able to be exchanged later (via the \`/token\` API) with an \`refresh_token\`.
+>	- The \`offline_access\` in the \`scope\` variable is an OAuth 2.0. convention to indicate that the \`code\` should be able to be exchanged later (via the \`/token\` API) with a \`refresh_token\`.
 >	- Both \`code_challenge\` and \`code_challenge_method\` are optional, but they cannot be specified without one or the other. This is part of the PKCE security flow.
 `
 

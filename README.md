@@ -485,7 +485,10 @@ To learn more about setting up identity providers, please refer to the [next sec
 - Description: Redirects to your platform's consent page to prompt user to authorize a third-party to access their resources.
 - HTTP method: `GET`
 - Query parameters: 
-	- `client_id` [required]: `<TOKEN VALUE>`
+	- `client_id` [required]: `<CLIENT_ID>`
+	- `client_secret` [optional]: Only required when the client identified by `client_id` contains one of the following values in its `auth_methods` property: 
+		- `client_secret_basic`
+		- `client_secret_post`
 	- `response_type` [required]: Valid values are: `code`, `id_token`, `token`, `code id_token`, `code token`, `id_token token` or `code id_token token`
 	- `redirect_uri` [required]: 
 	- `scope` [optional]: 
@@ -498,7 +501,7 @@ To learn more about setting up identity providers, please refer to the [next sec
 - Description: Processes the consent page's response. Though this is technically not part of the OAuth 2.0 specification, this API is what allows UserIn to implement the full OAuth 2.0 Authorization Code flow. That's why this API is still labelled as OAuth 2.0. 
 - HTTP method: `GET`
 - Query parameters: 
-	- `client_id` [required]: `<TOKEN VALUE>`
+	- `client_id` [required]: `<CLIENT_ID>`
 	- `response_type` [required]: Valid values are: `code`, `id_token`, `token`, `code id_token`, `code token`, `id_token token` or `code id_token token`
 	- `redirect_uri` [required]: 
 	- `scope` [optional]: 
@@ -1277,7 +1280,7 @@ This test function tests all the previous three tests at once. Use it if you hav
 
 ### Dependency injection
 
-The test suite supports inverson of control via dependency injection. All the event handlers supports the same signature: 
+The test suite supports inversion of control via dependency injection. All the event handlers supports the same signature: 
 
 `(root: Object, payload: Object, context: Object)`.
 
@@ -1300,7 +1303,7 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 }
 ```
 
-This example shows that `get_end_user` depends on the `USER_STORE` and `USER_TO_CLIENT_STORE` to function. Those would typically be connectors that can perform IO queries to your backend storage. This code is not properly designed to support unit tests, especially if you are tryng to test inserts. To solve this problem, the best practice is to inject those dependencies from the outside.
+This example shows that `get_end_user` depends on the `USER_STORE` and `USER_TO_CLIENT_STORE` to function. Those would typically be connectors that can perform IO queries to your backend storage. This code is not properly designed to support unit testing, especially if you are tryng to test inserts. To solve this problem, the best practice is to inject those dependencies from the outside.
 
 This is one the purpose of the `context` object. The `context` object is the `config` object passed to the `YourStrategyClass` instance:
 
@@ -1364,7 +1367,25 @@ YourStrategyClass.prototype.get_end_user = (root, { user }, context) => {
 }
 ```
 
-This design pattern is called dependency injection. It allows to replace the behaviors from the outside.
+This design pattern is called dependency injection. It allows to replace the behaviors from the outside. The following snippet shows how to inject dependencies in the UserIn middleware rather than on the Strategy:
+
+```js
+const { someDependency } = require('../src/dependencies')
+const userIn = new UserIn({
+	Strategy: MockStrategy,
+	modes:['loginsignup', 'loginsignupfip', 'openid'], // You have to define at least one of those three values.
+	config: {
+		baseUrl: 'http://localhost:3330',
+		consentPage: 'https://your-domain.com/consent-page',
+		tokenExpiry: {
+			access_token: 3600,
+			id_token: 3600,
+			code: 30
+		}
+		someDependency
+	}
+})
+```
 
 ## Integration testing
 ### Exporting the API to Postman

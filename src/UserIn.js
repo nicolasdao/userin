@@ -1,7 +1,7 @@
 const { co } = require('core-async')
 const express = require('express')
 const { error: { catchErrors, wrapErrors }, promise:{ delay } } = require('puffy')
-const { verifyStrategy, Strategy, getSupportedModes } = require('userin-core')
+const { verifyStrategy, Strategy, getSupportedModes, getEvents, error:userInError } = require('userin-core')
 const introspectApi = require('./introspect')
 const discoveryApi = require('./discovery')
 const tokenApi = require('./token')
@@ -14,6 +14,78 @@ const signupApi = require('./signup')
 const eventRegister = require('./eventRegister')
 const pluginManager = require('./pluginManager')
 const { request: { getParams }, config:{ prefixPathname }, response: { formatResponseError } } = require('./_utils')
+
+const EVENTS = [
+	...getEvents(), 
+	'generate_openid_access_token', 
+	'generate_openid_id_token', 
+	'generate_openid_refresh_token', 
+	'generate_openid_authorization_code'
+]
+
+const addEventHandlerMethods = (eventHandlerStore, obj) => {
+	if (!eventHandlerStore || !obj)
+		return
+
+	for (let event of EVENTS) {
+		obj[event] = (...args) => eventHandlerStore[event] && eventHandlerStore[event].exec
+			? eventHandlerStore[event].exec(...args)
+			: Promise.resolve([[new Error(`Event handler ${event} is not defined`)], null])
+	}
+}
+
+/**
+ * Inspects the the HTTP request body and the Authorization header to check for client's credentials. 
+ * If those exist, check that they are allowed to be specified ('client_secret_basic' vs 'client_secret_post'). 
+ * If they are valid, mutate the 'params' to add them. 
+ * 
+ * @param {Object}		eventHandlerStore
+ * @param {Object}		params
+ * @param {String}		authorization
+ * 
+ * @yield {Void}
+ */
+const verifyCreds = (eventHandlerStore, params={}, authorization='') => catchErrors(co(function *(){
+	const errorMsg = 'Failed to process request'
+	if (!eventHandlerStore)
+		throw new userInError.InternalServerError(`${errorMsg}. Missing required 'eventHandlerStore'.`)
+
+	if (params.client_id && params.client_secret) {
+		// client_secret_post case
+		if (!eventHandlerStore.get_client)
+			throw new userInError.InvalidRequestError(`${errorMsg}. client_id and client_secret are not supported by the current UserIn strategy implementation. Missing 'get_client' event handler.`)
+
+		const [errors, client] = yield eventHandlerStore.get_client.exec({ client_id:params.client_id })
+		if (errors || !client)
+			throw new userInError.InvalidClientError(`${errorMsg}. Invalid client.`, errors)
+		
+		if (!client.auth_methods || !Array.isArray(client.auth_methods) || !client.auth_methods.some(x => x == 'client_secret_post'))
+			throw new userInError.InvalidRequestError(`${errorMsg}. Client credentials passed in the body are not supported.`)
+	} else if (authorization && /^[bB]asic\s/.test(authorization)) {
+		// client_secret_basic case
+		const base64Creds = authorization.trim().replace(/^[Bb]asic\s+/, '')
+		try {
+			const [client_id, client_secret] = Buffer.from(base64Creds, 'base64').toString().split(':')
+			if (!client_id || !client_secret)
+				throw new userInError.InvalidClientError(`${errorMsg}. Invalid base64 client credentials.`)
+
+			if (!eventHandlerStore.get_client)
+				throw new userInError.InvalidRequestError(`${errorMsg}. client_id and client_secret are not supported by the current UserIn strategy implementation. Missing 'get_client' event handler.`)
+
+			const [errors, client] = yield eventHandlerStore.get_client.exec({ client_id })
+			if (errors || !client)
+				throw new userInError.InvalidClientError(`${errorMsg}. Invalid client.`, errors)
+
+			if (!client.auth_methods || !Array.isArray(client.auth_methods) || !client.auth_methods.some(x => x == 'client_secret_basic'))
+				throw new userInError.InvalidRequestError(`${errorMsg}. Client base64 credentials passed in the Authorization header (Basic scheme) are not supported.`)
+
+			params.client_id = client_id
+			params.client_secret = client_secret
+		} catch (err) {
+			throw new userInError.InvalidRequestError(`${errorMsg}. Invalid Basic credentials in the Authorization header. Failed to read base64 data.`, [err])
+		}
+	}
+}))
 
 /**
  * Gets a 'httpHandlerFactory' factory. 
@@ -85,7 +157,13 @@ const createHttpHandlerFactory = (app, eventHandlerStore, appConfig) => {
 			app[method](endpointFullPathname, async (req, res) => {
 				const params = await getParams(req)
 				const authorization = req.headers.Authorization || req.headers.authorization
+				
+				const [authErrors] = await verifyCreds(eventHandlerStore, params, authorization)
+				if (authErrors)
+					return formatResponseError(authErrors, res)
+
 				const [errors, result] = await handler(params, eventHandlerStore, { ...appConfig, req, res, authorization, ...options })
+				
 				if (errors)
 					return formatResponseError(errors, res)
 				else if (result) { // when 'result' is not truthy, we assume the request/response was managed upstream (e.g., redirect to consent page)
@@ -182,8 +260,8 @@ class UserIn extends express.Router {
 			createOauth2HttpHandler('openidconfiguration_endpoint', 'get', discoveryApi.openid, { formatJSON:true })
 			if (eventHandlerStore.get_jwks)
 				createOauth2HttpHandler('jwks_uri', 'get', jwksUriApi, { formatJSON:true })
-			createOauth2HttpHandler('authorize_endpoint', 'get', consentPageRequestHandler)
-			createOauth2HttpHandler('authorizeconsent_endpoint', 'get', consentPageResponseHandler)
+			createOauth2HttpHandler('authorization_endpoint', 'get', consentPageRequestHandler)
+			createOauth2HttpHandler('authorizationconsent_endpoint', 'get', consentPageResponseHandler)
 		} 
 
 		if (loginSignupModeOn) {
@@ -227,11 +305,7 @@ class UserIn extends express.Router {
 
 		this.config = appConfig
 
-		Object.defineProperty(this, 'eventHandlerStore', {
-			get() {
-				return eventHandlerStore
-			}
-		})
+		addEventHandlerMethods(eventHandlerStore, this)
 
 		Object.defineProperty(this, 'strategy', {
 			get() {

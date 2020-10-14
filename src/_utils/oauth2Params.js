@@ -173,7 +173,7 @@ const createCodeChallenge = (codeVerifier, method) => {
 		throw new Error(`Code challenge method '${method}' is not supported. Supported methods: 'plain', 'S256'.`)
 }
 
-const isClientPrivate = client => client && client.auth_methods && client.auth_methods.some(m => m == 'client_secret_basic' || m == 'client_secret_post')
+const isClientPrivate = client => client && client.auth_methods && Array.isArray(client.auth_methods) && client.auth_methods.some(m => m == 'client_secret_basic' || m == 'client_secret_post')
 
 const verifyCodeChallenge = ({ code_challenge, code_challenge_method }) => catchErrors(() => {
 	if (code_challenge && !code_challenge_method)

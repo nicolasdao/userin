@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/nicolasdao/userin/compare/v1.16.0...v2.0.0) (2020-10-14)
+
+
+### Features
+
+* Add support for authorization endpoint in Postman ([59e47f5](https://github.com/nicolasdao/userin/commit/59e47f5dd5dc5f46f2937feb4ba64c9dc9e20f0e))
+
 ## [1.16.0](https://github.com/nicolasdao/userin/compare/v1.15.0...v1.16.0) (2020-10-13)
 
 ## [1.15.0](https://github.com/nicolasdao/userin/compare/v1.14.0...v1.15.0) (2020-10-13)

@@ -92,6 +92,7 @@ UserIn is designed to expose web APIs that support two different flow types:
 > * [Annex](#annex)
 >	- [Jargon and concepts](#jargon-and-concepts)
 >		- [Grant types](#grant-types)
+>		- [ABAC PBAC CBAC & Co](#abac-pbac-cbac--co)
 >	- [Registering an application with an Identity Provider](#registering-an-application-with-an-identity-provider)
 >		- [Facebook](#facebook)
 >		- [Google](#google)
@@ -1668,6 +1669,13 @@ Grant types are labels used in the `/token` API to determine how the provided cr
 - `authorization_code`
 - `refresh_token`
 - `device_code` (not supported yet by UserIn)
+
+### ABAC PBAC CBAC & Co
+> Main ref at https://en.wikipedia.org/wiki/Attribute-based_access_control#Other_models
+
+__ABAC__ stands for _Attribute-based access control_. This is strictly equivalent to __PBAC__ (_Policy-Based Access Control_ used in IAM) and __CBAC__ (_Claims-Based Access Control_ used the Microsoft landscape).
+
+Historically, access control models have included mandatory access control (__MAC__), discretionary access control (__DAC__), and more recently role-based access control (__RBAC__). These access control models are user-centric and do not take into account additional parameters such as resource information, the relationship between the user (the requesting entity) and the resource, and dynamic information e.g. time of the day or user IP. ABAC tries to address this by defining access control based on attributes which describe the requesting entity (the user), the targeted object or resource, the desired action (view, edit, delete...), and environmental or contextual information. This is why access control is said to be attribute-based.
 
 ## Registering an application with an Identity Provider
 ### Facebook

@@ -1,5 +1,5 @@
 # UserIn 2.0 &middot; [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-UserIn is an NodeJS Express middleware to build Authorization Servers that support [OAuth 2.0](https://oauth.net/2/) workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the [OpenID Connect specification](https://openid.net/developers/specs/). With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by username and password, insert token's claims object) using the backend storage of their choice.
+UserIn is an NodeJS Express middleware to build __Authorization Servers__ that support [OAuth 2.0](https://oauth.net/2/) workflows and integrate with Identity Providers (e.g., Google, Facebook, GitHub). Its `openid` mode exposes an API that complies to the [OpenID Connect specification](https://openid.net/developers/specs/). With UserIn, the OAuth 2.0/OpenID Connect flows are abstracted so that developers focus only on implementing basic CRUD operations (e.g., get user by username and password, insert token's claims object) using the backend storage of their choice.
 
 To ease testing, UserIn ships with a [utility](#exporting-the-api-to-postman) that allows to export a `collection.json` to [Postman](https://www.postman.com/).  
 
@@ -17,46 +17,46 @@ UserIn is designed to expose web APIs that support two different flow types:
 >	- [`loginsignupfip`](#loginsignupfip-mode)
 >	- [`openid`](#openid-mode)
 > * [Endpoints](#endpoints)
->	- [/.well-known/configuration](#well-knownconfiguration)
->	- [/login](#login)
->	- [/signup](#signup)
->	- [/token](#token)
->	- [/revoke](#revoke)
->	- [/.well-known/openid-configuration](#well-knownopenid-configuration)
->	- [/authorize](#authorize)
->	- [/authorizeconsent](#authorizeconsent)
->	- [/introspect](#introspect)
->	- [/userinfo](#userinfo)
->	- [/certs](#certs)
->	- [/SomeIdP/authorize](#idpauthorize)
+>	1. [/.well-known/configuration](#well-knownconfiguration)
+>	2. [/login](#login)
+>	3. [/signup](#signup)
+>	4. [/token](#token)
+>	5. [/revoke](#revoke)
+>	6. [/.well-known/openid-configuration](#well-knownopenid-configuration)
+>	7. [/authorize](#authorize)
+>	8. [/authorizeconsent](#authorizeconsent)
+>	9. [/introspect](#introspect)
+>	10. [/userinfo](#userinfo)
+>	11. [/certs](#certs)
+>	12. [/SomeIdP/authorize](#idpauthorize)
 > * [Events and event handlers](#events-and-event-handlers)
 >	- [Events overview](#events-overview)
 >	- [Event APIs](#event-apis)
->		- [`create_end_user`](#create_end_user)
->		- [`create_fip_user`](#create_fip_user)
->		- [`generate_access_token`](#generate_access_token)
->		- [`generate_authorization_code`](#generate_authorization_code)
->		- [`generate_id_token`](#generate_id_token)
->		- [`generate_refresh_token`](#generate_refresh_token)
->		- [`generate_auth_request_code`](#generate_auth_request_code)
->		- [`generate_auth_consent_code`](#generate_auth_consent_code)
->		- [`get_access_token_claims`](#get_access_token_claims)
->		- [`get_authorization_code_claims`](#get_authorization_code_claims)
->		- [`get_auth_request_claims`](#get_auth_request_claims)
->		- [`get_auth_consent_claims`](#get_auth_consent_claims)
->		- [`get_client`](#get_client)
->		- [`get_config`](#get_config)
->		- [`get_end_user`](#get_end_user)
->		- [`get_fip_user`](#get_fip_user)
->		- [`get_id_token_claims`](#get_id_token_claims)
->		- [`get_identity_claims`](#get_identity_claims)
->		- [`get_refresh_token_claims`](#get_refresh_token_claims)
->		- [`get_jwks`](#get_jwks)
->		- [`get_claims_supported`](#get_claims_supported)
->		- [`get_scopes_supported`](#get_scopes_supported)
->		- [`get_grant_types_supported`](#get_grant_types_supported)
->		- [`delete_refresh_token`](#delete_refresh_token)
->		- [`link_client_to_user`](#link_client_to_user)
+>		1. [`create_end_user`](#create_end_user)
+>		2. [`create_fip_user`](#create_fip_user)
+>		3. [`generate_access_token`](#generate_access_token)
+>		4. [`generate_authorization_code`](#generate_authorization_code)
+>		5. [`generate_id_token`](#generate_id_token)
+>		6. [`generate_refresh_token`](#generate_refresh_token)
+>		7. [`generate_auth_request_code`](#generate_auth_request_code)
+>		8. [`generate_auth_consent_code`](#generate_auth_consent_code)
+>		9. [`get_access_token_claims`](#get_access_token_claims)
+>		10. [`get_authorization_code_claims`](#get_authorization_code_claims)
+>		11. [`get_auth_request_claims`](#get_auth_request_claims)
+>		12. [`get_auth_consent_claims`](#get_auth_consent_claims)
+>		13. [`get_client`](#get_client)
+>		14. [`get_config`](#get_config)
+>		15. [`get_end_user`](#get_end_user)
+>		16. [`get_fip_user`](#get_fip_user)
+>		17. [`get_id_token_claims`](#get_id_token_claims)
+>		18. [`get_identity_claims`](#get_identity_claims)
+>		19. [`get_refresh_token_claims`](#get_refresh_token_claims)
+>		20. [`get_jwks`](#get_jwks)
+>		21. [`get_claims_supported`](#get_claims_supported)
+>		22. [`get_scopes_supported`](#get_scopes_supported)
+>		23. [`get_grant_types_supported`](#get_grant_types_supported)
+>		24. [`delete_refresh_token`](#delete_refresh_token)
+>		25. [`link_client_to_user`](#link_client_to_user)
 > * [OpenID Connect tokens & authorization code requirements](#openid-connect-tokens--authorization-code-requirements)
 >	- [`id_token` requirements](#id_token-requirements)
 >	- [`access_token` requirements](#access_token-requirements)
@@ -102,7 +102,7 @@ UserIn is designed to expose web APIs that support two different flow types:
 
 # Getting started
 
-Creating a UserIn Authorization Server consists in creating an `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods based on how many UserIn features must be supported. UserIn removes the burden of implementing OAuth 2.0 logic in those methods so developer focus only on simple CRUD implementations.
+Creating a UserIn Authorization Server consists in creating a `UserInStrategy` class (which must inherit from the `Strategy` class) and then registering that class with the `UserIn` middleware. That `UserInStrategy` class must implement specific methods based on how many UserIn features must be supported. UserIn replaces the burden of implementing OAuth 2.0 logic with simple CRUD implementations.
 
 Install UserIn:
 
@@ -127,8 +127,8 @@ class YourStrategy extends Strategy {
 		super(config)
 		this.name = 'yourstrategyname',
 
-		// loginsignup mode
-		// ================
+		// loginsignup mode (login & signup are not part of the OAuth 2.0 spec)
+		// ====================================================================
 		// 		Implement those seven methods if you need to support the 'loginsignup' 
 		// 		mode (i.e., allowing users to login/signup with their username and password only)
 		this.create_end_user = (root, { user }, context) => { /* Implement your logic here */ }
@@ -139,17 +139,17 @@ class YourStrategy extends Strategy {
 		this.get_access_token_claims = (root, { token }, context) => { /* Implement your logic here */ }
 		this.delete_refresh_token = (root, { token }, context) => { /* Implement your logic here */ }
 
-		// loginsignupfip mode
-		// ===================
-		// 		Add those four methods to the above five if you also need to support login and signup with Identity 
+		// loginsignupfip mode  (login & signup are not part of the OAuth 2.0 spec, though using an FIP to get an access_token requires interacting with OAuth 2.0. workflows)
+		// ===============================================================================================
+		// 		Add those four methods to the above seven if you also need to support login and signup with Identity 
 		// 		Providers such as Facebook, Google, ...
 		this.create_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
 		this.get_fip_user = (root, { strategy, user }, context) => { /* Implement your logic here */ }
 		this.generate_authorization_code = (root, { claims }, context) => { /* Implement your logic here */ }
 		this.get_authorization_code_claims = (root, { token }, context) => { /* Implement your logic here */ }
 
-		// openid mode
-		// ===================
+		// openid mode (OAuth 2.0 with OpenID support)
+		// ===========================================
 		// 		Add those thirteen methods to the following eight if you need to support all the OpenID Connect
 		// 		APIs which allow third-parties to use your APIs:
 		// 			1. 'generate_access_token',
@@ -200,7 +200,7 @@ const userin = new UserIn({
 	}
 })
 
-// [Optional] This code requries that an app is registered with 
+// [Optional] This code requires that an app is registered with 
 // Facebook first. For more details about this topic, please refer 
 // to the "Setting up an identity provider" section. 
 userIn.use(Facebook, {
@@ -235,7 +235,7 @@ All the endpoints that the UserIn middleware exposes are discoverable at the fol
 
 # Auth modes
 
-The idea behind those modes is to add new non-OAuth 2.0 web APIs to complement the OAuth 2.0 specification. Indeed, the challenges that OAuth 2.0 aim to fix are not related to securing your apps using your own web APIs. OAuth 2.0 is designed to let third-parties use your APIs on behalf of your users. But as a software engineer, you often need to perform both (usually starting with the first challenge to secure your APIs to power your apps). UserIn's aim is to offer an implementation strategy that is progressive. A usual progression would be:
+The idea behind those modes is to add new non-OAuth 2.0 web APIs to complement the OAuth 2.0 specification. Indeed, the challenges that OAuth 2.0 aim to fix are not related to securing your apps using your own web APIs. OAuth 2.0 is designed to let third-parties use your APIs on behalf of your users. But as a software engineer, you often need to perform both (usually starting with the challenge to secure your APIs to power your apps). UserIn's aim is to offer an implementation strategy that is progressive. A usual progression would be:
 1. Allow your users to login or create a new account using username and password. UserIn calls this the [`loginsignup`](#loginsignup-mode) mode. 
 2. Add support for login or create new account with Identity Providers (e.g., Facebook, Google). UserIn calls this the [`loginsignupfip`](#loginsignupfip-mode) mode. 
 3. Allow third-parties to use your API. UserIn calls this the [`openid`](#openid-mode) mode. 
@@ -261,7 +261,7 @@ This is the simplest group of flows to implement. It only supports login and sig
 	> 	}
 	> })
 	> ```
-- Requires five event handlers:
+- Requires seven event handlers:
 	1. `create_end_user`
 	2. `get_end_user`
 	3. `generate_access_token`
@@ -795,6 +795,8 @@ const handler = (root, { client_id, client_secret }, context) => {
 ```
 
 ### `get_config`
+
+This method is not required to support any workflow. Instead, it can be used as a utility to add custom features.
 
 ```js
 /**
@@ -1884,7 +1886,22 @@ Up until August 2020, this seems to be a GitHub bug. The expected behavior is to
 
 # References
 
-
+- [OAuth 2.0](https://oauth.net/2/)
+- [OAuth 2.0 scopes](https://oauth.net/2/scope/)
+- [OAuth 2.0 standard errors](https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/#error)
+- [OAuth 2.0 exhaustive errors](https://developer.okta.com/docs/reference/error-codes/#example-errors-for-openid-connect-and-social-login)
+- [OAuth 2.0 access token implementation](https://medium.com/@darutk/oauth-access-token-implementation-30c2e8b90ff0)
+- [OAuth 2.0 Google API Primer](https://developers.google.com/identity/choose-auth)
+- [OpenID Connect scopes](https://developers.onelogin.com/openid-connect/scopes)
+- [OpenID Connect claims](https://openid.net/specs/openid-connect-core-1_0.html#IDToken)
+- [OpenID Connect scopes and their associated claims](https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.5.4)
+- [OpenID Connect discovery metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata)
+- [OpenID Connect discovery metadata example](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationResponse)
+- [Okta - OpenID Connect API list](https://developer.okta.com/docs/reference/api/oidc/#client-authentication-methods)
+- [Okta - Scope dependent claims](https://developer.okta.com/docs/reference/api/oidc/#claims-in-the-payload-section)
+- [Okta - Identity, Claims, & Tokens – An OpenID Connect Primer](https://developer.okta.com/blog/2017/07/25/oidc-primer-part-1)
+- [Okta - Verify the token signature and the meaning of the standard claims](https://developer.okta.com/docs/guides/validate-id-tokens/overview/#verify-the-token-signature)
+- [Auth0 - Authorization Code Flow with Proof Key for Code Exchange (PKCE)](https://auth0.com/docs/flows/authorization-code-flow-with-proof-key-for-code-exchange-pkce)
 
 
 

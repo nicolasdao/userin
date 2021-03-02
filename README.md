@@ -981,19 +981,124 @@ If you're implementing a UserIn strategy that supports the [`openid` mode](#open
 
 ## `id_token` requirements
 
-Doc under construction...
+An `id_token` must:
+1. Be cryptographically signed on your server so you can validate that it has indeed been issued by you and that it has not been tampered when you get it back.
+2. Be short-lived. It cannot be valid for more than an hour after being issued.
+3. Be a JWT containing at a minimum the following claims (to be compliant to the OIDC specification):
+	- `iss`: Issuer Identifier for the Issuer of the response. The iss value is a case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components and no query or fragment components.
+	- `sub`: Subject Identifier. That the ID of the token owner (i.e., the ID you use in your own system to do a user lookup). It must not exceed 255 ASCII characters in length. The sub value is a case sensitive string.
+	- `aud`: Audience(s) that this ID Token is intended for. It MUST contain the OAuth 2.0 client_id of the Relying Party as an audience value. It MAY also contain identifiers for other audiences. In the general case, the aud value is an array of case sensitive strings. In the common special case when there is one audience, the aud value MAY be a single case sensitive string.
+	- `exp`: Expiration time on or after which the ID Token MUST NOT be accepted for processing. The processing of this parameter requires that the current date/time MUST be before the expiration date/time listed in the value. Implementers MAY provide for some small leeway, usually no more than a few minutes, to account for clock skew. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time. See RFC 3339 [RFC3339] for details regarding date/times in general and UTC in particular.
+	- `iat`: Time at which the JWT was issued. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
+
+> The `sub` must be unique per `iss`. You can use the iss + sub to uniquely identify users.
+
+This JWT can also contain more reserved OIDC fields defined [here](https://openid.net/specs/openid-connect-core-1_0.html#IDToken). The optional other fields are referred as claims (e.g., name, family_name, given_name). OIDC defines a [series of standard claims associated with each scopes](https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.5.4). The number of claims contained in the _id_token_ depends on the scopes passed to the request. You are not limited to the standard claims. You can create your own scopes and associate whatever custom claims to each scope.
+
+Here is an example from an [Okta JWT `id_token`](https://developer.okta.com/blog/2017/08/01/oidc-primer-part-3#oidc-scopes):
+
+```js
+{
+	"iss": "https://micah.okta.com/oauth2/aus2yrcz7aMrmDAKZ1t7",
+	"sub": "00u2yulup4eWbOttd1t7",
+	"aud": "0oa2yrbf35Vcbom491t7",
+	"exp": 1501535822,
+	"iat": 1501532222,
+	"name": "Okta OIDC Fun",
+	"locale": "en-US",
+	"email": "okta_oidc_fun@okta.com",
+	"ver": 1,
+	"jti": "ID.Zx8EclaZmhSckGHOCRzOci2OaduksmERymi9-ad7ML4",
+	"amr": [
+		"pwd"
+	],
+	"idp": "00o1zyyqo9bpRehCw1t7",
+	"nonce": "c96fa468-ca1b-46f0-8974-546f23f9ee6f",
+	"preferred_username": "okta_oidc_fun@okta.com",
+	"given_name": "Okta OIDC",
+	"family_name": "Fun",
+	"zoneinfo": "America/Los_Angeles",
+	"updated_at": 1499922371,
+	"email_verified": true,
+	"auth_time": 1501528157
+}
+```
+
+> (1) Though the OAuth2 documentation specifies that the `aud` MUST contain the client_id of the resources that can accept it, most concrete implementation use URIs. For example, let's say that your token can only access the following two APIs: https://api.example.com and https://api.otherexample.com/somepath. In that case, the `aud` value associated with your token would be: `"aud":"https://api.example.com https://api.otherexample.com"`.
+
 
 ## `access_token` requirements
 
-Doc under construction...
+An `access_token` must:
+1. Be cryptographically signed on your server so you can validate that it has indeed been issued by you and that it has not been tampered when you get it back.
+2. Be short-lived. It cannot be valid for more than an hour after being issued.
+3. Be able to be associated with:
+	- The client_id that made the original request.
+	- The owner's identity, whether that owner is a user or a service account.
+	- The scopes it was generated it from. 
+	- The audience(s) that can be accessed by this token(1).
+
+Criteria 2 and 3 can be achieved by encoding this token using a JWT, but this is not required by the OAuth2 specification. If you decide to use JWT to implement your access tokens, the standard approach is to include some of the following standard OIDC claims:
+- `iss`: Issuer Identifier for the Issuer of the response. The iss value is a case sensitive URL using the https scheme that contains scheme, host, and optionally, port number and path components and no query or fragment components.
+- `sub`: Subject Identifier. That the ID of the token owner (i.e., the ID you use in your own system to do a user lookup). It must not exceed 255 ASCII characters in length. The sub value is a case sensitive string.
+- `exp`: Expiration time on or after which the ID Token MUST NOT be accepted for processing. The processing of this parameter requires that the current date/time MUST be before the expiration date/time listed in the value. Implementers MAY provide for some small leeway, usually no more than a few minutes, to account for clock skew. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time. See RFC 3339 [RFC3339] for details regarding date/times in general and UTC in particular.
+- `iat`: Time at which the JWT was issued. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
+You should also include the `scope`, `aud` and `client_id`.
+> Even if you choose to not use a JWT, those claims above should be associated with the access token in one way or the other.
+
+> The `sub` must be unique per `iss`. You can use the iss + sub to uniquely identify users.
+
+Here is an example from an [Okta JWT `access_token`](https://developer.okta.com/blog/2017/08/01/oidc-primer-part-3#oidc-response-types):
+
+```js
+{
+	"iss": "https://micah.okta.com/oauth2/aus2yrcz7aMrmDAKZ1t7",
+	"sub": "okta_oidc_fun@okta.com",
+	"exp": 1501531801,
+	"iat": 1501528201,
+	"scope": "openid email",
+	"client_id": "0oa2yrbf35Vcbom491t7",
+	"aud": "test",
+	"token_type": "Bearer",
+	"active": true,
+	"username": "okta_oidc_fun@okta.com",
+	"jti": "AT.upPJqU-Ism6Fwt5Fpl8AhNAdoUeuMsEgJ_VxJ3WJ1hk",
+	"uid": "00u2yulup4eWbOttd1t7"
+}
+```
+
+To learn more about the various strategies used to generate access tokens and maintain their state, please refer to this article called [OAuth Access Token Implementation](https://medium.com/@darutk/oauth-access-token-implementation-30c2e8b90ff0).
+
+> (1) Though the OAuth2 documentation specifies that the `aud` MUST contain the client_id of the resources that can accept it, most concrete implementation use URIs. For example, let's say that your token can only access the following two APIs: https://api.example.com and https://api.otherexample.com/somepath. In that case, the `aud` value associated with your token would be: `"aud":"https://api.example.com https://api.otherexample.com"`.
 
 ## `refresh_token` requirements
 
-Doc under construction...
+A `refresh_token` must:
+1. Be protected against tampering(1).
+2. Be long-lived. Theoretically, this token could live forever or you could add an expiry date far away from their creation date. It is entirely up to you to decide how long you want those tokens to exist. However, what you may want to support is the ability to revoke them.
+3. Be associated with the context of the original request that created that refresh token(2). That context must include at a minimum:
+	- The client_id so only the same client ID can exchange that refresh token for another articfact.
+	- If the refresh token does not last forever, the creation date or the expiry date must be associated with the refresh token so it can be invalidated if it has expired.
+	- The scopes that this refresh token was originally requested for. When the refresh token is used to acquire another token, those scopes need to be checked against the client_id to make sure they are still accessible.
+	- The audience(s) that this refresh token was originally requested for. When the refresh token is used to acquire another token, this audience(s) need to be checked against the client_id to make sure they are still accessible.
+
+> (1) It is entirely up to you to decide how to protect your refresh token against tampering. 
+> (2) It is entirely up to you to decide how to persist that context between requests. Because it is highly desirable to invalidate refresh tokens, a natural solution is to persist refresh tokens (incl. persisting their associated context) in your own database.
 
 ## Authorization `code` requirements
 
-Doc under construction...
+A `code` must:
+1. Be protected against tampering(1).
+2. Be very short-lived. OAuth2 recommends to set the duraction time between 30 and 60 seconds. The longest duration allowed by OAuth2 is 10 minutes.
+3. Be associated with the context of the original request that created that code(1). That context must include at a minimum:
+	- The client_id so only the same client ID can exchange that code for another articfact later.
+	- The creation date or the expiry date so the code can be invalidated if it has expired (recommended duraction is 30 to 60 seconds, max. 10 minutes).
+	- The scopes that this code can associate with a token. Certain flows(e.g., [refresh token scenario when the Authorization Code flow is used](#how-can-i-get-a-refresh_token)) rely on those scopes.
+	- The audience(s) that this code can associate with a token. 
+
+> (1) It is entirely up to you to decide how to protect your code against tampering. Two suggestions are listed below: 
+>	1. Encrypt the context in the code. Because this context is not meant to be shareable with other third-parties, a simple AES encryption should do. When the code comes back later, it can be verified to ensure no tampering occured. Decrypting thde code allows to retrieve the context.
+>	2. Use a random unique identifier to generate the code and use it a key to store the context in a secured persistent storage. When the code comes back, that context can be extracted from that persistent storage using a simple lookup.
 
 # Setting up an identity provider
 

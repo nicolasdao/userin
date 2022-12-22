@@ -30,7 +30,7 @@
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "express": "^4.17.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "passport": "^0.4.1",
     "portscanner": "^2.2.0",
     "puffy": "^1.4.0",
